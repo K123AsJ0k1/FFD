@@ -15,7 +15,7 @@ For all Flask applications with the exception of really simple ones, one of the 
 
 This guide shows the basics for setting up and developing these parts.
 
-## Setup
+## Setup 
 
 To start, we need to create the simple templates, enviroment and testing to start working. For templates there are different options found from guides like [1](https://flask.palletsprojects.com/en/2.3.x/patterns/appfactories/) and [2](https://dev.to/bredmond1019/flask-application-factory-1j81), but the one I have found useful for Kubernetes deployments is the one we can see in the worker-node folder. It consists of these files:
 
