@@ -1,9 +1,6 @@
 from flask import Flask
 from config import Config
-from apscheduler.schedulers.background import BackgroundScheduler
 import logging
-
-from functions.job_functions import *
 
 def create_app():
     app = Flask(__name__)
@@ -19,16 +16,6 @@ def create_app():
     elif enviroment == 'PROD':
         app.logger.warning('Choosen enviroment is production')
         app.config.from_object('config.ProdConfig')
-
-    scheduler = BackgroundScheduler()
-    scheduler.add_job(
-        func = send_update,
-        trigger = "interval",
-        seconds = 5
-    )
-    scheduler.start()
-
-    app.logger.warning('Scheduler ready')
 
     from routes.general_routes import general
     app.logger.warning('Routes imported')

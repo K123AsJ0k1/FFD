@@ -7,10 +7,10 @@ For all Flask applications with the exception of really simple ones, one of the 
 - Configuration file like config.py
   - Gives predefined enviromental variables for different situations 
 - Blueprints like general_routes.py
-  - Defines available the actions application can take 
+  - Defines the available actions the application can take 
 - Functions like general_functions.py
   - Defines the functions used by blueprints 
-- Runner lie run.py
+- Runner like run.py
   - Starts up the application with a wanted configuration
 
 This guide shows the basics for setting up and developing these parts.
