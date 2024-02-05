@@ -3,8 +3,6 @@ from config import Config
 from apscheduler.schedulers.background import BackgroundScheduler
 import logging
 
-from functions.job_functions import *
-
 def create_app():
     app = Flask(__name__)
 
@@ -20,11 +18,15 @@ def create_app():
         app.logger.warning('Choosen enviroment is production')
         app.config.from_object('config.ProdConfig')
 
-    scheduler = BackgroundScheduler()
+    scheduler = BackgroundScheduler(daemon = True)
+    
+    from functions.job_functions import send_update
+    send_update_args = [app.config['CENTRAL_ADDRESS']]
     scheduler.add_job(
         func = send_update,
         trigger = "interval",
-        seconds = 5
+        seconds = 5,
+        args = send_update_args
     )
     scheduler.start()
 
