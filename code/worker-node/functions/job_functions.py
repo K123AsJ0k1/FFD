@@ -1,13 +1,14 @@
 import requests
-
-def send_update(central_address):
-    print('Send update')
+# works, when docker run --network=host -p 7500:7500 worker:ping
+def send_update(logger, central_address):
+    logger.warning('Send update')
     address = central_address + '/update'
     try:
         response = requests.post(
             url = address
         )
-        print(response.status_code)
+        logger.warning(response.status_code)
     except Exception as e:
-        print('Update sending error')
-        print(e)
+        logger.error('Update sending error')
+        logger.error(e)
+        

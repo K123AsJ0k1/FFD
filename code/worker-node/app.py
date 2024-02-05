@@ -19,9 +19,8 @@ def create_app():
         app.config.from_object('config.ProdConfig')
 
     scheduler = BackgroundScheduler(daemon = True)
-    
     from functions.job_functions import send_update
-    send_update_args = [app.config['CENTRAL_ADDRESS']]
+    send_update_args = [app.logger,app.config['CENTRAL_ADDRESS']]
     scheduler.add_job(
         func = send_update,
         trigger = "interval",
@@ -29,7 +28,6 @@ def create_app():
         args = send_update_args
     )
     scheduler.start()
-
     app.logger.warning('Scheduler ready')
 
     from routes.general_routes import general
