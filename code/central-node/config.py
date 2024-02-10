@@ -4,7 +4,8 @@ class Config:
     GLOBAL_SEED = 42
     GLOBAL_LEARNING_RATE = 0.001
     GLOBAL_SAMPLE_RATE = 0.01
-    GLOBAL_EPOCHS = 5
+    GLOBAL_MODEL_OPTIMIZER = 'SGD'
+    GLOBAL_TRAINING_EPOCHS = 5
 
     SCALED_COLUMNS = [
         'amount'
@@ -19,6 +20,7 @@ class Config:
         'isFraud'
     ]
     TARGET_COLUMN = 'isFraud'
+    INPUT_SIZE = 6
 
     CENTRAL_SAMPLE_POOL = 10000
     CENTRAL_TRAIN_EVALUATION_RATIO = 0.5

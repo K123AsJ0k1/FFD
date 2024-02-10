@@ -6,7 +6,7 @@ import torch
 
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, TensorDataset
-
+# Works
 def central_worker_data_split():
     CENTRAL_SAMPLE_POOL = current_app.config['CENTRAL_SAMPLE_POOL']
     WORKER_SAMPLE_POOL = current_app.config['WORKER_SAMPLE_POOL']
@@ -23,7 +23,7 @@ def central_worker_data_split():
 
     central_data_pool.to_csv('data/Central_Data_Pool.csv', index = False)    
     worker_data_pool.to_csv('data/Worker_Data_Pool.csv', index = False)
-
+# Works
 def preprocess_into_train_test_and_evaluate_tensors():
     GLOBAL_SEED = current_app.config['GLOBAL_SEED']
 
@@ -88,3 +88,5 @@ def preprocess_into_train_test_and_evaluate_tensors():
     torch.save(train_tensor,'tensors/train.pt')
     torch.save(test_tensor,'tensors/test.pt')
     torch.save(eval_tensor,'tensors/evaluation.pt')
+    current_app.config['GLOBAL_INPUT_SIZE'] = X_train.shape[1]
+    
