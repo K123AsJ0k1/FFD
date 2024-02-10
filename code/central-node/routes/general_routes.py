@@ -10,6 +10,14 @@ general = Blueprint('general', __name__)
 def demo():
     initial_model_training()
     return 'Ok', 200
+# Works
+@general.route('/register', methods=["POST"])
+def worker_registration():
+    received_worker_ip = request.remote_addr
+    store_worker_ip(
+        worker_ip = received_worker_ip
+    )
+    return 'Ok', 200  
 
 @general.route('/update', methods=["POST"]) 
 def model_update():

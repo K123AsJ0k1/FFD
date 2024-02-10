@@ -67,7 +67,6 @@ def train(
     if GLOBAL_MODEL_OPTIMIZER == 'SGD':
         opt_func = torch.optim.SGD
 
-    print('')
     optimizer = opt_func(model.parameters(), GLOBAL_LEARNING_RATE)
     model_type = type(model)
     
@@ -106,16 +105,16 @@ def initial_model_training():
     GLOBAL_INPUT_SIZE = current_app.config['INPUT_SIZE']
 
     torch.manual_seed(GLOBAL_SEED)
-    print('Loaders')
+    #print('Loaders')
     given_train_loader, given_test_loader = get_loaders()
 
     lr_model = FederatedLogisticRegression(dim = GLOBAL_INPUT_SIZE)
-    print('Train')
+    #print('Train')
     train(
         model = lr_model, 
         train_loader = given_train_loader,  
     )
-    print('Test')
+    #print('Test')
     average_loss, total_accuracy = test(
         model = lr_model, 
         test_loader = given_test_loader

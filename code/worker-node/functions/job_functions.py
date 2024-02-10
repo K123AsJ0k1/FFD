@@ -10,5 +10,5 @@ def send_update(logger, central_address):
         logger.warning(response.status_code)
     except Exception as e:
         logger.error('Update sending error')
-        logger.error(e)
+        logger.error(e) 
         

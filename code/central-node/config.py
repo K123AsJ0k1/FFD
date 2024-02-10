@@ -28,6 +28,8 @@ class Config:
     
     WORKER_SAMPLE_POOL = 100
     WORKER_TRAIN_TEST_RATIO = 0.8
+
+    AVAILABLE_WORKERS = []
     
 class DevConfig(Config):
     DEBUG = True
