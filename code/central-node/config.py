@@ -9,7 +9,7 @@ class Config:
     SCALED_COLUMNS = [
         'amount'
     ]
-    INPUT_COLUMNS = [
+    USED_COLUMNS = [
         'amount',
         'type_CASH_IN',
         'type_CASH_OUT',
@@ -18,15 +18,14 @@ class Config:
         'type_TRANSFER',
         'isFraud'
     ]
-    OUTPUT_COLUMN = 'isFraud'
+    TARGET_COLUMN = 'isFraud'
 
-    CENTRAL_SAMPLE_POOL = 4000000
+    CENTRAL_SAMPLE_POOL = 10000
     CENTRAL_TRAIN_EVALUATION_RATIO = 0.5
     CENTRAL_TRAIN_TEST_RATIO = 0.8
     
-    WORKER_SAMPLE_POOL = 1000000
+    WORKER_SAMPLE_POOL = 100
     WORKER_TRAIN_TEST_RATIO = 0.8
-    
     
 class DevConfig(Config):
     DEBUG = True
