@@ -20,9 +20,16 @@ def create_app():
 
     scheduler = BackgroundScheduler(daemon = True)
     from functions.general_functions import register_worker
+    from functions.model_functions import send_update
     send_update_args = [app.logger,app.config['CENTRAL_ADDRESS']]
     scheduler.add_job(
         func = register_worker,
+        trigger = "interval",
+        seconds = 5,
+        args = send_update_args
+    )
+    scheduler.add_job(
+        func = send_update,
         trigger = "interval",
         seconds = 5,
         args = send_update_args

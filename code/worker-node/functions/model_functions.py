@@ -6,6 +6,8 @@ import pandas as pd
 import torch
 import torch.nn as nn
 
+import requests
+
 from torch.optim import SGD
 from torch.utils.data import DataLoader, TensorDataset
 
@@ -104,10 +106,10 @@ def test(
         average_loss = np.array(loss).sum() / total_size
         total_accuracy = np.array(accuracies).sum() / total_size
         return average_loss, total_accuracy
-    
+# Works
 def local_model_training(
     cycle: int
-) -> bool:
+) -> any:
     print('Local model training')
     global_parameters_path = 'logs/global_parameters.txt'
     global_model_path = 'models/global_model_' + str(cycle) + '.pth'
@@ -150,3 +152,57 @@ def local_model_training(
     parameters = lr_model.get_parameters(lr_model)
     torch.save(parameters, local_model_path)
     return True
+
+def send_update(
+    logger:any, 
+    central_address:str
+):  
+    logger.warning('Send update')
+    model_folder = 'models'
+    files = os.listdir(model_folder)
+    cycle = 0
+    for file in files:
+        if 'global_model' in file:
+            first_split = file.split('_')
+            second_split = first_split[-1].split('.')
+            file_cycle = int(second_split[0])
+            if cycle < file_cycle:
+                cycle = file_cycle
+    training_status = local_model_training(
+        cycle = cycle
+    )
+
+    worker_parameters_path = 'logs/worker_parameters.txt'
+
+    WORKER_PARAMETERS = None
+    with open(worker_parameters_path, 'r') as f:
+        WORKER_PARAMETERS = json.load(f)
+    
+    local_model_path = 'models/local_model_' + str(cycle) + '.pth'
+    local_model = torch.load(local_model_path)
+
+    formatted_local_model = {
+      'weights': local_model['linear.weight'].numpy().tolist(),
+      'bias': local_model['linear.bias'].numpy().tolist()
+    }
+
+    train_tensor = torch.load('tensors/train.pt')
+    
+
+
+    payload = {
+        'worker-id': ,
+        'local-model': formatted_local_model,
+        'cycle': cycle,
+        'train-size': len(train_tensor)
+    }
+
+    address = central_address + '/update'
+    try:
+        response = requests.post(
+            url = address
+        )
+        logger.warning(response.status_code)
+    except Exception as e:
+        logger.error('Registration error')
+        logger.error(e) 

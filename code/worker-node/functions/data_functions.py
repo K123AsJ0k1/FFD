@@ -15,15 +15,12 @@ def store_context(
     global_parameters: any,
     worker_parameters: any,
     global_model: any,
-    worker_data: any,
-    cycle: int
+    worker_data: any
 ):
     print('Store context')
     global_parameters_path = 'logs/global_parameters.txt'
     worker_parameters_path = 'logs/worker_parameters.txt'
-    global_model_path = 'models/global_model_' + str(cycle) + '.pth'
-    worker_data_path = 'data/used_data_' + str(cycle) + '.csv'
-
+    
     if not os.path.exists(global_parameters_path):
         with open(global_parameters_path, 'w') as f:
          json.dump(global_parameters, f)
@@ -31,6 +28,9 @@ def store_context(
     if not os.path.exists(worker_parameters_path):
         with open(worker_parameters_path, 'w') as f:
          json.dump(worker_parameters, f)
+
+    global_model_path = 'models/global_model_' + str(worker_parameters['cycle']) + '.pth'
+    worker_data_path = 'data/used_data_' + str(worker_parameters['cycle']) + '.csv'
 
     if not os.path.exists(global_model_path):
         weights = global_model['weights']
@@ -48,22 +48,13 @@ def store_context(
        worker_df.to_csv(worker_data_path, index = False)
 
 # Works
-def preprocess_into_train_and_test_tensors(
-    data_columns: list,
-    cycle: int
-) -> bool:
+def preprocess_into_train_and_test_tensors() -> bool:
     print('Preprocess')
     global_parameters_path = 'logs/global_parameters.txt'
     worker_parameters_path = 'logs/worker_parameters.txt'
-    worker_data_path = 'data/used_data_' + str(cycle) + '.csv'
-    train_tensor_path = 'tensors/train.pt'
-    test_tensor_path = 'tensors/test.pt'
     
-    if not os.path.exists(global_parameters_path) or not os.path.exists(worker_parameters_path) or not os.path.exists(worker_data_path):
+    if not os.path.exists(global_parameters_path) or not os.path.exists(worker_parameters_path):
        return False
-    
-    if os.path.exists(train_tensor_path) or os.path.exists(test_tensor_path):
-        return False
     
     GLOBAL_PARAMETERS = None
     with open(global_parameters_path, 'r') as f:
@@ -71,10 +62,22 @@ def preprocess_into_train_and_test_tensors(
     WORKER_PARAMETERS = None
     with open(worker_parameters_path, 'r') as f:
         WORKER_PARAMETERS = json.load(f)
+    
+    worker_data_path = 'data/used_data_' + str(WORKER_PARAMETERS['cycle']) + '.csv'
+    
+    if not os.path.exists(worker_data_path):
+       return False
+    
+    train_tensor_path = 'tensors/train.pt'
+    test_tensor_path = 'tensors/test.pt'
+    
+    if os.path.exists(train_tensor_path) or os.path.exists(test_tensor_path):
+        return False
+    
 
     preprocessed_df = pd.read_csv(worker_data_path)
     print(preprocessed_df)
-    preprocessed_df.columns = data_columns
+    preprocessed_df.columns = WORKER_PARAMETERS['columns']
     print(preprocessed_df)
     preprocessed_df = preprocessed_df[GLOBAL_PARAMETERS['used-columns']]
     for column in GLOBAL_PARAMETERS['scaled-columns']:

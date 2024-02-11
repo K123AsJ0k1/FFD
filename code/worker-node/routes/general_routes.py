@@ -23,20 +23,14 @@ def set_training_context():
     sent_worker_parameters = sent_payload['worker-parameters']
     sent_model = sent_payload['global-model']
     sent_worker_data = sent_payload['worker-data']
-    sent_data_dolumns = sent_payload['data-columns']
-    sent_cycle = sent_payload['cycle']
-
+    
     store_context(
         global_parameters = sent_global_parameters,
         worker_parameters = sent_worker_parameters,
         global_model = sent_model,
-        worker_data = sent_worker_data,
-        cycle = sent_cycle
+        worker_data = sent_worker_data
     )
 
-    preprocess_into_train_and_test_tensors(
-        data_columns = sent_data_dolumns,
-        cycle = sent_cycle
-    )
+    preprocess_into_train_and_test_tensors()
 
     return 'Ok', 200

@@ -128,4 +128,4 @@ def split_data_between_workers(
         data_list.append(assigned_df.values.tolist())
         index = index + 1
 
-    return data_list, worker_pool_df.columns.tolist()
+    return data_list, worker_pool_df.columns.tolist() 

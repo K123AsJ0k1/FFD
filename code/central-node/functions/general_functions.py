@@ -20,15 +20,19 @@ def store_worker_ip(
       with open(log_path, 'r') as f:
          worker_ips = json.load(f)
    
+   highest_worker_id = 0
    new_ip = True
    for dict in worker_ips:
       if worker_ip == dict['address']:
          new_ip = False
+      if highest_worker_id < dict['id']:
+         highest_worker_id = dict['id']
    
    if new_ip:
       worker_ips.append({
+         'id': highest_worker_id + 1,
          'address': worker_ip,
-         'status': 'ready'
+         'status': 'waiting'
       })
       with open(log_path, 'w') as f:
          json.dump(worker_ips, f)
@@ -57,21 +61,25 @@ def send_context_to_workers():
       'weights': global_model['linear.weight'].numpy().tolist(),
       'bias': global_model['linear.bias'].numpy().tolist()
    }
-   print(columns)
+   
    index = 0
    for dict in worker_ips:
       worker_address = 'http://' + dict['address'] + ':7500/context'
-      print(worker_address)
+      #print(worker_address)
+      worker_parameters = WORKER_PARAMETERS.copy()
+      worker_parameters['address'] = dict['address']
+      worker_parameters['id'] = dict['id']
+      worker_parameters['status'] = dict['status']
+      worker_parameters['cycle'] = 1
+      worker_parameters['columns'] = columns
       payload = {
+         'worker-id': dict['id'],
          'global-parameters': GLOBAL_PARAMETERS,
-         'worker-parameters': WORKER_PARAMETERS,
+         'worker-parameters': worker_parameters,
          'global-model': formatted_global_model,
-         'worker-data': data_list[index],
-         'data-columns': columns,
-         'cycle': 1
+         'worker-data': data_list[index]
       }
 
-      #'worker-data': base64.b64encode(pickled_data_list[index]).decode('utf-8')
       json_payload = json.dumps(payload)
 
       try:
