@@ -106,21 +106,26 @@ def preprocess_into_train_test_and_evaluate_tensors() -> bool:
 def split_data_between_workers(
     worker_amount: int
 ) -> any:
+    GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
     worker_pool_path = 'data/Worker_Data_Pool.csv'
 
     if not os.path.exists(worker_pool_path):
         return False
     
-    worker_df = pd.read_csv(worker_pool_path)
-    worker_df = worker_df.sample(frac = 1)
+    worker_pool_df = pd.read_csv(worker_pool_path)
+    #print(worker_df)
+    #worker_df = worker_pool_df.loc[:,GLOBAL_PARAMETERS['used-columns']]
+    #print(worker_df)
+    worker_df = worker_pool_df.sample(frac = 1)
     worker_dfs = np.array_split(worker_df, worker_amount)
-
-    pickle_list = []
+    
+    data_list = []
     index = 1
     for assigned_df in worker_dfs:
         assigned_df.to_csv('data/Worker_' + str(index) + '.csv', index = False)
-        pickled_data = pickle.dumps(assigned_df)
-        pickle_list.append(pickled_data)
+        #pickled_data = pickle.dumps(assigned_df)
+        #pickle_list.append(pickled_data)
+        data_list.append(assigned_df.values.tolist())
         index = index + 1
 
-    return pickle_list
+    return data_list, worker_pool_df.columns.tolist()

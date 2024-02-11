@@ -49,19 +49,15 @@ def send_context_to_workers():
    with open(log_path, 'r') as f:
       worker_ips = json.load(f)
    print('Get worker data')
-   pickled_data_list = split_data_between_workers(
+   data_list, columns = split_data_between_workers(
       worker_amount = len(worker_ips)
    )
-   print(global_model)
-   #print(global_model.numpy())
-
+   
    formatted_global_model = {
       'weights': global_model['linear.weight'].numpy().tolist(),
       'bias': global_model['linear.bias'].numpy().tolist()
    }
-
-   #print(formatted_global_model)
-
+   print(columns)
    index = 0
    for dict in worker_ips:
       worker_address = 'http://' + dict['address'] + ':7500/context'
@@ -69,7 +65,10 @@ def send_context_to_workers():
       payload = {
          'global-parameters': GLOBAL_PARAMETERS,
          'worker-parameters': WORKER_PARAMETERS,
-         'global-model': formatted_global_model
+         'global-model': formatted_global_model,
+         'worker-data': data_list[index],
+         'data-columns': columns,
+         'cycle': 1
       }
 
       #'worker-data': base64.b64encode(pickled_data_list[index]).decode('utf-8')
