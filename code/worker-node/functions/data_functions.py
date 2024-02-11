@@ -9,6 +9,8 @@ import json
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, TensorDataset
 
+from collections import OrderedDict
+
 def store_context(
     global_parameters: any,
     worker_parameters: any,
@@ -31,9 +33,16 @@ def store_context(
          json.dump(worker_parameters, f)
 
     if not os.path.exists(global_model_path):
-       with open(global_model_path, 'w') as f:
-         json.dump(global_model, f)
-    
+        weights = global_model['weights']
+        bias = global_model['bias']
+        formated_parameters = OrderedDict([
+            ('linear.weight', torch.tensor(weights,dtype=torch.float32)),
+            ('linear.bias', torch.tensor(bias,dtype=torch.float32))
+        ])
+        #with open(global_model_path, 'w') as f:
+         #json.dump(formated_parameters, f)
+        torch.save(formated_parameters, global_model_path)
+       
     if not os.path.exists(worker_data_path):
        worker_df = pd.DataFrame(worker_data)
        worker_df.to_csv(worker_data_path, index = False)
@@ -58,7 +67,7 @@ def preprocess_into_train_and_test_tensors(
     
     GLOBAL_PARAMETERS = None
     with open(global_parameters_path, 'r') as f:
-        GLOBAL_PARAMETERS = json.load(f)
+        GLOBAL_PARAMETERS = json.load(f) 
     WORKER_PARAMETERS = None
     with open(worker_parameters_path, 'r') as f:
         WORKER_PARAMETERS = json.load(f)

@@ -1,4 +1,5 @@
 import requests
+
 # works, when docker run --network=host -p 7500:7500 worker:ping
 def send_update(logger, central_address):
     logger.warning('Send update')

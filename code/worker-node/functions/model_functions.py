@@ -1,8 +1,13 @@
 from flask import current_app
+import os
+import json
+import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
 
 from torch.optim import SGD
+from torch.utils.data import DataLoader, TensorDataset
 
 class FederatedLogisticRegression(nn.Module):
     def __init__(self, dim, bias=True):
@@ -39,16 +44,18 @@ class FederatedLogisticRegression(nn.Module):
         model.load_state_dict(parameters)
 
 def get_loaders() -> any:
-    GLOBAL_SEED = current_app.config['GLOBAL_SEED']
-    GLOBAL_SAMPLE_RATE = current_app.config['GLOBAL_SAMPLE_RATE']
-   
+    global_parameters_path = 'logs/global_parameters.txt'
+    GLOBAL_PARAMETERS = None
+    with open(global_parameters_path, 'r') as f:
+        GLOBAL_PARAMETERS = json.load(f)
+    
     train_tensor = torch.load('tensors/train.pt')
     test_tensor = torch.load('tensors/test.pt')
 
     train_loader = DataLoader(
         train_tensor,
-        batch_size = int(len(train_tensor) * GLOBAL_SAMPLE_RATE),
-        generator = torch.Generator().manual_seed(GLOBAL_SEED)
+        batch_size = int(len(train_tensor) * GLOBAL_PARAMETERS['sample-rate']),
+        generator = torch.Generator().manual_seed(GLOBAL_PARAMETERS['seed'])
     )
     test_loader = DataLoader(test_tensor, 64)
     return train_loader,test_loader
@@ -57,18 +64,19 @@ def train(
     model: any,
     train_loader: any
 ):
-    GLOBAL_MODEL_OPTIMIZER = current_app.config['GLOBAL_MODEL_OPTIMIZER']
-    GLOBAL_LEARNING_RATE = current_app.config['GLOBAL_LEARNING_RATE']    
-    GLOBAL_TRAINING_EPOCHS = current_app.config['GLOBAL_TRAINING_EPOCHS']
-
+    global_parameters_path = 'logs/global_parameters.txt'
+    GLOBAL_PARAMETERS = None
+    with open(global_parameters_path, 'r') as f:
+        GLOBAL_PARAMETERS = json.load(f)
+    
     opt_func = None
-    if GLOBAL_MODEL_OPTIMIZER == 'SGD':
+    if GLOBAL_PARAMETERS['optimizer'] == 'SGD':
         opt_func = torch.optim.SGD
 
-    optimizer = opt_func(model.parameters(), GLOBAL_LEARNING_RATE)
+    optimizer = opt_func(model.parameters(), GLOBAL_PARAMETERS['learning-rate'])
     model_type = type(model)
     
-    for epoch in range(GLOBAL_TRAINING_EPOCHS):
+    for epoch in range(GLOBAL_PARAMETERS['epochs']):
         losses = []
         for batch in train_loader:
             loss = model_type.train_step(model, batch)
@@ -96,3 +104,49 @@ def test(
         average_loss = np.array(loss).sum() / total_size
         total_accuracy = np.array(accuracies).sum() / total_size
         return average_loss, total_accuracy
+    
+def local_model_training(
+    cycle: int
+) -> bool:
+    print('Local model training')
+    global_parameters_path = 'logs/global_parameters.txt'
+    global_model_path = 'models/global_model_' + str(cycle) + '.pth'
+    local_model_path = 'models/local_model_' + str(cycle) + '.pth'
+
+    if not os.path.exists(global_parameters_path) or not os.path.exists(global_model_path):
+        return False
+    
+    if os.path.exists(local_model_path):
+        return False
+
+    GLOBAL_PARAMETERS = None
+    with open(global_parameters_path, 'r') as f:
+        GLOBAL_PARAMETERS = json.load(f)
+
+    given_parameters = torch.load(global_model_path)
+
+    model_path = 'models/worker_model_parameters' + str(cycle) + '.pth'
+    if os.path.exists(model_path):
+        return False
+ 
+    torch.manual_seed(GLOBAL_PARAMETERS['seed'])
+    
+    given_train_loader, given_test_loader = get_loaders()
+
+    lr_model = FederatedLogisticRegression(dim = GLOBAL_PARAMETERS['input-size'])
+    lr_model.apply_parameters(lr_model, given_parameters)
+
+    train(
+        model = lr_model, 
+        train_loader = given_train_loader,  
+    )
+    
+    average_loss, total_accuracy = test(
+        model = lr_model, 
+        test_loader = given_test_loader
+    )
+    print('Loss:',average_loss)
+    print('Accuracy:',total_accuracy)
+    parameters = lr_model.get_parameters(lr_model)
+    torch.save(parameters, local_model_path)
+    return True

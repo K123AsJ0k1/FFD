@@ -2,11 +2,13 @@ from flask import Blueprint, current_app, request, jsonify
 
 from functions.general_functions import *
 from functions.data_functions import *
+from functions.model_functions import *
 
 general = Blueprint('general', __name__)
 
 @general.route('/demo', methods=["GET"]) 
 def demo():
+    local_model_training(cycle = 1)
     return 'Ok', 200
 
 @general.route('/status', methods=["GET"]) 
