@@ -8,37 +8,14 @@ import os
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, TensorDataset
 
+
+
 # Works
-def central_worker_data_split() -> bool:
-    central_pool_path = 'data/Central_Data_Pool.csv'
-    worker_pool_path = 'data/Worker_Data_Pool.csv'
-
-    if os.path.exists(central_pool_path) or os.path.exists(worker_pool_path):
-        return False
-
-    CENTRAL_SAMPLE_POOL = current_app.config['CENTRAL_SAMPLE_POOL']
-    WORKER_SAMPLE_POOL = current_app.config['WORKER_SAMPLE_POOL']
-    # Code is run in run.py, which is in the root folder
-    data_path = 'data/Formated_Fraud_Detection_Data.csv'
-    source_df = pd.read_csv(data_path)
-
-    splitted_data_df = source_df.drop('step', axis = 1)
-    
-    central_data_pool = splitted_data_df.sample(n = CENTRAL_SAMPLE_POOL)
-    central_indexes = central_data_pool.index.tolist()
-    splitted_data_df.drop(central_indexes)
-    worker_data_pool = splitted_data_df.sample(n = WORKER_SAMPLE_POOL)
-
-    central_data_pool.to_csv('data/Central_Data_Pool.csv', index = False)    
-    worker_data_pool.to_csv('data/Worker_Data_Pool.csv', index = False)
-    return True
-# Works
-def preprocess_into_train_test_and_evaluate_tensors() -> bool:
+def preprocess_into_train_and_test_tensors() -> bool:
     train_tensor_path = 'tensors/train.pt'
     test_tensor_path = 'tensors/test.pt'
-    eval_tensor_path = 'tensors/evaluation.pt'
 
-    if os.path.exists(train_tensor_path) or os.path.exists(test_tensor_path) or os.path.exists(eval_tensor_path):
+    if os.path.exists(train_tensor_path) or os.path.exists(test_tensor_path):
         return False
 
     GLOBAL_SEED = current_app.config['GLOBAL_SEED']
@@ -47,7 +24,6 @@ def preprocess_into_train_test_and_evaluate_tensors() -> bool:
     USED_COLUMNS = current_app.config['USED_COLUMNS']
     TARGET_COLUMN = current_app.config['TARGET_COLUMN']
 
-    CENTRAL_TRAIN_EVALUATION_RATIO = current_app.config['CENTRAL_TRAIN_EVALUATION_RATIO']
     CENTRAL_TRAIN_TEST_RATIO = current_app.config['CENTRAL_TRAIN_TEST_RATIO']
 
     data_path = 'data/Central_Data_Pool.csv'
@@ -106,4 +82,3 @@ def preprocess_into_train_test_and_evaluate_tensors() -> bool:
     torch.save(eval_tensor,'tensors/evaluation.pt')
     #current_app.config['GLOBAL_INPUT_SIZE'] = X_train.shape[1]
     return True
-    

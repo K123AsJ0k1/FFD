@@ -4,8 +4,6 @@ import torch.nn as nn
 
 from torch.optim import SGD
 
-from functions.data_functions import *
-
 class FederatedLogisticRegression(nn.Module):
     def __init__(self, dim, bias=True):
         super().__init__()
@@ -98,35 +96,3 @@ def test(
         average_loss = np.array(loss).sum() / total_size
         total_accuracy = np.array(accuracies).sum() / total_size
         return average_loss, total_accuracy
-
-def initial_model_training() -> bool:
-    model_path = 'models/initial_model_parameters.pth'
-
-    if os.path.exists(model_path):
-        return False
-
-    print('Initial model training')
-    GLOBAL_SEED = current_app.config['GLOBAL_SEED']
-    GLOBAL_INPUT_SIZE = current_app.config['INPUT_SIZE']
-
-    torch.manual_seed(GLOBAL_SEED)
-    #print('Loaders')
-    given_train_loader, given_test_loader = get_loaders()
-
-    lr_model = FederatedLogisticRegression(dim = GLOBAL_INPUT_SIZE)
-    #print('Train')
-    train(
-        model = lr_model, 
-        train_loader = given_train_loader,  
-    )
-    #print('Test')
-    average_loss, total_accuracy = test(
-        model = lr_model, 
-        test_loader = given_test_loader
-    )
-    print('Loss:',average_loss)
-    print('Accuracy:',total_accuracy)
-    parameters = lr_model.get_parameters(lr_model)
-    torch.save(parameters, 'models/initial_model_parameters.pth')
-    return True
-
