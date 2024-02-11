@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import torch 
 import os
+import pickle
 
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, TensorDataset
@@ -44,18 +45,7 @@ def preprocess_into_train_test_and_evaluate_tensors() -> bool:
 
     GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
     CENTRAL_PARAMETERS = current_app.config['CENTRAL_PARAMETERS']
-    #CENTRAL_PARAMETERS = current_app.config['CENTRAL_PARAMETERS']
-    #WORKER_PARAMETERS = current_app.config['WORKER_PARAMETERS']
-
-    #GLOBAL_SEED = current_app.config['GLOBAL_SEED']
-
-    #GLOBAL_SCALED_COLUMNS = current_app.config['GLOBAL_SCALED_COLUMNS']
-    #GLOBAL_USED_COLUMNS = current_app.config['GLOBAL_USED_COLUMNS']
-    #GLOBAL_TARGET_COLUMN = current_app.config['GLOBAL_TARGET_COLUMN']
-
-    #CENTRAL_TRAIN_EVALUATION_RATIO = current_app.config['CENTRAL_TRAIN_EVALUATION_RATIO']
-    #CENTRAL_TRAIN_TEST_RATIO = current_app.config['CENTRAL_TRAIN_TEST_RATIO']
-
+    
     data_path = 'data/Central_Data_Pool.csv'
     central_data_df = pd.read_csv(data_path)
     
@@ -110,7 +100,27 @@ def preprocess_into_train_test_and_evaluate_tensors() -> bool:
     torch.save(train_tensor,'tensors/train.pt')
     torch.save(test_tensor,'tensors/test.pt')
     torch.save(eval_tensor,'tensors/evaluation.pt')
-    #GLOBAL_PARAMETERS['input-size']
-    #current_app.config['GLOBAL_INPUT_SIZE'] = X_train.shape[1]
-    return True
     
+    return True
+
+def split_data_between_workers(
+    worker_amount: int
+) -> any:
+    worker_pool_path = 'data/Worker_Data_Pool.csv'
+
+    if not os.path.exists(worker_pool_path):
+        return False
+    
+    worker_df = pd.read_csv(worker_pool_path)
+    worker_df = worker_df.sample(frac = 1)
+    worker_dfs = np.array_split(worker_df, worker_amount)
+
+    pickle_list = []
+    index = 1
+    for assigned_df in worker_dfs:
+        assigned_df.to_csv('data/Worker_' + str(index) + '.csv', index = False)
+        pickled_data = pickle.dumps(assigned_df)
+        pickle_list.append(pickled_data)
+        index = index + 1
+
+    return pickle_list

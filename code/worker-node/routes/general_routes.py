@@ -12,10 +12,10 @@ def demo():
 def worker_status():
     return 'Ok', 200
 
-@general.route('/context', methods=["GET"]) 
+@general.route('/context', methods=["POST"]) 
 def set_training_context():
     sent_payload = request.json
-    sent_parameters = sent_payload['global_model']
-    sent_hyperparameters = sent_payload['global_hyperparameters']
-    sent_worker_data = sent_payload['worker_data']
+    sent_parameters = sent_payload['global-parameters']
+    sent_model = sent_payload['global-model']
+    sent_worker_data = sent_payload['worker-data']
     return 'Ok', 200

@@ -110,9 +110,7 @@ def initial_model_training() -> bool:
         return False
 
     print('Initial model training')
-    #GLOBAL_SEED = current_app.config['GLOBAL_SEED']
-    #GLOBAL_INPUT_SIZE = current_app.config['INPUT_SIZE']
-
+    
     torch.manual_seed(GLOBAL_PARAMETERS['seed'])
     #print('Loaders')
     given_train_loader, given_test_loader = get_loaders()

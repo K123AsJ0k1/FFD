@@ -8,7 +8,10 @@ general = Blueprint('general', __name__)
 
 @general.route('/demo', methods=["GET"]) 
 def demo():
-    print('Demo')
+    #send_context_to_workers()
+    split_data_between_workers(
+        worker_amount = 4
+    )
     return 'Ok', 200
 # Works
 @general.route('/register', methods=["POST"])
