@@ -191,21 +191,22 @@ def send_update(
 
     train_tensor = torch.load('tensors/train.pt')
     
-    #payload = {
-    #    'worker-id': int(WORKER_PARAMETERS['worker-id']),
-    #    'local-model': formatted_local_model,
-    #    'cycle': int(cycle),
-    #    'train-size': len(train_tensor)
-    #}
     payload = {
-        'local-model': formatted_local_model
+        'worker-id': int(WORKER_PARAMETERS['worker-id']),
+        'local-model': formatted_local_model,
+        'cycle': int(cycle),
+        'train-size': len(train_tensor)
     }
+    #payload = {
+    #    'local-model': formatted_local_model
+    #}
     #print(payload)
     json_payload = json.dumps(payload)
 
     central = central_address + '/update'
     print(central)
     print(json_payload)
+    # wierd typeerror
     try:
          response = requests.post(
             url = central, 

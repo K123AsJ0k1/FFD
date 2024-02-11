@@ -1,4 +1,5 @@
 from flask import Blueprint, current_app, request, jsonify
+import json
 
 from functions.general_functions import *
 from functions.data_functions import *
@@ -37,18 +38,17 @@ def model_inference():
 
 @general.route('/update', methods=["POST"]) 
 def worker_update():
-    sent_payload = request.json
+    # Wierd type error
+    sent_payload = json.loads(request.json)
     print(sent_payload)
-    print(sent_payload['local-model'])
-    #print(sent_payload['worker-id'])
-    #print(sent_payload)
-    #sent_worker_id = sent_payload['worker-id']
-    #sent_local_model = sent_payload['local-model']
-    #sent_cycle = sent_payload['cycle']
-    #sent_train_size = sent_payload['train-size']
 
-    #print(sent_worker_id)
-    #print(sent_cycle)
-    #print(sent_train_size)
+    sent_worker_id = sent_payload['worker-id']
+    sent_local_model = sent_payload['local-model']
+    sent_cycle = sent_payload['cycle']
+    sent_train_size = sent_payload['train-size']
+
+    print(sent_worker_id)
+    print(sent_cycle)
+    print(sent_train_size)
     
     return 'Ok', 200
