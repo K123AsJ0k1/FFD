@@ -41,16 +41,17 @@ class FederatedLogisticRegression(nn.Module):
         model.load_state_dict(parameters)
 
 def get_loaders() -> any:
-    GLOBAL_SEED = current_app.config['GLOBAL_SEED']
-    GLOBAL_SAMPLE_RATE = current_app.config['GLOBAL_SAMPLE_RATE']
+    GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
+    #GLOBAL_SEED = current_app.config['GLOBAL_SEED']
+    #GLOBAL_SAMPLE_RATE = current_app.config['GLOBAL_SAMPLE_RATE']
    
     train_tensor = torch.load('tensors/train.pt')
     test_tensor = torch.load('tensors/test.pt')
 
     train_loader = DataLoader(
         train_tensor,
-        batch_size = int(len(train_tensor) * GLOBAL_SAMPLE_RATE),
-        generator = torch.Generator().manual_seed(GLOBAL_SEED)
+        batch_size = int(len(train_tensor) * GLOBAL_PARAMETERS['sample-rate']),
+        generator = torch.Generator().manual_seed(GLOBAL_PARAMETERS['seed'])
     )
     test_loader = DataLoader(test_tensor, 64)
     return train_loader,test_loader
@@ -59,18 +60,19 @@ def train(
     model: any,
     train_loader: any
 ):
-    GLOBAL_MODEL_OPTIMIZER = current_app.config['GLOBAL_MODEL_OPTIMIZER']
-    GLOBAL_LEARNING_RATE = current_app.config['GLOBAL_LEARNING_RATE']    
-    GLOBAL_TRAINING_EPOCHS = current_app.config['GLOBAL_TRAINING_EPOCHS']
+    GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
+    #GLOBAL_MODEL_OPTIMIZER = current_app.config['GLOBAL_MODEL_OPTIMIZER']
+    #GLOBAL_LEARNING_RATE = current_app.config['GLOBAL_LEARNING_RATE']    
+    #GLOBAL_TRAINING_EPOCHS = current_app.config['GLOBAL_TRAINING_EPOCHS']
 
     opt_func = None
-    if GLOBAL_MODEL_OPTIMIZER == 'SGD':
+    if GLOBAL_PARAMETERS['optimizer'] == 'SGD':
         opt_func = torch.optim.SGD
 
-    optimizer = opt_func(model.parameters(), GLOBAL_LEARNING_RATE)
+    optimizer = opt_func(model.parameters(), GLOBAL_PARAMETERS['learning-rate'])
     model_type = type(model)
     
-    for epoch in range(GLOBAL_TRAINING_EPOCHS):
+    for epoch in range(GLOBAL_PARAMETERS['epochs']):
         losses = []
         for batch in train_loader:
             loss = model_type.train_step(model, batch)
@@ -100,20 +102,22 @@ def test(
         return average_loss, total_accuracy
 
 def initial_model_training() -> bool:
+    GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
+
     model_path = 'models/initial_model_parameters.pth'
 
     if os.path.exists(model_path):
         return False
 
     print('Initial model training')
-    GLOBAL_SEED = current_app.config['GLOBAL_SEED']
-    GLOBAL_INPUT_SIZE = current_app.config['INPUT_SIZE']
+    #GLOBAL_SEED = current_app.config['GLOBAL_SEED']
+    #GLOBAL_INPUT_SIZE = current_app.config['INPUT_SIZE']
 
-    torch.manual_seed(GLOBAL_SEED)
+    torch.manual_seed(GLOBAL_PARAMETERS['seed'])
     #print('Loaders')
     given_train_loader, given_test_loader = get_loaders()
 
-    lr_model = FederatedLogisticRegression(dim = GLOBAL_INPUT_SIZE)
+    lr_model = FederatedLogisticRegression(dim = GLOBAL_PARAMETERS['input-size'])
     #print('Train')
     train(
         model = lr_model, 

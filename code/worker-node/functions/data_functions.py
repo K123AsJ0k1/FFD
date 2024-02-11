@@ -20,23 +20,23 @@ def preprocess_into_train_and_test_tensors() -> bool:
 
     GLOBAL_SEED = current_app.config['GLOBAL_SEED']
 
-    SCALED_COLUMNS = current_app.config['SCALED_COLUMNS']
-    USED_COLUMNS = current_app.config['USED_COLUMNS']
-    TARGET_COLUMN = current_app.config['TARGET_COLUMN']
+    GLOBAL_SCALED_COLUMNS = current_app.config['GLOBAL_SCALED_COLUMNS']
+    GLOBAL_USED_COLUMNS = current_app.config['GLOBAL_USED_COLUMNS']
+    GLOBAL_TARGET_COLUMN = current_app.config['GLOBAL_TARGET_COLUMN']
 
     CENTRAL_TRAIN_TEST_RATIO = current_app.config['CENTRAL_TRAIN_TEST_RATIO']
 
     data_path = 'data/Central_Data_Pool.csv'
     central_data_df = pd.read_csv(data_path)
     
-    preprocessed_df = central_data_df[USED_COLUMNS]
-    for column in SCALED_COLUMNS:
+    preprocessed_df = central_data_df[GLOBAL_USED_COLUMNS]
+    for column in GLOBAL_SCALED_COLUMNS:
         mean = preprocessed_df[column].mean()
         std_dev = preprocessed_df[column].std()
         preprocessed_df[column] = (preprocessed_df[column] - mean)/std_dev
 
-    X = preprocessed_df.drop(TARGET_COLUMN, axis = 1).values
-    y = preprocessed_df[TARGET_COLUMN].values
+    X = preprocessed_df.drop(GLOBAL_TARGET_COLUMN, axis = 1).values
+    y = preprocessed_df[GLOBAL_TARGET_COLUMN].values
         
     X_train_test, X_eval, y_train_test, y_eval = train_test_split(
         X, 

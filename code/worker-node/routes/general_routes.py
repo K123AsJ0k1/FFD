@@ -14,4 +14,8 @@ def worker_status():
 
 @general.route('/context', methods=["GET"]) 
 def set_training_context():
+    sent_payload = request.json
+    sent_parameters = sent_payload['global_model']
+    sent_hyperparameters = sent_payload['global_hyperparameters']
+    sent_worker_data = sent_payload['worker_data']
     return 'Ok', 200
