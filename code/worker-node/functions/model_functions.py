@@ -154,8 +154,8 @@ def local_model_training(
     return True
 
 def send_update(
-    logger:any, 
-    central_address:str
+    logger: any, 
+    central_address: str
 ):  
     logger.warning('Send update')
     model_folder = 'models'
@@ -168,15 +168,18 @@ def send_update(
             file_cycle = int(second_split[0])
             if cycle < file_cycle:
                 cycle = file_cycle
-    training_status = local_model_training(
-        cycle = cycle
-    )
-
+    
     worker_parameters_path = 'logs/worker_parameters.txt'
+    if not os.path.exists(worker_parameters_path):
+        return False
 
     WORKER_PARAMETERS = None
     with open(worker_parameters_path, 'r') as f:
         WORKER_PARAMETERS = json.load(f)
+
+    training_status = local_model_training(
+        cycle = cycle
+    )
     
     local_model_path = 'models/local_model_' + str(cycle) + '.pth'
     local_model = torch.load(local_model_path)
@@ -188,21 +191,30 @@ def send_update(
 
     train_tensor = torch.load('tensors/train.pt')
     
-
-
+    #payload = {
+    #    'worker-id': int(WORKER_PARAMETERS['worker-id']),
+    #    'local-model': formatted_local_model,
+    #    'cycle': int(cycle),
+    #    'train-size': len(train_tensor)
+    #}
     payload = {
-        'worker-id': ,
-        'local-model': formatted_local_model,
-        'cycle': cycle,
-        'train-size': len(train_tensor)
+        'local-model': formatted_local_model
     }
+    #print(payload)
+    json_payload = json.dumps(payload)
 
-    address = central_address + '/update'
+    central = central_address + '/update'
+    print(central)
+    print(json_payload)
     try:
-        response = requests.post(
-            url = address
-        )
-        logger.warning(response.status_code)
+         response = requests.post(
+            url = central, 
+            json = json_payload,
+            headers = {
+               'Content-type':'application/json', 
+               'Accept':'application/json'
+            }
+         )
+         print(response.status_code)
     except Exception as e:
-        logger.error('Registration error')
-        logger.error(e) 
+        print(e)

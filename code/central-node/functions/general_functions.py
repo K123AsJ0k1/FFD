@@ -68,7 +68,7 @@ def send_context_to_workers():
       #print(worker_address)
       worker_parameters = WORKER_PARAMETERS.copy()
       worker_parameters['address'] = dict['address']
-      worker_parameters['id'] = dict['id']
+      worker_parameters['worker-id'] = dict['id']
       worker_parameters['status'] = dict['status']
       worker_parameters['cycle'] = 1
       worker_parameters['columns'] = columns
@@ -80,12 +80,12 @@ def send_context_to_workers():
          'worker-data': data_list[index]
       }
 
-      json_payload = json.dumps(payload)
+      json_payload = json.dumps(payload) 
 
       try:
          response = requests.post(
             url = worker_address, 
-            data = json_payload,
+            json = json_payload,
             headers = {
                'Content-type':'application/json', 
                'Accept':'application/json'
