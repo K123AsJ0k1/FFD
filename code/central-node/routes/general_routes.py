@@ -9,10 +9,7 @@ general = Blueprint('general', __name__)
 
 @general.route('/demo', methods=["GET"]) 
 def demo():
-    #send_context_to_workers()
-    #split_data_between_workers(
-    #    worker_amount = 4
-    #)
+    update_global_model()
     return 'Ok', 200
 # Works
 @general.route('/register', methods=["POST"])
@@ -40,15 +37,17 @@ def model_inference():
 def worker_update():
     # Wierd type error, which was fixed with loading 
     sent_payload = json.loads(request.json)
-    print(sent_payload)
-
+    
     sent_worker_id = sent_payload['worker-id']
     sent_local_model = sent_payload['local-model']
     sent_cycle = sent_payload['cycle']
     sent_train_size = sent_payload['train-size']
 
-    print(sent_worker_id)
-    print(sent_cycle)
-    print(sent_train_size)
+    store_update(
+        worker_id = sent_worker_id,
+        local_model = sent_local_model,
+        cycle = sent_cycle,
+        train_size = sent_train_size
+    )
     
     return 'Ok', 200

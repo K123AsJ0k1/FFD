@@ -5,6 +5,7 @@ import pandas as pd
 import torch 
 import os
 import pickle
+import json
 
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, TensorDataset
@@ -106,16 +107,14 @@ def preprocess_into_train_test_and_evaluate_tensors() -> bool:
 def split_data_between_workers(
     worker_amount: int
 ) -> any:
-    GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
+    #GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
     worker_pool_path = 'data/Worker_Data_Pool.csv'
 
     if not os.path.exists(worker_pool_path):
         return False
     
     worker_pool_df = pd.read_csv(worker_pool_path)
-    #print(worker_df)
-    #worker_df = worker_pool_df.loc[:,GLOBAL_PARAMETERS['used-columns']]
-    #print(worker_df)
+    
     worker_df = worker_pool_df.sample(frac = 1)
     worker_dfs = np.array_split(worker_df, worker_amount)
     
@@ -123,9 +122,38 @@ def split_data_between_workers(
     index = 1
     for assigned_df in worker_dfs:
         assigned_df.to_csv('data/Worker_' + str(index) + '.csv', index = False)
-        #pickled_data = pickle.dumps(assigned_df)
-        #pickle_list.append(pickled_data)
         data_list.append(assigned_df.values.tolist())
         index = index + 1
 
     return data_list, worker_pool_df.columns.tolist() 
+
+def store_update(
+    worker_id: str,
+    local_model: any,
+    cycle: int,
+    train_size: int
+) -> bool:
+    worker_log_path = 'logs/worker_ips.txt' # change to worker status
+   
+    worker_logs = []
+    if os.path.exists(worker_log_path):
+      with open(worker_log_path, 'r') as f:
+        worker_logs = json.load(f)
+
+    model_path = 'models/worker_' + str(worker_id) + '_' + str(cycle) + '_' + str(train_size) + '.pth'
+    
+    if os.path.exists(model_path):
+        return False
+    
+    torch.save(local_model, model_path)
+
+    index = 0
+    for worker in worker_logs:
+        if worker['id'] == worker_id:
+            worker_logs[index]['status'] = 'complete'
+
+    with open(worker_log_path, 'w') as f:
+        json.dump(worker_logs, f) 
+
+    return True
+

@@ -1,6 +1,7 @@
 from flask import current_app
 import torch
 import torch.nn as nn
+from collections import OrderedDict
 
 from torch.optim import SGD
 
@@ -42,9 +43,7 @@ class FederatedLogisticRegression(nn.Module):
 
 def get_loaders() -> any:
     GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
-    #GLOBAL_SEED = current_app.config['GLOBAL_SEED']
-    #GLOBAL_SAMPLE_RATE = current_app.config['GLOBAL_SAMPLE_RATE']
-   
+    
     train_tensor = torch.load('tensors/train.pt')
     test_tensor = torch.load('tensors/test.pt')
 
@@ -61,10 +60,7 @@ def train(
     train_loader: any
 ):
     GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
-    #GLOBAL_MODEL_OPTIMIZER = current_app.config['GLOBAL_MODEL_OPTIMIZER']
-    #GLOBAL_LEARNING_RATE = current_app.config['GLOBAL_LEARNING_RATE']    
-    #GLOBAL_TRAINING_EPOCHS = current_app.config['GLOBAL_TRAINING_EPOCHS']
-
+    
     opt_func = None
     if GLOBAL_PARAMETERS['optimizer'] == 'SGD':
         opt_func = torch.optim.SGD
@@ -109,19 +105,17 @@ def initial_model_training() -> bool:
     if os.path.exists(model_path):
         return False
 
-    print('Initial model training')
-    
     torch.manual_seed(GLOBAL_PARAMETERS['seed'])
-    #print('Loaders')
+    
     given_train_loader, given_test_loader = get_loaders()
 
     lr_model = FederatedLogisticRegression(dim = GLOBAL_PARAMETERS['input-size'])
-    #print('Train')
+    
     train(
         model = lr_model, 
         train_loader = given_train_loader,  
     )
-    #print('Test')
+    
     average_loss, total_accuracy = test(
         model = lr_model, 
         test_loader = given_test_loader
@@ -131,4 +125,90 @@ def initial_model_training() -> bool:
     parameters = lr_model.get_parameters(lr_model)
     torch.save(parameters, 'models/initial_model_parameters.pth')
     return True
+
+def model_fed_avg(
+    updates: any,
+    total_sample_size: int    
+) -> any:
+    weights = []
+    biases = []
+    for update in updates:
+        parameters = update['parameters']
+        worker_sample_size = update['samples']
+        print(parameters)
+        worker_weights = np.array(parameters['weights'][0])
+        worker_bias = np.array(parameters['bias'])
+        
+        adjusted_worker_weights = worker_weights * (worker_sample_size/total_sample_size)
+        adjusted_worker_bias = worker_bias * (worker_sample_size/total_sample_size)
+        
+        weights.append(adjusted_worker_weights.tolist())
+        biases.append(adjusted_worker_bias)
+
+    FedAvg_weight = [np.sum(weights,axis = 0)]
+    FedAvg_bias = [np.sum(biases, axis = 0)]
+
+    updated_global_model = OrderedDict([
+        ('linear.weight', torch.tensor(FedAvg_weight,dtype=torch.float32)),
+        ('linear.bias', torch.tensor(FedAvg_bias,dtype=torch.float32))
+    ])
+    return updated_global_model
+
+def update_global_model():
+    worker_log_path = 'logs/worker_ips.txt' # change to worker status
+
+    if not os.path.exists(worker_log_path):
+        return False
+
+    worker_logs = []
+    with open(worker_log_path, 'r') as f:
+        worker_logs = json.load(f)
+
+    model_folder = 'models'
+
+    usable_updates = []
+    files = os.listdir(model_folder)
+    current_cycle = 0
+    for file in files:
+        if 'worker' in file:
+            first_split = file.split('.')
+            second_split = first_split[0].split('_')
+            cycle = int(second_split[2])
+            
+            if current_cycle < cycle:
+                current_cycle = cycle
+    
+    update_model_path = 'models/global_model_' + str(current_cycle) + '.pth'
+    if os.path.exists(update_model_path):
+        return True
+    
+    collective_sample_size = 0
+    for file in files:
+        if 'worker' in file:
+            first_split = file.split('.')
+            second_split = first_split[0].split('_')
+            worker_id = int(second_split[1])
+            cycle = int(second_split[2])
+            sample_size = int(second_split[3])
+
+            if cycle == current_cycle:
+                if worker_logs[worker_id-1]['status'] == 'complete':
+                    print(file)
+                    local_model_path = 'models/' + file
+                    usable_updates.append({
+                        'parameters': torch.load(local_model_path),
+                        'samples': sample_size
+                    })
+                    collective_sample_size = collective_sample_size + sample_size
+
+    new_global_model = model_fed_avg(
+        updates = usable_updates,
+        total_sample_size = collective_sample_size 
+    )
+    print(new_global_model)
+    torch.save(new_global_model, update_model_path)
+    return True
+
+    
+            
 

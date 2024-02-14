@@ -6,7 +6,7 @@ import pandas as pd
 import torch
 import torch.nn as nn
 
-import requests
+import requests 
 
 from torch.optim import SGD
 from torch.utils.data import DataLoader, TensorDataset
@@ -197,16 +197,11 @@ def send_update(
         'cycle': int(cycle),
         'train-size': len(train_tensor)
     }
-    #payload = {
-    #    'local-model': formatted_local_model
-    #}
-    #print(payload)
+    
     json_payload = json.dumps(payload)
 
     central = central_address + '/update'
-    print(central)
-    print(json_payload)
-    # wierd typeerror
+
     try:
          response = requests.post(
             url = central, 

@@ -2,7 +2,7 @@ from flask import current_app
 
 import numpy as np
 import pandas as pd
-import torch 
+import torch  
 import os
 import json
 

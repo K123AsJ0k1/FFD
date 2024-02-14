@@ -35,24 +35,27 @@ def store_worker_ip(
          'status': 'waiting'
       })
       with open(log_path, 'w') as f:
-         json.dump(worker_ips, f)
+         json.dump(worker_ips, f) 
 
 def send_context_to_workers():
-   print('Send context')
    log_path = 'logs/worker_ips.txt'
    model_path = 'models/initial_model_parameters.pth'
    if not os.path.exists(log_path) or not os.path.exists(model_path):
       return False
    
+   #models_folder = 
+   #cycle = 1
+   #if 
+   
    GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
    WORKER_PARAMETERS = current_app.config['WORKER_PARAMETERS']
-   print('Get model')
+   #print('Get model')
    global_model = torch.load(model_path)
 
    worker_ips = None
    with open(log_path, 'r') as f:
       worker_ips = json.load(f)
-   print('Get worker data')
+   
    data_list, columns = split_data_between_workers(
       worker_amount = len(worker_ips)
    )
@@ -65,13 +68,14 @@ def send_context_to_workers():
    index = 0
    for dict in worker_ips:
       worker_address = 'http://' + dict['address'] + ':7500/context'
-      #print(worker_address)
+      
       worker_parameters = WORKER_PARAMETERS.copy()
       worker_parameters['address'] = dict['address']
       worker_parameters['worker-id'] = dict['id']
       worker_parameters['status'] = dict['status']
       worker_parameters['cycle'] = 1
       worker_parameters['columns'] = columns
+      
       payload = {
          'worker-id': dict['id'],
          'global-parameters': GLOBAL_PARAMETERS,
