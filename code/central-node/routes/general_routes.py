@@ -38,7 +38,7 @@ def model_inference():
 
 @general.route('/update', methods=["POST"]) 
 def worker_update():
-    # Wierd type error
+    # Wierd type error, which was fixed with loading 
     sent_payload = json.loads(request.json)
     print(sent_payload)
 
