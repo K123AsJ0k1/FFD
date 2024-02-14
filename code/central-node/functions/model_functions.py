@@ -41,7 +41,7 @@ class FederatedLogisticRegression(nn.Module):
     def apply_parameters(model, parameters):
         model.load_state_dict(parameters)
 
-def get_loaders() -> any:
+def get_train_test_loaders() -> any:
     GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
     
     train_tensor = torch.load('tensors/train.pt')
@@ -107,7 +107,7 @@ def initial_model_training() -> bool:
 
     torch.manual_seed(GLOBAL_PARAMETERS['seed'])
     
-    given_train_loader, given_test_loader = get_loaders()
+    given_train_loader, given_test_loader = get_train_test_loaders()
 
     lr_model = FederatedLogisticRegression(dim = GLOBAL_PARAMETERS['input-size'])
     
@@ -146,7 +146,7 @@ def model_fed_avg(
         biases.append(adjusted_worker_bias)
 
     FedAvg_weight = [np.sum(weights,axis = 0)]
-    FedAvg_bias = [np.sum(biases, axis = 0)]
+    FedAvg_bias = np.sum(biases, axis = 0)
 
     updated_global_model = OrderedDict([
         ('linear.weight', torch.tensor(FedAvg_weight,dtype=torch.float32)),
@@ -205,9 +205,48 @@ def update_global_model():
         updates = usable_updates,
         total_sample_size = collective_sample_size 
     )
-    print(new_global_model)
+    #print(new_global_model)
     torch.save(new_global_model, update_model_path)
     return True
+
+def evalute_global_model():
+    GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
+    model_folder = 'models'
+    
+    files = os.listdir(model_folder)
+    current_cycle = 0
+    for file in files:
+        if 'global' in file:
+            first_split = file.split('.')
+            second_split = first_split[0].split('_')
+            cycle = int(second_split[2])
+            if current_cycle < cycle:
+                current_cycle = cycle
+    
+    global_model_path = 'models/global_model_' + str(current_cycle) + '.pth'
+    if not os.path.exists(global_model_path):
+        return False
+    
+    given_parameters = torch.load(global_model_path)
+    
+    lr_model = FederatedLogisticRegression(dim = GLOBAL_PARAMETERS['input-size'])
+    lr_model.apply_parameters(lr_model, given_parameters)
+
+    eval_tensor = torch.load('tensors/evaluation.pt')
+    eval_loader = DataLoader(eval_tensor, 64)
+
+    average_loss, total_accuracy = test(
+        model = lr_model, 
+        test_loader = eval_loader
+    )
+
+    print('Loss:',average_loss)
+    print('Accuracy:',total_accuracy)
+
+    return True
+    
+
+
 
     
             

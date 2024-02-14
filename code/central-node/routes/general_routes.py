@@ -9,7 +9,8 @@ general = Blueprint('general', __name__)
 
 @general.route('/demo', methods=["GET"]) 
 def demo():
-    update_global_model()
+    #update_global_model()
+    evalute_global_model()
     return 'Ok', 200
 # Works
 @general.route('/register', methods=["POST"])
