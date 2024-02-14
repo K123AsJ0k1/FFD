@@ -30,10 +30,6 @@ def start_model_training():
     send_context_to_workers()
     return 'Ok', 200
 
-@general.route('/inference', methods=["POST"]) 
-def model_inference():
-    return 'Ok', 200
-
 @general.route('/update', methods=["POST"]) 
 def worker_update():
     # Wierd type error, which was fixed with loading 
@@ -52,3 +48,14 @@ def worker_update():
     )
     
     return 'Ok', 200
+
+@general.route('/predict', methods=["POST"])
+def inference():
+    sent_payload = json.loads(request.json)
+    sent_input = sent_payload['input']
+
+    given_output = model_inference(
+        input = sent_input
+    )
+
+    return jsonify({'predictions': given_output})

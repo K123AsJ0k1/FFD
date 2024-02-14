@@ -32,6 +32,12 @@ class FederatedLogisticRegression(nn.Module):
         preds = out > 0 # Predict y = 1 if P(y = 1) > 0.5
         corrects = torch.tensor(torch.sum(preds == y).item())
         return loss, corrects
+    
+    @staticmethod
+    def prediction(model, x):
+        out = model(x)
+        preds = out > 0
+        return preds
 
     @staticmethod
     def get_parameters(model):
@@ -96,6 +102,39 @@ def test(
         average_loss = np.array(loss).sum() / total_size
         total_accuracy = np.array(accuracies).sum() / total_size
         return average_loss, total_accuracy
+    
+def model_inference(
+    input: any
+) -> any:
+    GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
+
+    model_folder = 'models'
+    
+    files = os.listdir(model_folder)
+    current_cycle = 0
+    for file in files:
+        if 'global' in file:
+            first_split = file.split('.')
+            second_split = first_split[0].split('_')
+            cycle = int(second_split[2])
+            if current_cycle < cycle:
+                current_cycle = cycle
+    
+    global_model_path = 'models/global_model_' + str(current_cycle) + '.pth'
+    if not os.path.exists(global_model_path):
+        return None
+    
+    given_parameters = torch.load(global_model_path)
+    
+    lr_model = FederatedLogisticRegression(dim = GLOBAL_PARAMETERS['input-size'])
+    lr_model.apply_parameters(lr_model, given_parameters)
+    
+    given_input = torch.tensor(np.array(input, dtype=np.float32))
+
+    with torch.no_grad():
+        output = lr_model.prediction(lr_model,given_input)
+
+    return output.tolist()
 
 def initial_model_training() -> bool:
     GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
@@ -205,7 +244,7 @@ def update_global_model():
         updates = usable_updates,
         total_sample_size = collective_sample_size 
     )
-    #print(new_global_model)
+    
     torch.save(new_global_model, update_model_path)
     return True
 
