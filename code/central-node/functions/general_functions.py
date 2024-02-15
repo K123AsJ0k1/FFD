@@ -1,63 +1,67 @@
 from flask import current_app
 import os
 import json
-from typing import Dict
 import requests
-import base64
 
 from functions.data_functions import *
 
-def get_debug_mode() -> list:
-   return current_app.config['DEBUG']
 # Works
 def store_worker_ip(
    worker_ip: str
 ):
-   log_path = 'logs/worker_ips.txt'
+   worker_status_path = 'logs/worker_status.txt'
    
-   worker_ips = []
-   if os.path.exists(log_path):
-      with open(log_path, 'r') as f:
-         worker_ips = json.load(f)
+   worker_status = []
+   if os.path.exists(worker_status_path):
+      with open(worker_status_path, 'r') as f:
+         worker_status = json.load(f)
    
    highest_worker_id = 0
    new_ip = True
-   for dict in worker_ips:
+   for dict in worker_status:
       if worker_ip == dict['address']:
          new_ip = False
       if highest_worker_id < dict['id']:
          highest_worker_id = dict['id']
    
    if new_ip:
-      worker_ips.append({
+      worker_status.append({
          'id': highest_worker_id + 1,
          'address': worker_ip,
          'status': 'waiting'
       })
-      with open(log_path, 'w') as f:
-         json.dump(worker_ips, f) 
+      with open(worker_status_path, 'w') as f:
+         json.dump(worker_status, f) 
 
 def send_context_to_workers():
-   log_path = 'logs/worker_ips.txt'
-   model_path = 'models/initial_model_parameters.pth'
-   if not os.path.exists(log_path) or not os.path.exists(model_path):
-      return False
-   
-   #models_folder = 
-   #cycle = 1
-   #if 
-   
    GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
    WORKER_PARAMETERS = current_app.config['WORKER_PARAMETERS']
-   #print('Get model')
-   global_model = torch.load(model_path)
-
-   worker_ips = None
-   with open(log_path, 'r') as f:
-      worker_ips = json.load(f)
    
+   worker_status_path = 'logs/worker_status.txt'
+   if not os.path.exists(worker_status_path):
+      return False
+   
+   worker_status = None
+   with open(worker_status_path, 'r') as f:
+      worker_status = json.load(f)
+   
+   files = os.listdir('models')
+   current_cycle = 0
+   for file in files:
+      if 'worker' in file:
+         first_split = file.split('.')
+         second_split = first_split[0].split('_')
+         cycle = int(second_split[2])
+         
+         if current_cycle < cycle:
+               current_cycle = cycle
+
+   global_model_path = 'models/global_model_' + str(current_cycle) + '.pth'
+   
+   global_model = torch.load(global_model_path)
+
    data_list, columns = split_data_between_workers(
-      worker_amount = len(worker_ips)
+      worker_amount = len(worker_status)
    )
    
    formatted_global_model = {
@@ -66,7 +70,7 @@ def send_context_to_workers():
    }
    
    index = 0
-   for dict in worker_ips:
+   for dict in worker_status:
       worker_address = 'http://' + dict['address'] + ':7500/context'
       
       worker_parameters = WORKER_PARAMETERS.copy()
@@ -95,9 +99,9 @@ def send_context_to_workers():
                'Accept':'application/json'
             }
          )
-         print(response.status_code)
       except Exception as e:
-        print(e)
+         current_app.logger.error('Context sending error')
+         current_app.logger.error(e)
 
       index = index + 1
    

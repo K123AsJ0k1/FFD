@@ -10,7 +10,7 @@ general = Blueprint('general', __name__)
 @general.route('/demo', methods=["GET"]) 
 def demo():
     #update_global_model()
-    evalute_global_model()
+    #evalute_global_model()
     return 'Ok', 200
 # Works
 @general.route('/register', methods=["POST"])
@@ -26,7 +26,7 @@ def start_model_training():
     split_status = central_worker_data_split()
     tensor_status = preprocess_into_train_test_and_evaluate_tensors()
     model_status = initial_model_training()
-    print(split_status,tensor_status,model_status)
+    #print(split_status,tensor_status,model_status)
     send_context_to_workers()
     return 'Ok', 200
 

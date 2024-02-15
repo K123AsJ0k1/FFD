@@ -39,8 +39,6 @@ def store_context(
             ('linear.weight', torch.tensor(weights,dtype=torch.float32)),
             ('linear.bias', torch.tensor(bias,dtype=torch.float32))
         ])
-        #with open(global_model_path, 'w') as f:
-         #json.dump(formated_parameters, f)
         torch.save(formated_parameters, global_model_path)
        
     if not os.path.exists(worker_data_path):
@@ -76,9 +74,7 @@ def preprocess_into_train_and_test_tensors() -> bool:
     
 
     preprocessed_df = pd.read_csv(worker_data_path)
-    print(preprocessed_df)
     preprocessed_df.columns = WORKER_PARAMETERS['columns']
-    print(preprocessed_df)
     preprocessed_df = preprocessed_df[GLOBAL_PARAMETERS['used-columns']]
     for column in GLOBAL_PARAMETERS['scaled-columns']:
         mean = preprocessed_df[column].mean()
@@ -95,8 +91,8 @@ def preprocess_into_train_and_test_tensors() -> bool:
         random_state = GLOBAL_PARAMETERS['seed']
     )
 
-    print('Train:',X_train.shape,y_train.shape)
-    print('Test:',X_test.shape,y_test.shape)
+    #print('Train:',X_train.shape,y_train.shape)
+    #print('Test:',X_test.shape,y_test.shape)
 
     X_train = np.array(X_train, dtype=np.float32)
     X_test = np.array(X_test, dtype=np.float32)

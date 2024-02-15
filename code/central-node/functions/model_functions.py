@@ -46,7 +46,7 @@ class FederatedLogisticRegression(nn.Module):
     @staticmethod
     def apply_parameters(model, parameters):
         model.load_state_dict(parameters)
-
+# Works
 def get_train_test_loaders() -> any:
     GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
     
@@ -60,7 +60,7 @@ def get_train_test_loaders() -> any:
     )
     test_loader = DataLoader(test_tensor, 64)
     return train_loader,test_loader
-
+# Works
 def train(
     model: any,
     train_loader: any
@@ -83,7 +83,7 @@ def train(
             optimizer.step()
             optimizer.zero_grad()
         print("Epoch {}, loss = {}".format(epoch + 1, torch.sum(loss) / len(train_loader)))
-
+# Works
 def test(
     model: any, 
     test_loader: any
@@ -102,15 +102,13 @@ def test(
         average_loss = np.array(loss).sum() / total_size
         total_accuracy = np.array(accuracies).sum() / total_size
         return average_loss, total_accuracy
-    
+# Works
 def model_inference(
     input: any
 ) -> any:
     GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
 
-    model_folder = 'models'
-    
-    files = os.listdir(model_folder)
+    files = os.listdir('models')
     current_cycle = 0
     for file in files:
         if 'global' in file:
@@ -136,10 +134,9 @@ def model_inference(
 
     return output.tolist()
 
-def initial_model_training() -> bool:
+def initial_model_training() -> bool: # Fix
     GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
-
-    model_path = 'models/initial_model_parameters.pth'
+    model_path = 'models/global_model_0.pth'
 
     if os.path.exists(model_path):
         return False
@@ -162,7 +159,7 @@ def initial_model_training() -> bool:
     print('Loss:',average_loss)
     print('Accuracy:',total_accuracy)
     parameters = lr_model.get_parameters(lr_model)
-    torch.save(parameters, 'models/initial_model_parameters.pth')
+    torch.save(parameters, model_path)
     return True
 
 def model_fed_avg(
@@ -174,7 +171,7 @@ def model_fed_avg(
     for update in updates:
         parameters = update['parameters']
         worker_sample_size = update['samples']
-        print(parameters)
+
         worker_weights = np.array(parameters['weights'][0])
         worker_bias = np.array(parameters['bias'])
         
@@ -194,19 +191,17 @@ def model_fed_avg(
     return updated_global_model
 
 def update_global_model():
-    worker_log_path = 'logs/worker_ips.txt' # change to worker status
+    worker_status_path = 'logs/worker_status.txt' # change to worker status
 
-    if not os.path.exists(worker_log_path):
+    if not os.path.exists(worker_status_path):
         return False
 
-    worker_logs = []
-    with open(worker_log_path, 'r') as f:
-        worker_logs = json.load(f)
-
-    model_folder = 'models'
-
+    worker_status = []
+    with open(worker_status_path, 'r') as f:
+        worker_status = json.load(f)
+    # If config can be updated, 
     usable_updates = []
-    files = os.listdir(model_folder)
+    files = os.listdir('models')
     current_cycle = 0
     for file in files:
         if 'worker' in file:
@@ -231,7 +226,7 @@ def update_global_model():
             sample_size = int(second_split[3])
 
             if cycle == current_cycle:
-                if worker_logs[worker_id-1]['status'] == 'complete':
+                if worker_status[worker_id-1]['status'] == 'complete':
                     print(file)
                     local_model_path = 'models/' + file
                     usable_updates.append({

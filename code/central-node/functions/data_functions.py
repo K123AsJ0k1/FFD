@@ -12,8 +12,8 @@ from torch.utils.data import DataLoader, TensorDataset
 
 # Works
 def central_worker_data_split() -> bool:
-    central_pool_path = 'data/Central_Data_Pool.csv'
-    worker_pool_path = 'data/Worker_Data_Pool.csv'
+    central_pool_path = 'data/central_pool.csv'
+    worker_pool_path = 'data/worker_pool.csv'
 
     if os.path.exists(central_pool_path) or os.path.exists(worker_pool_path):
         return False
@@ -22,7 +22,7 @@ def central_worker_data_split() -> bool:
     WORKER_PARAMETERS = current_app.config['WORKER_PARAMETERS']
 
     # Code is run in run.py, which is in the root folder
-    data_path = 'data/Formated_Fraud_Detection_Data.csv'
+    data_path = 'data/formated_fraud_detection_data.csv'
     source_df = pd.read_csv(data_path)
 
     splitted_data_df = source_df.drop('step', axis = 1)
@@ -32,23 +32,27 @@ def central_worker_data_split() -> bool:
     splitted_data_df.drop(central_indexes)
     worker_data_pool = splitted_data_df.sample(n =  WORKER_PARAMETERS['sample-pool'])
 
-    central_data_pool.to_csv('data/Central_Data_Pool.csv', index = False)    
-    worker_data_pool.to_csv('data/Worker_Data_Pool.csv', index = False)
+    central_data_pool.to_csv(central_pool_path, index = False)    
+    worker_data_pool.to_csv(worker_pool_path, index = False)
     return True
 # Works
 def preprocess_into_train_test_and_evaluate_tensors() -> bool:
+    GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
+    CENTRAL_PARAMETERS = current_app.config['CENTRAL_PARAMETERS']
+    
+    central_pool_path = 'data/central_pool.csv'
+
+    if not os.path.exists(central_pool_path):
+        return False
+    
     train_tensor_path = 'tensors/train.pt'
     test_tensor_path = 'tensors/test.pt'
-    eval_tensor_path = 'tensors/evaluation.pt'
+    eval_tensor_path = 'tensors/eval.pt'
 
     if os.path.exists(train_tensor_path) or os.path.exists(test_tensor_path) or os.path.exists(eval_tensor_path):
         return False
 
-    GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
-    CENTRAL_PARAMETERS = current_app.config['CENTRAL_PARAMETERS']
-    
-    data_path = 'data/Central_Data_Pool.csv'
-    central_data_df = pd.read_csv(data_path)
+    central_data_df = pd.read_csv(central_pool_path)
     
     preprocessed_df = central_data_df[GLOBAL_PARAMETERS['used-columns']]
     for column in GLOBAL_PARAMETERS['scaled-columns']:
@@ -73,10 +77,6 @@ def preprocess_into_train_test_and_evaluate_tensors() -> bool:
         random_state = GLOBAL_PARAMETERS['seed']
     )
 
-    #print('Train:',X_train.shape,y_train.shape)
-    #print('Test:',X_test.shape,y_test.shape)
-    #print('Evaluation:',X_eval.shape,y_eval.shape)
-
     X_train = np.array(X_train, dtype=np.float32)
     X_test = np.array(X_test, dtype=np.float32)
     X_eval = np.array(X_eval, dtype=np.float32)
@@ -98,17 +98,16 @@ def preprocess_into_train_test_and_evaluate_tensors() -> bool:
         torch.tensor(y_eval, dtype=torch.float32)
     )
 
-    torch.save(train_tensor,'tensors/train.pt')
-    torch.save(test_tensor,'tensors/test.pt')
-    torch.save(eval_tensor,'tensors/evaluation.pt')
+    torch.save(train_tensor,train_tensor_path)
+    torch.save(test_tensor,test_tensor_path)
+    torch.save(eval_tensor,eval_tensor_path)
     
     return True
-
+# Works
 def split_data_between_workers(
     worker_amount: int
 ) -> any:
-    #GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
-    worker_pool_path = 'data/Worker_Data_Pool.csv'
+    worker_pool_path = 'data/worker_pool.csv'
 
     if not os.path.exists(worker_pool_path):
         return False
@@ -126,18 +125,18 @@ def split_data_between_workers(
         index = index + 1
 
     return data_list, worker_pool_df.columns.tolist() 
-
+# Works
 def store_update(
     worker_id: str,
     local_model: any,
     cycle: int,
     train_size: int
 ) -> bool:
-    worker_log_path = 'logs/worker_ips.txt' # change to worker status
+    worker_status_path = 'logs/worker_status.txt'
    
     worker_logs = []
-    if os.path.exists(worker_log_path):
-      with open(worker_log_path, 'r') as f:
+    if os.path.exists(worker_status_path):
+      with open(worker_status_path, 'r') as f:
         worker_logs = json.load(f)
 
     model_path = 'models/worker_' + str(worker_id) + '_' + str(cycle) + '_' + str(train_size) + '.pth'
@@ -152,7 +151,7 @@ def store_update(
         if worker['id'] == worker_id:
             worker_logs[index]['status'] = 'complete'
 
-    with open(worker_log_path, 'w') as f:
+    with open(worker_status_path, 'w') as f:
         json.dump(worker_logs, f) 
 
     return True
