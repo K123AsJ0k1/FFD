@@ -2,10 +2,12 @@ from flask import current_app
 import torch
 import torch.nn as nn
 from collections import OrderedDict
+from sklearn.metrics import confusion_matrix
 
 from torch.optim import SGD
 
 from functions.data_functions import *
+from functions.general_functions import *
 
 class FederatedLogisticRegression(nn.Module):
     def __init__(self, dim, bias=True):
@@ -90,35 +92,68 @@ def test(
 ) -> any:
     with torch.no_grad():
         losses = []
-        accuracies = []
         total_size = 0
+        total_confusion_matrix = [0,0,0,0]
         
         for batch in test_loader:
             total_size += len(batch[1])
-            loss, corrects = model.test_step(model, batch)
+            _, correct = batch
+            loss, preds = model.test_step(model, batch)
             losses.append(loss)
-            accuracies.append(corrects)
+            
+            formated_correct = correct.numpy()
+            formated_preds = preds.numpy().astype(int)
+            
+            tn, fp, fn, tp = confusion_matrix(
+                y_true = formated_correct,
+                y_pred = formated_preds,
+                labels = [0,1]
+            ).ravel()
 
+            total_confusion_matrix[0] += tp # True positive
+            total_confusion_matrix[1] += fp # False positive
+            total_confusion_matrix[2] += tn # True negative
+            total_confusion_matrix[3] += fn # False negative
+ 
         average_loss = np.array(loss).sum() / total_size
-        total_accuracy = np.array(accuracies).sum() / total_size
-        return average_loss, total_accuracy
+
+        TP, FP, TN, FN = total_confusion_matrix
+
+        TPR = TP/(TP+FN)
+        TNR = TN/(TN+FP)
+        PPV = TP/(TP+FP)
+        FNR = FN/(FN+TP)
+        FPR = FP/(FP+TN)
+        BA = (TPR+TNR)/2
+        ACC = (TP + TN)/(TP + TN + FP + FN)
+        
+        metrics = {
+            'loss': average_loss,
+            'confusion': total_confusion_matrix,
+            'recall': TPR,
+            'selectivity': TNR,
+            'precision': PPV,
+            'miss-rate': FNR,
+            'fall-out':FPR,
+            'balanced-accuracy':BA,
+            'accuracy': ACC
+        }
+    
+        return metrics
 # Works
 def model_inference(
     input: any
 ) -> any:
+    training_status_path = 'logs/training_status.txt'
+    if not os.path.exists(training_status_path):
+        return False
+    training_status = None
+    with open(training_status_path, 'r') as f:
+        training_status = json.load(f)
+
     GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
 
-    files = os.listdir('models')
-    current_cycle = 0
-    for file in files:
-        if 'global' in file:
-            first_split = file.split('.')
-            second_split = first_split[0].split('_')
-            cycle = int(second_split[2])
-            if current_cycle < cycle:
-                current_cycle = cycle
-    
-    global_model_path = 'models/global_model_' + str(current_cycle) + '.pth'
+    global_model_path = 'models/global_model_' + str(training_status['parameters']['cycle']) + '.pth'
     if not os.path.exists(global_model_path):
         return None
     
@@ -133,8 +168,8 @@ def model_inference(
         output = lr_model.prediction(lr_model,given_input)
 
     return output.tolist()
-
-def initial_model_training() -> bool: # Fix
+# Refactored
+def initial_model_training() -> bool:
     GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
     model_path = 'models/global_model_0.pth'
 
@@ -152,16 +187,19 @@ def initial_model_training() -> bool: # Fix
         train_loader = given_train_loader,  
     )
     
-    average_loss, total_accuracy = test(
+    test_metrics = test(
         model = lr_model, 
         test_loader = given_test_loader
     )
-    print('Loss:',average_loss)
-    print('Accuracy:',total_accuracy)
+
+    store_global_metrics(
+        metrics = test_metrics
+    )
+    
     parameters = lr_model.get_parameters(lr_model)
     torch.save(parameters, model_path)
     return True
-
+# Refactored
 def model_fed_avg(
     updates: any,
     total_sample_size: int    
@@ -189,33 +227,21 @@ def model_fed_avg(
         ('linear.bias', torch.tensor(FedAvg_bias,dtype=torch.float32))
     ])
     return updated_global_model
-
+# Refactored
 def update_global_model():
-    worker_status_path = 'logs/worker_status.txt' # change to worker status
-
-    if not os.path.exists(worker_status_path):
+    training_status_path = 'logs/training_status.txt'
+    if not os.path.exists(training_status_path):
         return False
+    training_status = None
+    with open(training_status_path, 'r') as f:
+        training_status = json.load(f)
 
-    worker_status = []
-    with open(worker_status_path, 'r') as f:
-        worker_status = json.load(f)
-    # If config can be updated, 
-    usable_updates = []
-    files = os.listdir('models')
-    current_cycle = 0
-    for file in files:
-        if 'worker' in file:
-            first_split = file.split('.')
-            second_split = first_split[0].split('_')
-            cycle = int(second_split[2])
-            
-            if current_cycle < cycle:
-                current_cycle = cycle
-    
-    update_model_path = 'models/global_model_' + str(current_cycle) + '.pth'
+    update_model_path = 'models/global_model_' + str(training_status['parameters']['cycle']) + '.pth'
     if os.path.exists(update_model_path):
         return True
     
+    files = os.listdir('models')
+    available_updates = []
     collective_sample_size = 0
     for file in files:
         if 'worker' in file:
@@ -225,39 +251,34 @@ def update_global_model():
             cycle = int(second_split[2])
             sample_size = int(second_split[3])
 
-            if cycle == current_cycle:
-                if worker_status[worker_id-1]['status'] == 'complete':
-                    print(file)
+            if cycle == training_status['parameters']['cycle']:
+                if training_status['workers'][worker_id-1]['status'] == 'complete':
                     local_model_path = 'models/' + file
-                    usable_updates.append({
+                    available_updates.append({
                         'parameters': torch.load(local_model_path),
                         'samples': sample_size
                     })
                     collective_sample_size = collective_sample_size + sample_size
 
     new_global_model = model_fed_avg(
-        updates = usable_updates,
+        updates = available_updates,
         total_sample_size = collective_sample_size 
     )
     
     torch.save(new_global_model, update_model_path)
     return True
-
+# Refactored
 def evalute_global_model():
+    training_status_path = 'logs/training_status.txt'
+    if not os.path.exists(training_status_path):
+        return False
+    training_status = None
+    with open(training_status_path, 'r') as f:
+        training_status = json.load(f)
+    
     GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
-    model_folder = 'models'
     
-    files = os.listdir(model_folder)
-    current_cycle = 0
-    for file in files:
-        if 'global' in file:
-            first_split = file.split('.')
-            second_split = first_split[0].split('_')
-            cycle = int(second_split[2])
-            if current_cycle < cycle:
-                current_cycle = cycle
-    
-    global_model_path = 'models/global_model_' + str(current_cycle) + '.pth'
+    global_model_path = 'models/global_model_' + str(training_status['parameters']['cycle']) + '.pth'
     if not os.path.exists(global_model_path):
         return False
     
@@ -269,13 +290,14 @@ def evalute_global_model():
     eval_tensor = torch.load('tensors/evaluation.pt')
     eval_loader = DataLoader(eval_tensor, 64)
 
-    average_loss, total_accuracy = test(
+    metrics = test(
         model = lr_model, 
         test_loader = eval_loader
     )
 
-    print('Loss:',average_loss)
-    print('Accuracy:',total_accuracy)
+    store_global_metrics(
+        metrics = test_metrics
+    )
 
     return True
     

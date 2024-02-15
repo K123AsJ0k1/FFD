@@ -16,18 +16,28 @@ def demo():
 @general.route('/register', methods=["POST"])
 def worker_registration():
     received_worker_ip = request.remote_addr
-    store_worker_ip(
+    store_worker_status(
         worker_ip = received_worker_ip
     )
     return 'Ok', 200  
 
 @general.route('/start', methods=["POST"])
 def start_model_training():
-    split_status = central_worker_data_split()
-    tensor_status = preprocess_into_train_test_and_evaluate_tensors()
-    model_status = initial_model_training()
-    #print(split_status,tensor_status,model_status)
-    send_context_to_workers()
+    status = initilize_training_status()
+    current_app.logger.warning(status)
+    
+    status = central_worker_data_split()
+    current_app.logger.warning(status)
+    
+    status = preprocess_into_train_test_and_evaluate_tensors()
+    current_app.logger.warning(status)
+    
+    status = initial_model_training()
+    current_app.logger.warning(status)
+    
+    status = send_context_to_workers()
+    current_app.logger.warning(status)
+    
     return 'Ok', 200
 
 @general.route('/update', methods=["POST"]) 

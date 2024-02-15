@@ -21,7 +21,6 @@ def central_worker_data_split() -> bool:
     CENTRAL_PARAMETERS = current_app.config['CENTRAL_PARAMETERS']
     WORKER_PARAMETERS = current_app.config['WORKER_PARAMETERS']
 
-    # Code is run in run.py, which is in the root folder
     data_path = 'data/formated_fraud_detection_data.csv'
     source_df = pd.read_csv(data_path)
 
@@ -124,7 +123,7 @@ def split_data_between_workers(
         data_list.append(assigned_df.values.tolist())
         index = index + 1
 
-    return data_list, worker_pool_df.columns.tolist() 
+    return data_list, worker_pool_df.columns.tolist()     
 # Works
 def store_update(
     worker_id: str,
@@ -132,11 +131,11 @@ def store_update(
     cycle: int,
     train_size: int
 ) -> bool:
-    worker_status_path = 'logs/worker_status.txt'
+    training_status_path = 'logs/training_status.txt'
    
     worker_logs = []
-    if os.path.exists(worker_status_path):
-      with open(worker_status_path, 'r') as f:
+    if os.path.exists(training_status_path):
+      with open(training_status_path, 'r') as f:
         worker_logs = json.load(f)
 
     model_path = 'models/worker_' + str(worker_id) + '_' + str(cycle) + '_' + str(train_size) + '.pth'
@@ -151,7 +150,7 @@ def store_update(
         if worker['id'] == worker_id:
             worker_logs[index]['status'] = 'complete'
 
-    with open(worker_status_path, 'w') as f:
+    with open(training_status_path, 'w') as f:
         json.dump(worker_logs, f) 
 
     return True
