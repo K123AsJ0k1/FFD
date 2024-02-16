@@ -25,19 +25,28 @@ from collections import OrderedDict
             - balanced-accuracy: int 
             - accuracy: int
 '''
-
-def register_into_central(logger, central_address):
+# Refactored
+def send_status_to_central(logger, central_address):
     #logger.warning('Register worker')
-    address = central_address + '/register'
+    payload = {
+        'status': os.environ.get('STATUS')
+    }
+    json_payload = json.dumps(payload) 
+    address = central_address + '/status'
     try:
         response = requests.post(
-            url = address
+            url = address,
+            json = json_payload,
+            headers = {
+               'Content-type':'application/json', 
+               'Accept':'application/json'
+            }
         )
         logger.warning(response.status_code)
     except Exception as e:
         logger.error('Registration error')
         logger.error(e) 
-# 
+# Refactored
 def store_training_context(
     global_parameters: any,
     worker_parameters: any,

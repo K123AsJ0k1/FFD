@@ -180,44 +180,54 @@ def store_global_metrics(
 ) -> bool:
    training_status_path = 'logs/training_status.txt'
    if not os.path.exists(training_status_path):
-      return False
+        return False
    training_status = None
    with open(training_status_path, 'r') as f:
-      training_status = json.load(f)
+        training_status = json.load(f)
    training_status['parameters']['global-metrics'].append(metrics)
    with open(training_status_path, 'w') as f:
-      json.dump(training_status, f, indent=4) 
+        json.dump(training_status, f, indent=4) 
    return True
-# refactored
+# refactored and works
 def store_worker_status(
-   worker_ip: str
+    worker_ip: str,
+    worker_status: str
 ) -> bool:
    training_status_path = 'logs/training_status.txt'
    
    training_status = None
    if not os.path.exists(training_status_path):
-      return False
+        return False
    
    with open(training_status_path, 'r') as f:
-      training_status = json.load(f)
+        training_status = json.load(f)
    
+   current_worker_index = 0
    highest_worker_id = 0
    new_ip = True
+   index = 0
    for dict in training_status['workers']:
-      if worker_ip == dict['address']:
-         new_ip = False
-      if highest_worker_id < dict['id']:
-         highest_worker_id = dict['id']
+        if worker_ip == dict['address']:
+            new_ip = False
+            current_worker_index = current_worker_index + 1
+            break
+        if highest_worker_id < dict['id']:
+            highest_worker_id = dict['id']
+        index = index + 1
    
    if new_ip:
-      training_status['workers'].append({
-         'id': highest_worker_id + 1,
-         'address': worker_ip,
-         'status': 'waiting',
-         'metrics': {}
-      })
-      with open(training_status_path, 'w') as f:
-         json.dump(training_status, f, indent=4) 
+        training_status['workers'].append({
+            'id': highest_worker_id + 1,
+            'address': worker_ip,
+            'status': worker_status,
+            'local-metrics': {}
+        })
+        with open(training_status_path, 'w') as f:
+            json.dump(training_status, f, indent=4) 
+   else:
+        training_status['workers'][current_worker_index-1]['status'] = worker_status
+        with open(training_status_path, 'w') as f:
+            json.dump(training_status, f, indent=4) 
    return True
 # Works
 def store_update(

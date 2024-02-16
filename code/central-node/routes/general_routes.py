@@ -10,11 +10,16 @@ general = Blueprint('general', __name__)
 def demo():
     return 'Ok', 200
 # Works
-@general.route('/register', methods=["POST"])
-def worker_registration():
+@general.route('/status', methods=["POST"])
+def worker_status():
     received_worker_ip = request.remote_addr
+    sent_payload = json.loads(request.json)
+
+    sent_worker_status = sent_payload['status']
+
     store_worker_status(
-        worker_ip = received_worker_ip
+        worker_ip = received_worker_ip,
+        worker_status = sent_worker_status
     )
     return 'Ok', 200  
 

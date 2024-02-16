@@ -2,6 +2,7 @@ from flask import Flask, request
 from config import Config
 from apscheduler.schedulers.background import BackgroundScheduler
 import logging
+import os
 
 def create_app():
     app = Flask(__name__)
@@ -18,12 +19,14 @@ def create_app():
         app.logger.warning('Choosen enviroment is production')
         app.config.from_object('config.ProdConfig')
 
+    os.environ['STATUS'] = 'waiting'
+
     scheduler = BackgroundScheduler(daemon = True)
-    from functions.general_functions import register_worker
+    from functions.data_functions import send_status_to_central
     from functions.model_functions import send_update
     send_update_args = [app.logger,app.config['CENTRAL_ADDRESS']]
     scheduler.add_job(
-        func = register_worker,
+        func = send_status_to_central,
         trigger = "interval",
         seconds = 5,
         args = send_update_args
