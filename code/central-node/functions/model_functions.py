@@ -4,10 +4,11 @@ import torch.nn as nn
 from collections import OrderedDict
 from sklearn.metrics import confusion_matrix
 
-from torch.optim import SGD
+import numpy
+
+from torch.utils.data import DataLoader
 
 from functions.data_functions import *
-from functions.general_functions import *
 
 class FederatedLogisticRegression(nn.Module):
     def __init__(self, dim, bias=True):
@@ -32,8 +33,7 @@ class FederatedLogisticRegression(nn.Module):
         out = model(x)
         loss = model.loss(out, y)
         preds = out > 0 # Predict y = 1 if P(y = 1) > 0.5
-        corrects = torch.tensor(torch.sum(preds == y).item())
-        return loss, corrects
+        return loss, preds
     
     @staticmethod
     def prediction(model, x):
@@ -110,10 +110,10 @@ def test(
                 labels = [0,1]
             ).ravel()
 
-            total_confusion_matrix[0] += tp # True positive
-            total_confusion_matrix[1] += fp # False positive
-            total_confusion_matrix[2] += tn # True negative
-            total_confusion_matrix[3] += fn # False negative
+            total_confusion_matrix[0] += int(tp) # True positive
+            total_confusion_matrix[1] += int(fp) # False positive
+            total_confusion_matrix[2] += int(tn) # True negative
+            total_confusion_matrix[3] += int(fn) # False negative
  
         average_loss = np.array(loss).sum() / total_size
 
@@ -128,17 +128,17 @@ def test(
         ACC = (TP + TN)/(TP + TN + FP + FN)
         
         metrics = {
-            'loss': average_loss,
             'confusion': total_confusion_matrix,
-            'recall': TPR,
-            'selectivity': TNR,
-            'precision': PPV,
-            'miss-rate': FNR,
-            'fall-out':FPR,
-            'balanced-accuracy':BA,
-            'accuracy': ACC
+            'loss': float(round(average_loss,5)),
+            'recall': float(round(TPR,5)),
+            'selectivity': float(round(TNR,5)),
+            'precision': float(round(PPV,5)),
+            'miss-rate': float(round(FNR,5)),
+            'fall-out': float(round(FPR,5)),
+            'balanced-accuracy': float(round(BA,5)),
+            'accuracy': float(round(ACC,5))
         }
-    
+        print(metrics)
         return metrics
 # Works
 def model_inference(
@@ -147,6 +147,7 @@ def model_inference(
     training_status_path = 'logs/training_status.txt'
     if not os.path.exists(training_status_path):
         return False
+    
     training_status = None
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
@@ -272,6 +273,7 @@ def evalute_global_model():
     training_status_path = 'logs/training_status.txt'
     if not os.path.exists(training_status_path):
         return False
+    
     training_status = None
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
@@ -282,15 +284,19 @@ def evalute_global_model():
     if not os.path.exists(global_model_path):
         return False
     
+    eval_tensor_path = 'tensors/evaluation.pt'
+    if not os.path.exists(eval_tensor_path):
+        return False
+    
     given_parameters = torch.load(global_model_path)
     
     lr_model = FederatedLogisticRegression(dim = GLOBAL_PARAMETERS['input-size'])
     lr_model.apply_parameters(lr_model, given_parameters)
 
-    eval_tensor = torch.load('tensors/evaluation.pt')
+    eval_tensor = torch.load(eval_tensor_path)
     eval_loader = DataLoader(eval_tensor, 64)
 
-    metrics = test(
+    test_metrics = test(
         model = lr_model, 
         test_loader = eval_loader
     )

@@ -24,8 +24,8 @@ class Config:
     }
 
     CENTRAL_PARAMETERS = {
-        'sample-pool': 2000000,
-        'train-eval-ratio': 0.4,
+        'sample-pool': 3000000,
+        'train-eval-ratio': 0.5,
         'train-test-ratio': 0.8
     }
 

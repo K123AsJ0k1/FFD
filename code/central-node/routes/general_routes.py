@@ -1,7 +1,6 @@
 from flask import Blueprint, current_app, request, jsonify
 import json
 
-from functions.general_functions import *
 from functions.data_functions import *
 from functions.model_functions import *
 
@@ -9,8 +8,6 @@ general = Blueprint('general', __name__)
 
 @general.route('/demo', methods=["GET"]) 
 def demo():
-    #update_global_model()
-    #evalute_global_model()
     return 'Ok', 200
 # Works
 @general.route('/register', methods=["POST"])
@@ -35,14 +32,13 @@ def start_model_training():
     status = initial_model_training()
     current_app.logger.warning(status)
     
-    status = send_context_to_workers()
-    current_app.logger.warning(status)
+    #status = send_context_to_workers()
+    #current_app.logger.warning(status)
     
     return 'Ok', 200
 
 @general.route('/update', methods=["POST"]) 
-def worker_update():
-    # Wierd type error, which was fixed with loading 
+def worker_update(): 
     sent_payload = json.loads(request.json)
     
     sent_worker_id = sent_payload['worker-id']
