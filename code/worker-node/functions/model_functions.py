@@ -5,11 +5,14 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
+from sklearn.metrics import confusion_matrix
 
 import requests 
 
 from torch.optim import SGD
 from torch.utils.data import DataLoader, TensorDataset
+
+from functions.data_functions import *
 
 class FederatedLogisticRegression(nn.Module):
     def __init__(self, dim, bias=True):
@@ -34,8 +37,7 @@ class FederatedLogisticRegression(nn.Module):
         out = model(x)
         loss = model.loss(out, y)
         preds = out > 0 # Predict y = 1 if P(y = 1) > 0.5
-        corrects = torch.tensor(torch.sum(preds == y).item())
-        return loss, corrects
+        return loss, preds
 
     @staticmethod
     def get_parameters(model):
@@ -45,7 +47,7 @@ class FederatedLogisticRegression(nn.Module):
     def apply_parameters(model, parameters):
         model.load_state_dict(parameters)
 
-def get_loaders() -> any:
+def get_train_test_loaders_loaders() -> any:
     global_parameters_path = 'logs/global_parameters.txt'
     GLOBAL_PARAMETERS = None
     with open(global_parameters_path, 'r') as f:
@@ -93,24 +95,58 @@ def test(
     test_loader: any
 ) -> any:
     with torch.no_grad():
-        losses = []
-        accuracies = []
+        #losses = []
         total_size = 0
+        total_confusion_matrix = [0,0,0,0]
         
         for batch in test_loader:
             total_size += len(batch[1])
-            loss, corrects = model.test_step(model, batch)
-            losses.append(loss)
-            accuracies.append(corrects)
+            _, correct = batch
+            _, preds = model.test_step(model, batch)
+            #losses.append(loss)
+            
+            formated_correct = correct.numpy()
+            formated_preds = preds.numpy().astype(int)
+            
+            tn, fp, fn, tp = confusion_matrix(
+                y_true = formated_correct,
+                y_pred = formated_preds,
+                labels = [0,1]
+            ).ravel()
 
-        average_loss = np.array(loss).sum() / total_size
-        total_accuracy = np.array(accuracies).sum() / total_size
-        return average_loss, total_accuracy
+            total_confusion_matrix[0] += int(tp) # True positive
+            total_confusion_matrix[1] += int(fp) # False positive
+            total_confusion_matrix[2] += int(tn) # True negative
+            total_confusion_matrix[3] += int(fn) # False negative
+ 
+        #average_loss = np.array(loss).sum() / total_size
+        # 'loss': float(round(average_loss,5)),
+        TP, FP, TN, FN = total_confusion_matrix
+
+        TPR = TP/(TP+FN)
+        TNR = TN/(TN+FP)
+        PPV = TP/(TP+FP)
+        FNR = FN/(FN+TP)
+        FPR = FP/(FP+TN)
+        BA = (TPR+TNR)/2
+        ACC = (TP + TN)/(TP + TN + FP + FN)
+        
+        metrics = {
+            'confusion': total_confusion_matrix,
+            'recall': float(round(TPR,5)),
+            'selectivity': float(round(TNR,5)),
+            'precision': float(round(PPV,5)),
+            'miss-rate': float(round(FNR,5)),
+            'fall-out': float(round(FPR,5)),
+            'balanced-accuracy': float(round(BA,5)),
+            'accuracy': float(round(ACC,5))
+        }
+        
+        return metrics
 # Works
 def local_model_training(
     cycle: int
 ) -> any:
-    print('Local model training')
     global_parameters_path = 'logs/global_parameters.txt'
     global_model_path = 'models/global_model_' + str(cycle) + '.pth'
     local_model_path = 'models/local_model_' + str(cycle) + '.pth'
@@ -133,7 +169,7 @@ def local_model_training(
  
     torch.manual_seed(GLOBAL_PARAMETERS['seed'])
     
-    given_train_loader, given_test_loader = get_loaders()
+    given_train_loader, given_test_loader = get_train_test_loaders_loaders()
 
     lr_model = FederatedLogisticRegression(dim = GLOBAL_PARAMETERS['input-size'])
     lr_model.apply_parameters(lr_model, given_parameters)
@@ -143,12 +179,15 @@ def local_model_training(
         train_loader = given_train_loader,  
     )
     
-    average_loss, total_accuracy = test(
+    test_metrics = test(
         model = lr_model, 
         test_loader = given_test_loader
     )
-    print('Loss:',average_loss)
-    print('Accuracy:',total_accuracy)
+
+    store_local_metrics(
+        metrics = test_metrics
+    )
+    
     parameters = lr_model.get_parameters(lr_model)
     torch.save(parameters, local_model_path)
     return True
@@ -157,17 +196,17 @@ def send_update(
     logger: any, 
     central_address: str
 ):  
-    logger.warning('Send update')
-    model_folder = 'models'
-    files = os.listdir(model_folder)
-    cycle = 0
-    for file in files:
-        if 'global_model' in file:
-            first_split = file.split('_')
-            second_split = first_split[-1].split('.')
-            file_cycle = int(second_split[0])
-            if cycle < file_cycle:
-                cycle = file_cycle
+    #logger.warning('Send update')
+    #model_folder = 'models'
+    #files = os.listdir(model_folder)
+    #cycle = 0
+    #for file in files:
+    #    if 'global_model' in file:
+    #        first_split = file.split('_')
+    #        second_split = first_split[-1].split('.')
+    #        file_cycle = int(second_split[0])
+    #        if cycle < file_cycle:
+    #            cycle = file_cycle
     
     worker_parameters_path = 'logs/worker_parameters.txt'
     if not os.path.exists(worker_parameters_path):

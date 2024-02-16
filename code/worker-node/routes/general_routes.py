@@ -1,7 +1,6 @@
 from flask import Blueprint, current_app, request, jsonify
 import json
 
-from functions.general_functions import *
 from functions.data_functions import *
 from functions.model_functions import *
 
@@ -9,7 +8,6 @@ general = Blueprint('general', __name__)
 
 @general.route('/demo', methods=["GET"]) 
 def demo():
-    local_model_training(cycle = 1)
     return 'Ok', 200
 
 @general.route('/status', methods=["GET"]) 
@@ -25,13 +23,12 @@ def set_training_context():
     sent_model = sent_payload['global-model']
     sent_worker_data = sent_payload['worker-data']
     
-    store_context(
+    status = store_training_context(
         global_parameters = sent_global_parameters,
         worker_parameters = sent_worker_parameters,
         global_model = sent_model,
         worker_data = sent_worker_data
     )
-
-    preprocess_into_train_and_test_tensors()
+    status = preprocess_into_train_and_test_tensors()
 
     return 'Ok', 200

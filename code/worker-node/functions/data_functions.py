@@ -1,4 +1,5 @@
 from flask import current_app
+import requests
 
 import numpy as np
 import pandas as pd
@@ -7,47 +8,81 @@ import os
 import json
 
 from sklearn.model_selection import train_test_split
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import TensorDataset
 
 from collections import OrderedDict
+'''
+- metrics: list
+    - model: dict
+        - metrics: dict
+            - loss: int,
+            - confusion list
+            - recall: int
+            - selectivity: int
+            - precision: int
+            - miss-rate: int
+            - fall-out: int
+            - balanced-accuracy: int 
+            - accuracy: int
+'''
 
-def store_context(
+def register_into_central(logger, central_address):
+    #logger.warning('Register worker')
+    address = central_address + '/register'
+    try:
+        response = requests.post(
+            url = address
+        )
+        logger.warning(response.status_code)
+    except Exception as e:
+        logger.error('Registration error')
+        logger.error(e) 
+# 
+def store_training_context(
     global_parameters: any,
     worker_parameters: any,
     global_model: any,
     worker_data: any
-):
-    print('Store context')
+) -> bool:
     global_parameters_path = 'logs/global_parameters.txt'
     worker_parameters_path = 'logs/worker_parameters.txt'
-    
-    if not os.path.exists(global_parameters_path):
-        with open(global_parameters_path, 'w') as f:
-         json.dump(global_parameters, f)
 
-    if not os.path.exists(worker_parameters_path):
-        with open(worker_parameters_path, 'w') as f:
-         json.dump(worker_parameters, f)
+    if os.path.exists(global_parameters_path):
+       return False
+    
+    with open(global_parameters_path, 'w') as f:
+        json.dump(global_parameters, f)
+
+    if os.path.exists(worker_parameters_path):
+        return False
+    
+    with open(worker_parameters_path, 'w') as f:
+        json.dump(worker_parameters, f)
 
     global_model_path = 'models/global_model_' + str(worker_parameters['cycle']) + '.pth'
     worker_data_path = 'data/used_data_' + str(worker_parameters['cycle']) + '.csv'
+    
+    if os.path.exists(global_model_path):
+        return False
 
-    if not os.path.exists(global_model_path):
-        weights = global_model['weights']
-        bias = global_model['bias']
-        formated_parameters = OrderedDict([
-            ('linear.weight', torch.tensor(weights,dtype=torch.float32)),
-            ('linear.bias', torch.tensor(bias,dtype=torch.float32))
-        ])
-        torch.save(formated_parameters, global_model_path)
+    if os.path.exists(worker_data_path):
+       return False
+    
+    weights = global_model['weights']
+    bias = global_model['bias']
+    
+    formated_parameters = OrderedDict([
+        ('linear.weight', torch.tensor(weights,dtype=torch.float32)),
+        ('linear.bias', torch.tensor(bias,dtype=torch.float32))
+    ])
+    
+    torch.save(formated_parameters, global_model_path)
        
-    if not os.path.exists(worker_data_path):
-       worker_df = pd.DataFrame(worker_data)
-       worker_df.to_csv(worker_data_path, index = False)
-
+    worker_df = pd.DataFrame(worker_data)
+    worker_df.to_csv(worker_data_path, index = False)
+    return True
 # Works
 def preprocess_into_train_and_test_tensors() -> bool:
-    print('Preprocess')
     global_parameters_path = 'logs/global_parameters.txt'
     worker_parameters_path = 'logs/worker_parameters.txt'
     
@@ -57,12 +92,12 @@ def preprocess_into_train_and_test_tensors() -> bool:
     GLOBAL_PARAMETERS = None
     with open(global_parameters_path, 'r') as f:
         GLOBAL_PARAMETERS = json.load(f) 
+
     WORKER_PARAMETERS = None
     with open(worker_parameters_path, 'r') as f:
         WORKER_PARAMETERS = json.load(f)
     
     worker_data_path = 'data/used_data_' + str(WORKER_PARAMETERS['cycle']) + '.csv'
-    
     if not os.path.exists(worker_data_path):
        return False
     
@@ -72,7 +107,6 @@ def preprocess_into_train_and_test_tensors() -> bool:
     if os.path.exists(train_tensor_path) or os.path.exists(test_tensor_path):
         return False
     
-
     preprocessed_df = pd.read_csv(worker_data_path)
     preprocessed_df.columns = WORKER_PARAMETERS['columns']
     preprocessed_df = preprocessed_df[GLOBAL_PARAMETERS['used-columns']]
@@ -90,9 +124,6 @@ def preprocess_into_train_and_test_tensors() -> bool:
         train_size = WORKER_PARAMETERS['train-test-ratio'], 
         random_state = GLOBAL_PARAMETERS['seed']
     )
-
-    #print('Train:',X_train.shape,y_train.shape)
-    #print('Test:',X_test.shape,y_test.shape)
 
     X_train = np.array(X_train, dtype=np.float32)
     X_test = np.array(X_test, dtype=np.float32)
@@ -112,3 +143,17 @@ def preprocess_into_train_and_test_tensors() -> bool:
     torch.save(train_tensor,train_tensor_path)
     torch.save(test_tensor,test_tensor_path)
     return True
+# Created
+def store_local_metrics(
+   metrics: any
+) -> bool:
+   training_metrics_path = 'logs/training_metrics.txt'
+   if not os.path.exists(training_metrics_path):
+      return False
+   training_metrics = None
+   with open(training_metrics_path, 'r') as f:
+      training_status = json.load(f)
+   training_metrics.append(metrics)
+   with open(training_metrics, 'w') as f:
+      json.dump(training_status, f, indent=4) 
+   return True

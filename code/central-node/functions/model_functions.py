@@ -91,15 +91,15 @@ def test(
     test_loader: any
 ) -> any:
     with torch.no_grad():
-        losses = []
+        #losses = []
         total_size = 0
         total_confusion_matrix = [0,0,0,0]
         
         for batch in test_loader:
             total_size += len(batch[1])
             _, correct = batch
-            loss, preds = model.test_step(model, batch)
-            losses.append(loss)
+            _, preds = model.test_step(model, batch)
+            #losses.append(loss)
             
             formated_correct = correct.numpy()
             formated_preds = preds.numpy().astype(int)
@@ -115,8 +115,8 @@ def test(
             total_confusion_matrix[2] += int(tn) # True negative
             total_confusion_matrix[3] += int(fn) # False negative
  
-        average_loss = np.array(loss).sum() / total_size
-
+        #average_loss = np.array(loss).sum() / total_size
+        # 'loss': float(round(average_loss,5)),
         TP, FP, TN, FN = total_confusion_matrix
 
         TPR = TP/(TP+FN)
@@ -129,7 +129,6 @@ def test(
         
         metrics = {
             'confusion': total_confusion_matrix,
-            'loss': float(round(average_loss,5)),
             'recall': float(round(TPR,5)),
             'selectivity': float(round(TNR,5)),
             'precision': float(round(PPV,5)),
@@ -138,7 +137,7 @@ def test(
             'balanced-accuracy': float(round(BA,5)),
             'accuracy': float(round(ACC,5))
         }
-        print(metrics)
+        
         return metrics
 # Works
 def model_inference(
@@ -233,6 +232,7 @@ def update_global_model():
     training_status_path = 'logs/training_status.txt'
     if not os.path.exists(training_status_path):
         return False
+    
     training_status = None
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
@@ -265,8 +265,11 @@ def update_global_model():
         updates = available_updates,
         total_sample_size = collective_sample_size 
     )
-    
+
     torch.save(new_global_model, update_model_path)
+    training_status['parameters']['cycle'] = training_status['parameters']['cycle'] + 1 
+    with open(training_status_path, 'w') as f:
+         json.dump(training_status, f, indent=4) 
     return True
 # Refactored
 def evalute_global_model():

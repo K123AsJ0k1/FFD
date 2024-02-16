@@ -58,7 +58,7 @@ def initilize_training_status():
    }
    
    with open(training_status_path, 'w') as f:
-      json.dump(training_status, f) 
+      json.dump(training_status, f, indent=4) 
    return True
 # Works
 def central_worker_data_split() -> bool:
@@ -186,7 +186,7 @@ def store_global_metrics(
       training_status = json.load(f)
    training_status['parameters']['global-metrics'].append(metrics)
    with open(training_status_path, 'w') as f:
-      json.dump(training_status, f) 
+      json.dump(training_status, f, indent=4) 
    return True
 # refactored
 def store_worker_status(
@@ -217,7 +217,7 @@ def store_worker_status(
          'metrics': {}
       })
       with open(training_status_path, 'w') as f:
-         json.dump(training_status_path, f) 
+         json.dump(training_status, f, indent=4) 
    return True
 # Works
 def store_update(
@@ -226,27 +226,28 @@ def store_update(
     cycle: int,
     train_size: int
 ) -> bool:
-    training_status_path = 'logs/training_status.txt'
+    training_status_path = 'logs/training_status.txt' # refactor
    
-    worker_logs = []
-    if os.path.exists(training_status_path):
-      with open(training_status_path, 'r') as f:
-        worker_logs = json.load(f)
+    training_status = None
+    if not os.path.exists(training_status_path):
+      return False
+    
+    with open(training_status_path, 'r') as f:
+        training_status = json.load(f)
 
     model_path = 'models/worker_' + str(worker_id) + '_' + str(cycle) + '_' + str(train_size) + '.pth'
-    
     if os.path.exists(model_path):
         return False
     
     torch.save(local_model, model_path)
 
     index = 0
-    for worker in worker_logs:
+    for worker in training_status['workers']:
         if worker['id'] == worker_id:
-            worker_logs[index]['status'] = 'complete'
+            training_status['workers'][index]['status'] = 'complete'
 
     with open(training_status_path, 'w') as f:
-        json.dump(worker_logs, f) 
+        json.dump(training_status, f, indent=4) 
 
     return True
 # Refactored
@@ -284,7 +285,7 @@ def send_context_to_workers():
       worker_parameters['address'] = dict['address']
       worker_parameters['worker-id'] = dict['id']
       worker_parameters['status'] = dict['status']
-      worker_parameters['cycle'] = training_status['parameters']['cycle'] + 1
+      worker_parameters['cycle'] = training_status['parameters']['cycle']
       worker_parameters['columns'] = columns
       
       payload = {

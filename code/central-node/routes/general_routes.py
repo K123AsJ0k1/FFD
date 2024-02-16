@@ -32,8 +32,8 @@ def start_model_training():
     status = initial_model_training()
     current_app.logger.warning(status)
     
-    #status = send_context_to_workers()
-    #current_app.logger.warning(status)
+    status = send_context_to_workers()
+    current_app.logger.warning(status)
     
     return 'Ok', 200
 
