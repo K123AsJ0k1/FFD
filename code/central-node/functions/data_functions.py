@@ -6,6 +6,7 @@ import torch
 import os
 import json
 import requests
+from collections import OrderedDict
 
 from sklearn.model_selection import train_test_split
 from torch.utils.data import TensorDataset
@@ -17,7 +18,6 @@ training status format:
       - cycle: int
       - global metrics: list
          - metrics: dict
-            - loss: int,
             - confusion list
             - recall: int
             - selectivity: int
@@ -26,40 +26,38 @@ training status format:
             - fall-out: int
             - balanced-accuracy: int 
             - accuracy: int
-   - workers: list
-      - worker: dict
-         - id: int 
-         - address: str
-         - status: str
-         - local metrics: list
-            - metrics: dict
-               - loss: int,
-               - confusion list
-               - recall: int
-               - selectivity: int
-               - precision: int
-               - miss-rate: int
-               - fall-out: int
-               - balanced-accuracy: int 
-               - accuracy: int
+   - workers: dict
+        - id: dict
+            - address: str
+            - status: str
+                - local metrics: list
+                    - metrics: dict
+                        - confusion list
+                        - recall: int
+                        - selectivity: int
+                        - precision: int
+                        - miss-rate: int
+                        - fall-out: int
+                        - balanced-accuracy: int 
+                        - accuracy: int
 '''
-# Created
+# Created and works
 def initilize_training_status():
-   training_status_path = 'logs/training_status.txt'
-   if os.path.exists(training_status_path):
-      return False
+    training_status_path = 'logs/training_status.txt'
+    if os.path.exists(training_status_path):
+        return False
    
-   training_status = {
-      'parameters': {
-         'cycle': 0,
-         'global-metrics': []
-      },
-      'workers': []
-   }
+    training_status = {
+        'parameters': {
+            'cycle': 0,
+            'global-metrics': []
+        },
+        'workers': {}
+    }
    
-   with open(training_status_path, 'w') as f:
-      json.dump(training_status, f, indent=4) 
-   return True
+    with open(training_status_path, 'w') as f:
+        json.dump(training_status, f, indent=4) 
+    return True
 # Works
 def central_worker_data_split() -> bool:
     central_pool_path = 'data/central_pool.csv'
@@ -169,7 +167,7 @@ def split_data_between_workers(
     data_list = []
     index = 1
     for assigned_df in worker_dfs:
-        assigned_df.to_csv('data/Worker_' + str(index) + '.csv', index = False)
+        assigned_df.to_csv('data/worker_' + str(index) + '.csv', index = False)
         data_list.append(assigned_df.values.tolist())
         index = index + 1
 
@@ -178,57 +176,75 @@ def split_data_between_workers(
 def store_global_metrics(
    metrics: any
 ) -> bool:
-   training_status_path = 'logs/training_status.txt'
-   if not os.path.exists(training_status_path):
+    training_status_path = 'logs/training_status.txt'
+    if not os.path.exists(training_status_path):
         return False
-   training_status = None
-   with open(training_status_path, 'r') as f:
+    training_status = None
+    with open(training_status_path, 'r') as f:
         training_status = json.load(f)
-   training_status['parameters']['global-metrics'].append(metrics)
-   with open(training_status_path, 'w') as f:
+    training_status['parameters']['global-metrics'].append(metrics)
+    with open(training_status_path, 'w') as f:
         json.dump(training_status, f, indent=4) 
-   return True
+    return True
 # refactored and works
 def store_worker_status(
+    worker_id: int,
     worker_ip: str,
     worker_status: str
-) -> bool:
-   training_status_path = 'logs/training_status.txt'
+) -> any:
+    training_status_path = 'logs/training_status.txt'
    
-   training_status = None
-   if not os.path.exists(training_status_path):
+    training_status = None
+    if not os.path.exists(training_status_path):
         return False
-   
-   with open(training_status_path, 'r') as f:
+    
+    with open(training_status_path, 'r') as f:
         training_status = json.load(f)
-   
-   current_worker_index = 0
-   highest_worker_id = 0
-   new_ip = True
-   index = 0
-   for dict in training_status['workers']:
-        if worker_ip == dict['address']:
-            new_ip = False
-            current_worker_index = current_worker_index + 1
-            break
-        if highest_worker_id < dict['id']:
-            highest_worker_id = dict['id']
-        index = index + 1
-   
-   if new_ip:
-        training_status['workers'].append({
-            'id': highest_worker_id + 1,
+
+    if worker_id == -1:
+        duplicate_id = -1
+        used_keys = []
+        
+        for worker_key in training_status['workers'].keys():
+            worker_metadata = training_status['workers'][worker_key]
+            if worker_metadata['address'] == worker_ip:
+                duplicate_id = worker_key
+            used_keys.append(worker_key)
+            
+        set_of_used_keys = set(used_keys)
+        smallest_missing_id = 0
+        while smallest_missing_id in set_of_used_keys:
+            smallest_missing_id += 1
+        
+        local_metrics = {}
+        if -1 < duplicate_id:
+            local_metrics = training_status['workers'][duplicate_id]['local-metrics']
+            del training_status['workers'][duplicate_id]
+
+        training_status['workers'][smallest_missing_id] = {
             'address': worker_ip,
             'status': worker_status,
-            'local-metrics': {}
-        })
+            'local-metrics': local_metrics
+        }
         with open(training_status_path, 'w') as f:
-            json.dump(training_status, f, indent=4) 
-   else:
-        training_status['workers'][current_worker_index-1]['status'] = worker_status
-        with open(training_status_path, 'w') as f:
-            json.dump(training_status, f, indent=4) 
-   return True
+            json.dump(training_status, f, indent=4)
+        
+        return smallest_missing_id, 'registered'
+    else:
+        worker_metadata = training_status['workers'][worker_id]
+        if worker_metadata['address'] == worker_ip:
+            # When worker is already registered and address has stayed the same
+            training_status['workers'][worker_id]['status'] = worker_status
+            with open(training_status_path, 'w') as f:
+                json.dump(training_status, f, indent=4)
+            return worker_id, 'checked'
+        else:
+            # When worker id has stayed the same, but address has changed due to load balancing
+            training_status['workers'][worker_id]['status'] = worker_status
+            training_status['workers'][worker_id]['address'] = worker_ip
+            with open(training_status_path, 'w') as f:
+                json.dump(training_status, f, indent=4)
+            return worker_id, 'rerouted'
 # Works
 def store_update(
     worker_id: str,
@@ -236,7 +252,7 @@ def store_update(
     cycle: int,
     train_size: int
 ) -> bool:
-    training_status_path = 'logs/training_status.txt' # refactor
+    training_status_path = 'logs/training_status.txt'
    
     training_status = None
     if not os.path.exists(training_status_path):

@@ -8,7 +8,7 @@ import numpy
 
 from torch.utils.data import DataLoader
 
-from functions.data_functions import *
+from functions.data_functions import * 
 
 class FederatedLogisticRegression(nn.Module):
     def __init__(self, dim, bias=True):
