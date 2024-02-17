@@ -11,25 +11,30 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data import TensorDataset
 
 from collections import OrderedDict
+
 '''
-- metrics: list
-    - model: dict
-        - metrics: dict
-            - loss: int,
-            - confusion list
-            - recall: int
-            - selectivity: int
-            - precision: int
-            - miss-rate: int
-            - fall-out: int
-            - balanced-accuracy: int 
-            - accuracy: int
+- workers: dict
+    - id: dict
+        - address: str
+        - status: str
+            - local metrics: list
+                - metrics: dict
+                    - confusion list
+                    - recall: int
+                    - selectivity: int
+                    - precision: int
+                    - miss-rate: int
+                    - fall-out: int
+                    - balanced-accuracy: int 
+                    - accuracy: int
 '''
 # Refactored
 def send_status_to_central(logger, central_address):
-    #logger.warning('Register worker')
+    # Refactor to enable id cross checking
+    print(os.environ.get('ID'))
     payload = {
-        'status': os.environ.get('STATUS')
+        'status': os.environ.get('STATUS'),
+        'id': int(os.environ.get('ID'))
     }
     json_payload = json.dumps(payload) 
     address = central_address + '/status'
@@ -42,10 +47,10 @@ def send_status_to_central(logger, central_address):
                'Accept':'application/json'
             }
         )
-        logger.warning(response.status_code)
+        given_data = json.loads(response.text)
+        os.environ['ID'] = str(given_data['id'])
     except Exception as e:
-        logger.error('Registration error')
-        logger.error(e) 
+        logger.error('Status sending error:', e) 
 # Refactored
 def store_training_context(
     global_parameters: any,
