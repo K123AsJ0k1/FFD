@@ -193,7 +193,7 @@ def store_worker_status(
     worker_status: str
 ) -> any:
     training_status_path = 'logs/training_status.txt'
-   
+    #print(type(worker_id))
     training_status = None
     if not os.path.exists(training_status_path):
         return False
@@ -208,8 +208,8 @@ def store_worker_status(
         for worker_key in training_status['workers'].keys():
             worker_metadata = training_status['workers'][worker_key]
             if worker_metadata['address'] == worker_ip:
-                duplicate_id = worker_key
-            used_keys.append(worker_key)
+                duplicate_id = int(worker_key)
+            used_keys.append(int(worker_key))
             
         set_of_used_keys = set(used_keys)
         smallest_missing_id = 0
@@ -218,10 +218,10 @@ def store_worker_status(
         
         local_metrics = {}
         if -1 < duplicate_id:
-            local_metrics = training_status['workers'][duplicate_id]['local-metrics']
-            del training_status['workers'][duplicate_id]
+            local_metrics = training_status['workers'][str(duplicate_id)]['local-metrics']
+            del training_status['workers'][str(duplicate_id)]
 
-        training_status['workers'][smallest_missing_id] = {
+        training_status['workers'][str(smallest_missing_id)] = {
             'address': worker_ip,
             'status': worker_status,
             'local-metrics': local_metrics
@@ -231,17 +231,17 @@ def store_worker_status(
         
         return smallest_missing_id, 'registered'
     else:
-        worker_metadata = training_status['workers'][worker_id]
+        worker_metadata = training_status['workers'][str(worker_id)]
         if worker_metadata['address'] == worker_ip:
             # When worker is already registered and address has stayed the same
-            training_status['workers'][worker_id]['status'] = worker_status
+            training_status['workers'][str(worker_id)]['status'] = worker_status
             with open(training_status_path, 'w') as f:
                 json.dump(training_status, f, indent=4)
             return worker_id, 'checked'
         else:
             # When worker id has stayed the same, but address has changed due to load balancing
-            training_status['workers'][worker_id]['status'] = worker_status
-            training_status['workers'][worker_id]['address'] = worker_ip
+            training_status['workers'][str(worker_id)]['status'] = worker_status
+            training_status['workers'][str(worker_id)]['address'] = worker_ip
             with open(training_status_path, 'w') as f:
                 json.dump(training_status, f, indent=4)
             return worker_id, 'rerouted'

@@ -309,10 +309,3 @@ def evalute_global_model():
     )
 
     return True
-    
-
-
-
-    
-            
-

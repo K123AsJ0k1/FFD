@@ -16,14 +16,15 @@ def worker_status():
     sent_payload = json.loads(request.json)
 
     sent_worker_status = sent_payload['status']
-    sent_worker_id = sent_payload['id']
+    sent_worker_id = int(sent_payload['id'])
 
-    store_worker_status(
+    set_worker_id, set_message = store_worker_status(
         worker_id = sent_worker_id,
         worker_ip = received_worker_ip,
         worker_status = sent_worker_status
     )
-    return 'Ok', 200  
+
+    return jsonify({'id': set_worker_id, 'message': set_message})  
 
 @general.route('/start', methods=["POST"])
 def start_model_training():
