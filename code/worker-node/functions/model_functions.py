@@ -194,7 +194,7 @@ def local_model_training(
 
     worker_status['trained'] = True
     with open(worker_status_path, 'w') as f:
-        json.dump(worker_status, f)
+        json.dump(worker_status, f, indent=4)
 
     os.environ['STATUS'] = 'trained'
 

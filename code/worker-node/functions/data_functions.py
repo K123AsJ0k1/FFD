@@ -79,7 +79,7 @@ def preprocess_into_train_and_test_tensors(
 
     worker_status['preprocessed'] = True
     with open(worker_status_path, 'w') as f:
-        json.dump(worker_status, f)
+        json.dump(worker_status, f, indent=4)
 
     os.environ['STATUS'] = 'preprocessed'
 

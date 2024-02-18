@@ -43,7 +43,7 @@ def initilize_worker_status():
         'stored': False,
         'preprocessed': False,
         'trained': False,
-        'updating': False,
+        'updated': False,
         'columns': None,
         'train-test-ratio': 0,
         'cycle': 0,
@@ -51,7 +51,9 @@ def initilize_worker_status():
     }
    
     with open(worker_status_path, 'w') as f:
-        json.dump(worker_status, f, indent=4) 
+        json.dump(worker_status, f, indent=4)
+
+    os.environ['STATUS'] = 'waiting' 
     return True
 # Refactored
 def store_training_context(
@@ -67,8 +69,8 @@ def store_training_context(
     worker_status = None
     with open(worker_status_path, 'r') as f:
         worker_status = json.load(f)
-
-    if not worker_status['id'] == worker_parameters['id']:
+    
+    if not worker_status['id'] == int(worker_parameters['id']):
         return 'wrong id'
     
     if worker_status['stored'] and not worker_status['updated']:
@@ -81,7 +83,7 @@ def store_training_context(
     
     global_parameters_path = 'logs/global_parameters.txt'
     with open(global_parameters_path, 'w') as f:
-        json.dump(global_parameters, f)
+        json.dump(global_parameters, f, indent=4)
     
     os.environ['STATUS'] = 'storing'
     
@@ -103,7 +105,7 @@ def store_training_context(
 
     worker_status['stored'] = True
     with open(worker_status_path, 'w') as f:
-        json.dump(worker_status, f)
+        json.dump(worker_status, f, indent=4)
 
     os.environ['STATUS'] = 'stored'
 

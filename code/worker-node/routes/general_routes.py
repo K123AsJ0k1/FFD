@@ -25,5 +25,6 @@ def set_training_context():
         global_model = sent_model,
         worker_data = sent_worker_data
     )
+    current_app.logger.warning('Local context:' + status)
 
     return 'Ok', 200

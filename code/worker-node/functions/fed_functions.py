@@ -73,7 +73,7 @@ def send_update(
     train_tensor = torch.load('tensors/train.pt')
     
     payload = {
-        'worker-id': worker_status['worker-id'],
+        'worker-id': str(worker_status['id']),
         'local-model': formatted_local_model,
         'cycle': worker_status['cycle'],
         'train-size': len(train_tensor)
@@ -93,10 +93,13 @@ def send_update(
         if response.status_code == 200:
             worker_status['updated'] = True
             with open(worker_status_path, 'w') as f:
-                json.dump(worker_status, f)
+                json.dump(worker_status, f, indent=4)
             os.environ['STATUS'] = 'updated'
+            return True
+        return False
     except Exception as e:
         logger.error('Status sending error:' + str(e))
+        return False
 # Created
 def worker_federated_pipeline(
     task_logger: any,
