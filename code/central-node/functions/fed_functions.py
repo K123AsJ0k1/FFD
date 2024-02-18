@@ -141,7 +141,8 @@ def model_fed_avg(
     return updated_global_model
 # Refactored
 def update_global_model(
-    logger: any
+    logger: any,
+    central_parameters: any
 ) -> bool:
     training_status_path = 'logs/training_status.txt'
     if not os.path.exists(training_status_path):
@@ -154,8 +155,7 @@ def update_global_model(
     if training_status['parameters']['updated']:
         return True
 
-    GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
-    if training_status['parameters']['worker-updates'] < GLOBAL_PARAMETERS['min-update-amount']:
+    if training_status['parameters']['worker-updates'] < central_parameters['min-update-amount']:
         return False
     
     update_model_path = 'models/global_model_' + str(training_status['parameters']['cycle']) + '.pth'
@@ -190,7 +190,8 @@ def update_global_model(
     return True
 # Refactored
 def evalute_global_model(
-    logger: any
+    logger: any,
+    global_parameters: any
 ):
     training_status_path = 'logs/training_status.txt'
     if not os.path.exists(training_status_path):
@@ -206,14 +207,12 @@ def evalute_global_model(
     if not training_status['parameters']['updated']:
         return False
     
-    GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
-    
     global_model_path = 'models/global_model_' + str(training_status['parameters']['cycle']) + '.pth'
     eval_tensor_path = 'tensors/evaluation.pt'
 
     given_parameters = torch.load(global_model_path)
     
-    lr_model = FederatedLogisticRegression(dim = GLOBAL_PARAMETERS['input-size'])
+    lr_model = FederatedLogisticRegression(dim = global_parameters['input-size'])
     lr_model.apply_parameters(lr_model, given_parameters)
 
     eval_tensor = torch.load(eval_tensor_path)
@@ -235,13 +234,19 @@ def evalute_global_model(
     return True
 # Created
 def central_federated_pipeline(
-    logger: any
+    task_logger: any,
+    task_global_parameters: any,
+    task_central_parameters: any
 ): 
+    status = initilize_training_status()
+    task_logger.warning('Logging creation:' + str(status))
     status = update_global_model(
-        logger = logger
+        logger = task_logger,
+        central_parameters = task_central_parameters
     )
-    logger.warning('Global update:' + str(status))
+    task_logger.warning('Global update:' + str(status))
     status = evalute_global_model(
-        logger = logger
+        logger = task_logger,
+        global_parameters = task_global_parameters
     )
-    logger.warning('Global evaluation:' + str(status))
+    task_logger.warning('Global evaluation:' + str(status))

@@ -82,7 +82,7 @@ def store_worker_status(
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
 
-    if worker_id == -1:
+    if worker_id == None:
         duplicate_id = -1
         used_keys = []
         

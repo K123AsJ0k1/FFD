@@ -16,7 +16,7 @@ def worker_status():
     sent_payload = json.loads(request.json)
 
     sent_worker_status = sent_payload['status']
-    sent_worker_id = int(sent_payload['id'])
+    sent_worker_id = sent_payload['id']
 
     set_worker_id, set_message = store_worker_status(
         worker_id = sent_worker_id,
