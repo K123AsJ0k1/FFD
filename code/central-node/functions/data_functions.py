@@ -109,6 +109,11 @@ def store_worker_status(
         training_status['workers'][str(smallest_missing_id)] = {
             'address': worker_ip,
             'status': worker_status,
+            'stored': False,
+            'preprocessed': False,
+            'training': False,
+            'updated': False,
+            'cycle': 0,
             'local-metrics': local_metrics
         }
         with open(training_status_path, 'w') as f:
@@ -343,6 +348,7 @@ def send_context_to_workers(
         return False
 
     GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
+    WORKER_PARAMETERS = current_app.config['WORKER_PARAMETERS']
    
     global_model_path = 'models/global_model_' + str(training_status['parameters']['cycle']) + '.pth'
     if not os.path.exists(global_model_path):
@@ -375,9 +381,9 @@ def send_context_to_workers(
         sent_worker_parameters = {
             'id': worker_metadata['id'],
             'address': worker_metadata['address'],
-            'status': worker_metadata['status'],
             'columns': columns,
-            'cycle': training_status['parameters']['cycle']
+            'cycle': training_status['parameters']['cycle'],
+            'train-test-ratio': WORKER_PARAMETERS['train-test-ratio']
         }
         
         payload = {
@@ -388,7 +394,6 @@ def send_context_to_workers(
         }
 
         json_payload = json.dumps(payload) 
-
         try:
             response = requests.post(
                 url = worker_url, 
@@ -403,7 +408,8 @@ def send_context_to_workers(
                 'response':response.status_code
             }
         except Exception as e:
-            current_app.logger.error('Context sending error' + e)
+            logger.error('Context sending error' + e)
+    
     successes = 0
     for worker_key in payload_status.keys():
         worker_data = payload_status[worker_key]
