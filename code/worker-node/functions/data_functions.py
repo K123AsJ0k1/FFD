@@ -13,31 +13,66 @@ from torch.utils.data import TensorDataset
 from collections import OrderedDict
 
 '''
-- workers: dict
+worker status format:
+- status dict
     - id: dict
-        - address: str
-        - status: str
-            - local metrics: list
-                - metrics: dict
-                    - confusion list
-                    - recall: int
-                    - selectivity: int
-                    - precision: int
-                    - miss-rate: int
-                    - fall-out: int
-                    - balanced-accuracy: int 
-                    - accuracy: int
+    - address: str
+    - stored: str
+    - preprocessed: bool
+    - training: bool
+    - updating: bool
+    - columns: list
+    - train-test-ratio: float
+    - cycle: int
+    - local metrics: list
+        - metrics: dict
+            - confusion list
+            - recall: int
+            - selectivity: int
+            - precision: int
+            - miss-rate: int
+            - fall-out: int
+            - balanced-accuracy: int 
+            - accuracy: int
 '''
+# Created
+def initilize_worker_status():
+    worker_status_path = 'logs/worker_status.txt'
+    if os.path.exists(worker_status_path):
+        return False
+   
+    os.environ['STATUS'] = 'initilizing'
+    worker_status = {
+        'id': None,
+        'address': None,
+        'stored': False,
+        'preprocessed': False,
+        'trained': False,
+        'updating': False,
+        'columns': None,
+        'train-test-ratio': 0,
+        'cycle': 0,
+        'local-metrics': []
+    }
+   
+    with open(worker_status_path, 'w') as f:
+        json.dump(worker_status, f, indent=4) 
+    return True
 # Refactored and works
 def send_status_to_central(
     logger: any, 
     central_address: str
-):
-    payload = {
-        'status': os.environ.get('STATUS'),
-        'id': int(os.environ.get('ID'))
-    }
-    json_payload = json.dumps(payload) 
+) -> bool:
+    worker_status_path = 'logs/worker_status.txt'
+    if not os.path.exists(worker_status_path):
+        return False
+
+    worker_status = None
+    with open(worker_status_path, 'r') as f:
+        worker_status = json.load(f)
+
+    worker_status['status'] = os.environ.get('STATUS')
+    json_payload = json.dumps(worker_status) 
     address = central_address + '/status'
     try:
         response = requests.post(
@@ -49,30 +84,39 @@ def send_status_to_central(
             }
         )
         given_data = json.loads(response.text)
-        os.environ['ID'] = str(given_data['id'])
+        worker_status['id'] = given_data['id']
+        with open(worker_status_path, 'w') as f:
+            json.dump(worker_status, f, indent=4) 
+        return True
     except Exception as e:
         logger.error('Status sending error:', e) 
+        return False
 # Refactored
 def store_training_context(
     global_parameters: any,
     worker_parameters: any,
     global_model: any,
     worker_data: any
-) -> bool:
-    if not os.environ.get('ID') == worker_parameters['id']:
-        return 'wrong id'
-    worker_parameters_path = 'logs/worker_parameters.txt'
+) -> any:
+    worker_status_path = 'logs/worker_status.txt'
+    if not os.path.exists(worker_status_path):
+        return 'missing initilization'
     
-    if os.path.exists(worker_parameters_path):
-        WORKER_PARAMETERS = None
-        with open(worker_parameters_path, 'r') as f:
-            WORKER_PARAMETERS = json.load(f)
-        if not WORKER_PARAMETERS['updated']:
-            return os.environ.get('STATUS')
-        
-    with open(worker_parameters_path, 'w') as f:
-        json.dump(worker_parameters, f)
+    worker_status = None
+    with open(worker_status_path, 'r') as f:
+        worker_status = json.load(f)
 
+    if not worker_status['id'] == worker_parameters['id']:
+        return 'wrong id'
+    
+    if not worker_status['updated']:
+        return 'ongoing jobs'
+    
+    worker_status['address'] = worker_parameters['address']
+    worker_status['columns'] = worker_parameters['columns']
+    worker_status['train-test-ratio'] = worker_parameters['train-test-ratio']
+    worker_status['cycle'] = worker_parameters['cycle']
+    
     global_parameters_path = 'logs/global_parameters.txt'
     with open(global_parameters_path, 'w') as f:
         json.dump(global_parameters, f)
@@ -95,22 +139,27 @@ def store_training_context(
     worker_df = pd.DataFrame(worker_data)
     worker_df.to_csv(worker_data_path, index = False)
 
-    WORKER_PARAMETERS['stored'] = True
-    with open(worker_parameters_path, 'w') as f:
-        json.dump(WORKER_PARAMETERS, f)
+    worker_status['stored'] = True
+    with open(worker_status_path, 'w') as f:
+        json.dump(worker_status, f)
 
-    return True
+    os.environ['STATUS'] = 'stored'
+
+    return 'stored'
 # Refactored
 def preprocess_into_train_and_test_tensors() -> bool:
-    worker_parameters_path = 'logs/worker_parameters.txt'
-    WORKER_PARAMETERS = None
-    with open(worker_parameters_path, 'r') as f:
-        WORKER_PARAMETERS = json.load(f)
-    
-    if WORKER_PARAMETERS['preprocessed']:
+    worker_status_path = 'logs/worker_status.txt'
+    if not os.path.exists(worker_status_path):
         return False
     
-    worker_data_path = 'data/used_data_' + str(WORKER_PARAMETERS['cycle']) + '.csv'
+    worker_status = None
+    with open(worker_status_path, 'r') as f:
+        worker_status = json.load(f)
+
+    if worker_status['preprocessed']:
+        return False
+    
+    worker_data_path = 'data/used_data_' + str(worker_status['cycle']) + '.csv'
     if not os.path.exists(worker_data_path):
        return False
     
@@ -125,7 +174,7 @@ def preprocess_into_train_and_test_tensors() -> bool:
         GLOBAL_PARAMETERS = json.load(f) 
 
     preprocessed_df = pd.read_csv(worker_data_path)
-    preprocessed_df.columns = WORKER_PARAMETERS['columns']
+    preprocessed_df.columns = worker_status['columns']
     preprocessed_df = preprocessed_df[GLOBAL_PARAMETERS['used-columns']]
     for column in GLOBAL_PARAMETERS['scaled-columns']:
         mean = preprocessed_df[column].mean()
@@ -138,7 +187,7 @@ def preprocess_into_train_and_test_tensors() -> bool:
     X_train, X_test, y_train, y_test = train_test_split(
         X, 
         y, 
-        train_size = WORKER_PARAMETERS['train-test-ratio'], 
+        train_size = worker_status['train-test-ratio'], 
         random_state = GLOBAL_PARAMETERS['seed']
     )
 
@@ -160,22 +209,24 @@ def preprocess_into_train_and_test_tensors() -> bool:
     torch.save(train_tensor,train_tensor_path)
     torch.save(test_tensor,test_tensor_path)
 
-    WORKER_PARAMETERS['preprocessed'] = True
-    with open(worker_parameters_path, 'w') as f:
-        json.dump(WORKER_PARAMETERS, f)
+    worker_status['preprocessed'] = True
+    with open(worker_status_path, 'w') as f:
+        json.dump(worker_status, f)
+
+    os.environ['STATUS'] = 'preprocessed'
 
     return True
-# Created
+# Refactored
 def store_local_metrics(
    metrics: any
 ) -> bool:
-   training_metrics_path = 'logs/training_metrics.txt'
-   if not os.path.exists(training_metrics_path):
-      return False
-   training_metrics = None
-   with open(training_metrics_path, 'r') as f:
-      training_status = json.load(f)
-   training_metrics.append(metrics)
-   with open(training_metrics, 'w') as f:
-      json.dump(training_status, f, indent=4) 
-   return True
+    worker_status_path = 'logs/worker_status.txt'
+    if not os.path.exists(worker_status_path):
+        return False
+    worker_status = None
+    with open(worker_status_path, 'r') as f:
+        worker_status = json.load(f)
+    worker_status['local-metrics'].append(metrics)
+    with open(worker_status_path, 'w') as f:
+        json.dump(worker_status, f, indent=4) 
+    return True
