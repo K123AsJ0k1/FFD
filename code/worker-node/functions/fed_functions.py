@@ -40,7 +40,7 @@ def send_status_to_central(
             json.dump(worker_status, f, indent=4) 
         return True
     except Exception as e:
-        logger.error('Status sending error:', e) 
+        logger.error('Status sending error:' +  str(e)) 
         return False
 # Created    
 def send_update(
@@ -96,22 +96,24 @@ def send_update(
                 json.dump(worker_status, f)
             os.environ['STATUS'] = 'updated'
     except Exception as e:
-        logger.error('Status sending error:', e)
+        logger.error('Status sending error:' + str(e))
 # Created
 def worker_federated_pipeline(
     task_logger: any,
     task_central_address: str
 ):
+    status = initilize_worker_status()
+    task_logger.warning('Logging creation:' + str(status))
     status = preprocess_into_train_and_test_tensors(
         logger = task_logger
     )
-    task_logger.warning('Preprocessing:' + str(status))
+    task_logger.warning('Local preprocessing:' + str(status))
     status = local_model_training(
         logger = task_logger
     )
-    task_logger.warning('Training:' + str(status))
+    task_logger.warning('Local training:' + str(status))
     status = send_update(
         logger = task_logger,
         central_address = task_central_address
     )
-    task_logger.warning('Updating:' + str(status))
+    task_logger.warning('Local updating:' + str(status))
