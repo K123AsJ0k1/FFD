@@ -10,7 +10,9 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data import TensorDataset
 
 # Refactored
-def preprocess_into_train_and_test_tensors() -> bool:
+def preprocess_into_train_and_test_tensors(
+    logger: any
+) -> bool:
     worker_status_path = 'logs/worker_status.txt'
     if not os.path.exists(worker_status_path):
         return False

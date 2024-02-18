@@ -136,7 +136,9 @@ def test(
         
         return metrics
 # Refactored
-def local_model_training() -> any:
+def local_model_training(
+    logger: any
+) -> any:
     worker_status_path = 'logs/worker_status.txt'
     if not os.path.exists(worker_status_path):
         return False

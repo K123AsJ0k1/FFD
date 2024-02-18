@@ -9,11 +9,7 @@ general = Blueprint('general', __name__)
 @general.route('/demo', methods=["GET"]) 
 def demo():
     return 'Ok', 200
-
-@general.route('/status', methods=["GET"]) 
-def worker_status():
-    return 'Ok', 200
-
+# Need st obe refactored
 @general.route('/context', methods=["POST"]) 
 def set_training_context():
     sent_payload = json.loads(request.json)
@@ -29,6 +25,5 @@ def set_training_context():
         global_model = sent_model,
         worker_data = sent_worker_data
     )
-    status = preprocess_into_train_and_test_tensors()
 
     return 'Ok', 200

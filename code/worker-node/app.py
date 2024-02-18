@@ -23,7 +23,7 @@ def create_app():
     
     scheduler = BackgroundScheduler(daemon = True)
     from functions.data_functions import send_status_to_central
-    from functions.model_functions import send_update
+    from functions.fed_functions import worker_federated_pipeline
     send_update_args = [app.logger,app.config['CENTRAL_ADDRESS']]
     scheduler.add_job(
         func = send_status_to_central,
@@ -32,9 +32,9 @@ def create_app():
         args = send_update_args
     )
     scheduler.add_job(
-        func = send_update,
+        func = worker_federated_pipeline,
         trigger = "interval",
-        seconds = 5,
+        seconds = 30,
         args = send_update_args
     )
     scheduler.start()

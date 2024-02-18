@@ -98,8 +98,20 @@ def send_update(
     except Exception as e:
         logger.error('Status sending error:', e)
 # Created
-def run_training_pipeline(
-    logger: any
+def worker_federated_pipeline(
+    task_logger: any,
+    task_central_address: str
 ):
-    status = preprocess_into_train_and_test_tensors()
-    status = local_model_training()
+    status = preprocess_into_train_and_test_tensors(
+        logger = task_logger
+    )
+    task_logger.warning('Preprocessing:' + str(status))
+    status = local_model_training(
+        logger = task_logger
+    )
+    task_logger.warning('Training:' + str(status))
+    status = send_update(
+        logger = task_logger,
+        central_address = task_central_address
+    )
+    task_logger.warning('Updating:' + str(status))
