@@ -25,14 +25,23 @@ def create_app():
     scheduler = BackgroundScheduler(daemon = True)
     from functions.fed_functions import send_context_to_workers
     from functions.fed_functions import central_federated_pipeline
-    given_args = [app.logger]
+    given_args = [
+        app.logger, 
+        app.config['GLOBAL_PARAMETERS'], 
+        app.config['CENTRAL_PARAMETERS'], 
+        app.config['WORKER_PARAMETERS']
+    ]
     scheduler.add_job(
         func = send_context_to_workers,
         trigger = "interval",
         seconds = 10,
         args = given_args 
     )
-    given_args = [app.logger, app.config['GLOBAL_PARAMETERS'], app.config['CENTRAL_PARAMETERS']]
+    given_args = [
+        app.logger, 
+        app.config['GLOBAL_PARAMETERS'], 
+        app.config['CENTRAL_PARAMETERS']
+    ]
     scheduler.add_job(
         func = central_federated_pipeline,
         trigger = "interval",

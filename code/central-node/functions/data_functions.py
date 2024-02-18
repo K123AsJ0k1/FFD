@@ -125,7 +125,7 @@ def preprocess_into_train_test_and_evaluate_tensors() -> bool:
     return True
 # Refactored
 def split_data_between_workers(
-    workers: any
+    logger: any
 ) -> bool:
     training_status_path = 'logs/training_status.txt'
     training_status = None
@@ -146,8 +146,8 @@ def split_data_between_workers(
     worker_pool_df = pd.read_csv(worker_pool_path)
 
     available_workers = []
-    for worker_key in workers.keys():
-        worker_metadata = workers[worker_key]
+    for worker_key in training_status['workers'].keys():
+        worker_metadata = training_status['workers'][worker_key]
         if worker_metadata['status'] == 'waiting':
             available_workers.append(worker_key)
 

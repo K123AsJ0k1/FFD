@@ -165,17 +165,13 @@ def store_update(
         return False
 
     model_path = 'models/worker_' + str(worker_id) + '_' + str(cycle) + '_' + str(train_size) + '.pth'
-    if os.path.exists(model_path):
-        return False
-    
     torch.save(local_model, model_path)
+    # Fix the inconsistent string worker id
+    for worker_key in training_status['workers'].keys():
+        if worker_key == str(worker_id):
+            training_status['workers'][worker_key]['status'] = 'complete'
 
-    index = 0
-    for worker in training_status['workers']:
-        if worker['id'] == worker_id:
-            training_status['workers'][index]['status'] = 'complete'
-
-    training_status['parameters']['updates'] = training_status['parameters']['updates'] + 1
+    training_status['parameters']['worker-updates'] = training_status['parameters']['worker-updates'] + 1
     with open(training_status_path, 'w') as f:
         json.dump(training_status, f, indent=4) 
 

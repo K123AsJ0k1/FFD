@@ -28,17 +28,14 @@ def worker_status():
 # Refactored
 @general.route('/start', methods=["POST"])
 def start_model_training():
-    status = initilize_training_status()
-    current_app.logger.warning(status)
-    
     status = central_worker_data_split()
-    current_app.logger.warning(status)
+    current_app.logger.warning('Global data split:' + str(status))
     
     status = preprocess_into_train_test_and_evaluate_tensors()
-    current_app.logger.warning(status)
+    current_app.logger.warning('Global preprocessing:' + str(status))
     
     status = initial_model_training()
-    current_app.logger.warning(status)
+    current_app.logger.warning('Global training:' + str(status))
     
     return 'Ok', 200
 # Refactored

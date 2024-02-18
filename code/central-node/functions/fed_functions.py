@@ -13,7 +13,10 @@ from functions.model_functions import *
 
 # Refactored
 def send_context_to_workers(
-    logger: any
+    logger: any,
+    global_parameters: any,
+    central_parameters: any,
+    worker_parameter: any
 ) -> bool:
     training_status_path = 'logs/training_status.txt'
     if not os.path.exists(training_status_path):
@@ -29,14 +32,11 @@ def send_context_to_workers(
     if not training_status['parameters']['worker-split']:
         return False
 
-    if training_status['parameters']['received']:
+    if training_status['parameters']['sent']:
         return False
 
     os.environ['STATUS'] = 'sending'
     
-    GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
-    WORKER_PARAMETERS = current_app.config['WORKER_PARAMETERS']
-   
     global_model_path = 'models/global_model_' + str(training_status['parameters']['cycle']) + '.pth'
     global_model = torch.load(global_model_path)
     formatted_global_model = {
@@ -57,15 +57,15 @@ def send_context_to_workers(
         worker_url = 'http://' + worker_metadata['address'] + ':7500/context'
         
         sent_worker_parameters = {
-            'id': worker_metadata['id'],
+            'id': worker_key,
             'address': worker_metadata['address'],
             'columns': training_status['parameters']['columns'],
             'cycle': training_status['parameters']['cycle'],
-            'train-test-ratio': WORKER_PARAMETERS['train-test-ratio']
+            'train-test-ratio': worker_parameter['train-test-ratio']
         }
         
         payload = {
-            'global-parameters': GLOBAL_PARAMETERS,
+            'global-parameters': global_parameters,
             'worker-parameters': sent_worker_parameters,
             'global-model': formatted_global_model,
             'worker-data': worker_data
@@ -73,6 +73,7 @@ def send_context_to_workers(
 
         json_payload = json.dumps(payload) 
         try:
+
             response = requests.post(
                 url = worker_url, 
                 json = json_payload,
@@ -81,13 +82,13 @@ def send_context_to_workers(
                     'Accept':'application/json'
                 }
             )
-            # Refactor
+            
             payload_status[worker_key] = {
                 'address': worker_metadata['address'],
                 'response': response.status_code
             }
         except Exception as e:
-            logger.error('Context sending error' + e)
+            logger.error('Context sending error' + str(e))
 
     successes = 0
     for worker_key in payload_status.keys():
@@ -101,7 +102,7 @@ def send_context_to_workers(
             continue
         successes = successes + 1
     
-    if not GLOBAL_PARAMETERS['min-update-amount'] <= successes:
+    if not central_parameters['min-update-amount'] <= successes:
         return False
     
     training_status['parameters']['sent'] = True
@@ -111,7 +112,7 @@ def send_context_to_workers(
     os.environ['STATUS'] = 'waiting updates'
 
     return True
-# Refactored
+# needs to be fixed 
 def model_fed_avg(
     updates: any,
     total_sample_size: int    
@@ -152,8 +153,11 @@ def update_global_model(
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
 
+    if not training_status['parameters']['sent']:
+        return False
+
     if training_status['parameters']['updated']:
-        return True
+        return False
 
     if training_status['parameters']['worker-updates'] < central_parameters['min-update-amount']:
         return False
@@ -184,9 +188,7 @@ def update_global_model(
     )
 
     torch.save(new_global_model, update_model_path)
-    training_status['parameters']['cycle'] = training_status['parameters']['cycle'] + 1 
-    with open(training_status_path, 'w') as f:
-         json.dump(training_status, f, indent=4) 
+    training_status['parameters']['updated'] = True
     return True
 # Refactored
 def evalute_global_model(
@@ -211,6 +213,8 @@ def evalute_global_model(
     eval_tensor_path = 'tensors/evaluation.pt'
 
     given_parameters = torch.load(global_model_path)
+    # Fix tensors
+    print(given_parameters)
     
     lr_model = FederatedLogisticRegression(dim = global_parameters['input-size'])
     lr_model.apply_parameters(lr_model, given_parameters)
@@ -228,6 +232,7 @@ def evalute_global_model(
     )
 
     training_status['parameters']['evaluated'] = True  
+    training_status['parameters']['cycle'] = training_status['parameters']['cycle'] + 1 
     with open(training_status_path, 'w') as f:
          json.dump(training_status, f, indent=4) 
 
@@ -240,6 +245,10 @@ def central_federated_pipeline(
 ): 
     status = initilize_training_status()
     task_logger.warning('Logging creation:' + str(status))
+    status = split_data_between_workers(
+        logger = task_logger
+    )
+    task_logger.warning('Global splitting:' + str(status))
     status = update_global_model(
         logger = task_logger,
         central_parameters = task_central_parameters
