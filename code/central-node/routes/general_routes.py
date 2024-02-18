@@ -25,7 +25,7 @@ def worker_status():
     )
 
     return jsonify({'id': set_worker_id, 'message': set_message})  
-
+# Refactored
 @general.route('/start', methods=["POST"])
 def start_model_training():
     status = initilize_training_status()
@@ -44,7 +44,7 @@ def start_model_training():
     current_app.logger.warning(status)
     
     return 'Ok', 200
-
+# Refactored
 @general.route('/update', methods=["POST"]) 
 def worker_update(): 
     sent_payload = json.loads(request.json)

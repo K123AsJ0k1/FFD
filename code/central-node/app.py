@@ -1,6 +1,7 @@
 from flask import Flask
 from config import Config
 import logging
+import os
 
 def create_app():
     app = Flask(__name__)
@@ -16,6 +17,8 @@ def create_app():
     elif enviroment == 'PROD':
         app.logger.warning('Choosen enviroment is production')
         app.config.from_object('config.ProdConfig')
+
+    os.environ['STATUS'] = 'waiting'
 
     from routes.general_routes import general
     app.logger.warning('Routes imported')
