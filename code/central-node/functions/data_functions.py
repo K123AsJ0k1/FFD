@@ -56,12 +56,13 @@ def initilize_training_status():
 
     training_status = {
         'parameters': {
-            'pooling': False,
+            'data-splitting': False,
             'preprocess': False,
             'training': False,
-            'splitting': False,
+            'worker-splitting': False,
             'sending': False,
             'update': False,
+            'columns': None,
             'cycle': 0,
             'global-metrics': []
         },
@@ -156,7 +157,7 @@ def central_worker_data_split() -> bool:
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
 
-    if training_status['parameters']['splitting']:
+    if training_status['parameters']['data-splitting']:
         return False
     
     central_pool_path = 'data/central_pool.csv'
@@ -186,7 +187,7 @@ def central_worker_data_split() -> bool:
     central_data_pool.to_csv(central_pool_path, index = False)    
     worker_data_pool.to_csv(worker_pool_path, index = False)
     
-    training_status['parameters']['splitting'] = True
+    training_status['parameters']['data-splitting'] = True
     with open(training_status_path, 'w') as f:
         json.dump(training_status, f, indent=4) 
 
@@ -197,6 +198,9 @@ def preprocess_into_train_test_and_evaluate_tensors() -> bool:
     training_status = None
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
+
+    if not training_status['parameters']['data-splitting']:
+        return False
 
     if training_status['parameters']['preprocess']:
         return False
@@ -281,23 +285,26 @@ def preprocess_into_train_test_and_evaluate_tensors() -> bool:
 # Refactored
 def split_data_between_workers(
     workers: any
-) -> any:
+) -> bool:
     training_status_path = 'logs/training_status.txt'
     training_status = None
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
 
-    if training_status['parameters']['splitting']:
-        return None, None
+    if not training_status['parameters']['preprocessing']:
+        return False
+
+    if training_status['parameters']['worker-splitting']:
+        return False
 
     worker_pool_path = 'data/worker_pool.csv'
     training_status_path = 'logs/training_status.txt'
 
     if not os.path.exists(worker_pool_path):
-        return None, None
+        return False
     
     if not os.path.exists(training_status_path):
-        return None, None
+        return False
     
     training_status = None
     with open(training_status_path, 'r') as f:
@@ -314,24 +321,24 @@ def split_data_between_workers(
             available_workers.append(worker_key)
 
     if len(available_workers) == 0:
-        return None, None
+        return False
         
     worker_df = worker_pool_df.sample(frac = 1)
     worker_dfs = np.array_split(worker_df, len(available_workers))
     
-    data_list = {}
     index = 0
     for worker_key in available_workers:
         data_path = 'data/worker_' + worker_key + '_' + str(training_status['parameters']['cycle']) + '.csv'
         worker_dfs[index].to_csv(data_path, index = False)
-        data_list[worker_key] = worker_dfs[index].values.tolist()
         index = index + 1
 
-    training_status['parameters']['splitting'] = True
+    training_status['parameters']['worker-splitting'] = True
+    training_status['parameters']['columns'] = worker_pool_df.columns.tolist() 
+    
     with open(training_status_path, 'w') as f:
         json.dump(training_status, f, indent=4) 
 
-    return data_list, worker_pool_df.columns.tolist()     
+    return True    
 # Refactored
 def send_context_to_workers(
     logger: any
@@ -343,6 +350,12 @@ def send_context_to_workers(
     training_status = None
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
+
+    if not training_status['parameters']['training']:
+        return False
+    
+    if not training_status['parameters']['worker-splitting']:
+        return False
 
     if training_status['parameters']['sending']:
         return False
@@ -357,13 +370,6 @@ def send_context_to_workers(
     os.environ['STATUS'] = 'sending'
 
     global_model = torch.load(global_model_path)
-    data_list, columns = split_data_between_workers(
-        workers = training_status['workers']
-    )
-
-    if data_list == None:
-        return False
-   
     formatted_global_model = {
         'weights': global_model['linear.weight'].numpy().tolist(),
         'bias': global_model['linear.bias'].numpy().tolist()
@@ -375,13 +381,16 @@ def send_context_to_workers(
         
         if not worker_metadata['status'] == 'waiting':
             continue
-        
+
+        data_path = 'data/worker_' + worker_key + '_' + str(training_status['parameters']['cycle']) + '.csv'
+        worker_df = pd.read_csv(data_path)
+        worker_data = worker_df.values.tolist()
         worker_url = 'http://' + worker_metadata['address'] + ':7500/context'
         
         sent_worker_parameters = {
             'id': worker_metadata['id'],
             'address': worker_metadata['address'],
-            'columns': columns,
+            'columns': training_status['parameters']['columns'],
             'cycle': training_status['parameters']['cycle'],
             'train-test-ratio': WORKER_PARAMETERS['train-test-ratio']
         }
@@ -390,7 +399,7 @@ def send_context_to_workers(
             'global-parameters': GLOBAL_PARAMETERS,
             'worker-parameters': sent_worker_parameters,
             'global-model': formatted_global_model,
-            'worker-data': data_list[worker_metadata]
+            'worker-data': worker_data
         }
 
         json_payload = json.dumps(payload) 
@@ -443,10 +452,13 @@ def store_update(
    
     training_status = None
     if not os.path.exists(training_status_path):
-      return False
-    
+        return False
+ 
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
+
+    if not training_status['parameters']['sending']:
+        return False
 
     model_path = 'models/worker_' + str(worker_id) + '_' + str(cycle) + '_' + str(train_size) + '.pth'
     if os.path.exists(model_path):

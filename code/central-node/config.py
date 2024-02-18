@@ -24,14 +24,14 @@ class Config:
     }
 
     CENTRAL_PARAMETERS = {
-        'sample-pool': 3000000,
+        'sample-pool': 100000,
         'train-eval-ratio': 0.5,
         'train-test-ratio': 0.8,
         'min-update-amount': 1
     }
 
     WORKER_PARAMETERS = {
-        'sample-pool': 100000,
+        'sample-pool': 10000,
         'train-test-ratio': 0.8
     }
 

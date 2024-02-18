@@ -9,7 +9,7 @@ general = Blueprint('general', __name__)
 @general.route('/demo', methods=["GET"]) 
 def demo():
     return 'Ok', 200
-# Works
+# Refactored
 @general.route('/status', methods=["POST"])
 def worker_status():
     received_worker_ip = request.remote_addr
@@ -40,8 +40,8 @@ def start_model_training():
     status = initial_model_training()
     current_app.logger.warning(status)
     
-    status = send_context_to_workers()
-    current_app.logger.warning(status)
+    #status = send_context_to_workers()
+    #current_app.logger.warning(status)
     
     return 'Ok', 200
 # Refactored
@@ -62,7 +62,7 @@ def worker_update():
     )
     
     return 'Ok', 200
-
+# Need refactoring
 @general.route('/predict', methods=["POST"])
 def inference():
     sent_payload = json.loads(request.json)

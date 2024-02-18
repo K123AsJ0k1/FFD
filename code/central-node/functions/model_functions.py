@@ -9,7 +9,7 @@ import numpy
 from torch.utils.data import DataLoader
 
 from functions.data_functions import * 
-
+# Refactored
 class FederatedLogisticRegression(nn.Module):
     def __init__(self, dim, bias=True):
         super().__init__()
@@ -48,7 +48,7 @@ class FederatedLogisticRegression(nn.Module):
     @staticmethod
     def apply_parameters(model, parameters):
         model.load_state_dict(parameters)
-# Works
+# Refactored
 def get_train_test_loaders() -> any:
     GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
     
@@ -62,7 +62,7 @@ def get_train_test_loaders() -> any:
     )
     test_loader = DataLoader(test_tensor, 64)
     return train_loader,test_loader
-# Works
+# Refactored
 def train(
     model: any,
     train_loader: any
@@ -85,13 +85,12 @@ def train(
             optimizer.step()
             optimizer.zero_grad()
         print("Epoch {}, loss = {}".format(epoch + 1, torch.sum(loss) / len(train_loader)))
-# Works
+# Refactored
 def test(
     model: any, 
     test_loader: any
 ) -> any:
     with torch.no_grad():
-        #losses = []
         total_size = 0
         total_confusion_matrix = [0,0,0,0]
         
@@ -99,7 +98,6 @@ def test(
             total_size += len(batch[1])
             _, correct = batch
             _, preds = model.test_step(model, batch)
-            #losses.append(loss)
             
             formated_correct = correct.numpy()
             formated_preds = preds.numpy().astype(int)
@@ -115,8 +113,6 @@ def test(
             total_confusion_matrix[2] += int(tn) # True negative
             total_confusion_matrix[3] += int(fn) # False negative
  
-        #average_loss = np.array(loss).sum() / total_size
-        # 'loss': float(round(average_loss,5)),
         TP, FP, TN, FN = total_confusion_matrix
 
         TPR = TP/(TP+FN)
@@ -139,7 +135,7 @@ def test(
         }
         
         return metrics
-# Works
+# Need refactoring
 def model_inference(
     input: any
 ) -> any:
