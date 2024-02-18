@@ -95,7 +95,6 @@ def test(
     test_loader: any
 ) -> any:
     with torch.no_grad():
-        #losses = []
         total_size = 0
         total_confusion_matrix = [0,0,0,0]
         
@@ -103,7 +102,6 @@ def test(
             total_size += len(batch[1])
             _, correct = batch
             _, preds = model.test_step(model, batch)
-            #losses.append(loss)
             
             formated_correct = correct.numpy()
             formated_preds = preds.numpy().astype(int)
@@ -119,8 +117,6 @@ def test(
             total_confusion_matrix[2] += int(tn) # True negative
             total_confusion_matrix[3] += int(fn) # False negative
  
-        #average_loss = np.array(loss).sum() / total_size
-        # 'loss': float(round(average_loss,5)),
         TP, FP, TN, FN = total_confusion_matrix
 
         TPR = TP/(TP+FN)
@@ -151,6 +147,9 @@ def local_model_training() -> any:
     worker_status = None
     with open(worker_status_path, 'r') as f:
         worker_status = json.load(f)
+
+    if not worker_status['stored'] or not worker_status['preprocessed']:
+        return False
 
     if worker_status['trained']:
         return False
@@ -219,6 +218,9 @@ def send_update(
     worker_status = None
     with open(worker_status_path, 'r') as f:
         worker_status = json.load(f)
+
+    if not worker_status['stored'] or not worker_status['preprocessed'] or not worker_status['trained']:
+        return False
 
     if worker_status['updated']:
         return False

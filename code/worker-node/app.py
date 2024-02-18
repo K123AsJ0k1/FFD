@@ -20,7 +20,6 @@ def create_app():
         app.config.from_object('config.ProdConfig')
 
     os.environ['STATUS'] = 'waiting'
-    os.environ['ID'] = '-1'
     
     scheduler = BackgroundScheduler(daemon = True)
     from functions.data_functions import send_status_to_central

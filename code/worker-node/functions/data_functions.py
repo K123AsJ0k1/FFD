@@ -109,7 +109,7 @@ def store_training_context(
     if not worker_status['id'] == worker_parameters['id']:
         return 'wrong id'
     
-    if not worker_status['updated']:
+    if worker_status['stored'] and not worker_status['updated']:
         return 'ongoing jobs'
     
     worker_status['address'] = worker_parameters['address']
@@ -155,6 +155,9 @@ def preprocess_into_train_and_test_tensors() -> bool:
     worker_status = None
     with open(worker_status_path, 'r') as f:
         worker_status = json.load(f)
+
+    if not worker_status['stored']:
+        return False
 
     if worker_status['preprocessed']:
         return False
