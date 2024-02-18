@@ -28,10 +28,11 @@ from collections import OrderedDict
                     - balanced-accuracy: int 
                     - accuracy: int
 '''
-# Refactored
-def send_status_to_central(logger, central_address):
-    # Refactor to enable id cross checking
-    print(os.environ.get('ID'))
+# Refactored and works
+def send_status_to_central(
+    logger: any, 
+    central_address: str
+):
     payload = {
         'status': os.environ.get('STATUS'),
         'id': int(os.environ.get('ID'))
@@ -58,29 +59,28 @@ def store_training_context(
     global_model: any,
     worker_data: any
 ) -> bool:
-    global_parameters_path = 'logs/global_parameters.txt'
+    if not os.environ.get('ID') == worker_parameters['id']:
+        return 'wrong id'
     worker_parameters_path = 'logs/worker_parameters.txt'
-
-    if os.path.exists(global_parameters_path):
-       return False
     
-    with open(global_parameters_path, 'w') as f:
-        json.dump(global_parameters, f)
-
     if os.path.exists(worker_parameters_path):
-        return False
-    
+        WORKER_PARAMETERS = None
+        with open(worker_parameters_path, 'r') as f:
+            WORKER_PARAMETERS = json.load(f)
+        if not WORKER_PARAMETERS['updated']:
+            return os.environ.get('STATUS')
+        
     with open(worker_parameters_path, 'w') as f:
         json.dump(worker_parameters, f)
 
+    global_parameters_path = 'logs/global_parameters.txt'
+    with open(global_parameters_path, 'w') as f:
+        json.dump(global_parameters, f)
+    
+    os.environ['STATUS'] = 'storing'
+    
     global_model_path = 'models/global_model_' + str(worker_parameters['cycle']) + '.pth'
     worker_data_path = 'data/used_data_' + str(worker_parameters['cycle']) + '.csv'
-    
-    if os.path.exists(global_model_path):
-        return False
-
-    if os.path.exists(worker_data_path):
-       return False
     
     weights = global_model['weights']
     bias = global_model['bias']
@@ -94,33 +94,36 @@ def store_training_context(
        
     worker_df = pd.DataFrame(worker_data)
     worker_df.to_csv(worker_data_path, index = False)
-    return True
-# Works
-def preprocess_into_train_and_test_tensors() -> bool:
-    global_parameters_path = 'logs/global_parameters.txt'
-    worker_parameters_path = 'logs/worker_parameters.txt'
-    
-    if not os.path.exists(global_parameters_path) or not os.path.exists(worker_parameters_path):
-       return False
-    
-    GLOBAL_PARAMETERS = None
-    with open(global_parameters_path, 'r') as f:
-        GLOBAL_PARAMETERS = json.load(f) 
 
+    WORKER_PARAMETERS['stored'] = True
+    with open(worker_parameters_path, 'w') as f:
+        json.dump(WORKER_PARAMETERS, f)
+
+    return True
+# Refactored
+def preprocess_into_train_and_test_tensors() -> bool:
+    worker_parameters_path = 'logs/worker_parameters.txt'
     WORKER_PARAMETERS = None
     with open(worker_parameters_path, 'r') as f:
         WORKER_PARAMETERS = json.load(f)
+    
+    if WORKER_PARAMETERS['preprocessed']:
+        return False
     
     worker_data_path = 'data/used_data_' + str(WORKER_PARAMETERS['cycle']) + '.csv'
     if not os.path.exists(worker_data_path):
        return False
     
+    global_parameters_path = 'logs/global_parameters.txt'
     train_tensor_path = 'tensors/train.pt'
     test_tensor_path = 'tensors/test.pt'
     
-    if os.path.exists(train_tensor_path) or os.path.exists(test_tensor_path):
-        return False
+    os.environ['STATUS'] = 'preprocessing'
     
+    GLOBAL_PARAMETERS = None
+    with open(global_parameters_path, 'r') as f:
+        GLOBAL_PARAMETERS = json.load(f) 
+
     preprocessed_df = pd.read_csv(worker_data_path)
     preprocessed_df.columns = WORKER_PARAMETERS['columns']
     preprocessed_df = preprocessed_df[GLOBAL_PARAMETERS['used-columns']]
@@ -156,6 +159,11 @@ def preprocess_into_train_and_test_tensors() -> bool:
     
     torch.save(train_tensor,train_tensor_path)
     torch.save(test_tensor,test_tensor_path)
+
+    WORKER_PARAMETERS['preprocessed'] = True
+    with open(worker_parameters_path, 'w') as f:
+        json.dump(WORKER_PARAMETERS, f)
+
     return True
 # Created
 def store_local_metrics(

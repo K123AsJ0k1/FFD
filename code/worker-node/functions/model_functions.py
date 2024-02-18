@@ -13,7 +13,7 @@ from torch.optim import SGD
 from torch.utils.data import DataLoader, TensorDataset
 
 from functions.data_functions import *
-
+# Refactored
 class FederatedLogisticRegression(nn.Module):
     def __init__(self, dim, bias=True):
         super().__init__()
@@ -46,7 +46,7 @@ class FederatedLogisticRegression(nn.Module):
     @staticmethod
     def apply_parameters(model, parameters):
         model.load_state_dict(parameters)
-
+# Refactored
 def get_train_test_loaders_loaders() -> any:
     global_parameters_path = 'logs/global_parameters.txt'
     GLOBAL_PARAMETERS = None
@@ -63,7 +63,7 @@ def get_train_test_loaders_loaders() -> any:
     )
     test_loader = DataLoader(test_tensor, 64)
     return train_loader,test_loader
-
+# Refactored
 def train(
     model: any,
     train_loader: any
@@ -89,7 +89,7 @@ def train(
             optimizer.step()
             optimizer.zero_grad()
         print("Epoch {}, loss = {}".format(epoch + 1, torch.sum(loss) / len(train_loader)))
-
+# Refactored
 def test(
     model: any, 
     test_loader: any
@@ -143,30 +143,38 @@ def test(
         }
         
         return metrics
-# Works
-def local_model_training(
-    cycle: int
-) -> any:
+# Refactored
+def local_model_training() -> any:
     global_parameters_path = 'logs/global_parameters.txt'
-    global_model_path = 'models/global_model_' + str(cycle) + '.pth'
-    local_model_path = 'models/local_model_' + str(cycle) + '.pth'
+    worker_parameters_path = 'logs/worker_parameters.txt'
 
-    if not os.path.exists(global_parameters_path) or not os.path.exists(global_model_path):
+    if not os.path.exists(global_parameters_path):
+        return False
+
+    if not os.path.exists(worker_parameters_path):
+        return False
+ 
+    GLOBAL_PARAMETERS = None
+    with open(global_parameters_path, 'r') as f:
+        GLOBAL_PARAMETERS = json.load(f)
+    
+    WORKER_PARAMETERS = None
+    with open(worker_parameters_path, 'r') as f:
+        WORKER_PARAMETERS = json.load(f)
+    
+    global_model_path = 'models/global_model_' + str(WORKER_PARAMETERS['cycle']) + '.pth'
+    local_model_path = 'models/local_model_' + str(WORKER_PARAMETERS['cycle']) + '.pth'
+
+    if os.path.exists(global_model_path):
         return False
     
     if os.path.exists(local_model_path):
         return False
-
-    GLOBAL_PARAMETERS = None
-    with open(global_parameters_path, 'r') as f:
-        GLOBAL_PARAMETERS = json.load(f)
+    
+    os.environ['STATUS'] = 'training'
 
     given_parameters = torch.load(global_model_path)
 
-    model_path = 'models/worker_model_parameters' + str(cycle) + '.pth'
-    if os.path.exists(model_path):
-        return False
- 
     torch.manual_seed(GLOBAL_PARAMETERS['seed'])
     
     given_train_loader, given_test_loader = get_train_test_loaders_loaders()
@@ -191,23 +199,20 @@ def local_model_training(
     parameters = lr_model.get_parameters(lr_model)
     torch.save(parameters, local_model_path)
     return True
-
+# Created
+def run_training_pipeline(
+    logger: any
+):
+    status = preprocess_into_train_and_test_tensors()
+    status = local_model_training()
+# Created    
 def send_update(
     logger: any, 
     central_address: str
 ):  
-    #logger.warning('Send update')
-    #model_folder = 'models'
-    #files = os.listdir(model_folder)
-    #cycle = 0
-    #for file in files:
-    #    if 'global_model' in file:
-    #        first_split = file.split('_')
-    #        second_split = first_split[-1].split('.')
-    #        file_cycle = int(second_split[0])
-    #        if cycle < file_cycle:
-    #            cycle = file_cycle
-    
+    if os.environ.get('STATUS') == 'updated':
+        return False
+
     worker_parameters_path = 'logs/worker_parameters.txt'
     if not os.path.exists(worker_parameters_path):
         return False
@@ -216,11 +221,9 @@ def send_update(
     with open(worker_parameters_path, 'r') as f:
         WORKER_PARAMETERS = json.load(f)
 
-    training_status = local_model_training(
-        cycle = cycle
-    )
-    
-    local_model_path = 'models/local_model_' + str(cycle) + '.pth'
+    os.environ['STATUS'] = 'updating'
+
+    local_model_path = 'models/local_model_' + str(WORKER_PARAMETERS['cycle']) + '.pth'
     local_model = torch.load(local_model_path)
 
     formatted_local_model = {
@@ -233,23 +236,22 @@ def send_update(
     payload = {
         'worker-id': int(WORKER_PARAMETERS['worker-id']),
         'local-model': formatted_local_model,
-        'cycle': int(cycle),
+        'cycle': WORKER_PARAMETERS['cycle'],
         'train-size': len(train_tensor)
     }
     
     json_payload = json.dumps(payload)
-
-    central = central_address + '/update'
-
+    central_url = central_address + '/update'
     try:
-         response = requests.post(
-            url = central, 
+        response = requests.post(
+            url = central_url, 
             json = json_payload,
             headers = {
-               'Content-type':'application/json', 
-               'Accept':'application/json'
+                'Content-type':'application/json', 
+                'Accept':'application/json'
             }
-         )
-         print(response.status_code)
+        )
+        if response.status_code == 200:
+            os.environ['STATUS'] = 'updated'
     except Exception as e:
-        print(e)
+        logger.error('Status sending error:', e)
