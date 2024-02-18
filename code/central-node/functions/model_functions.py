@@ -164,11 +164,22 @@ def model_inference(
     return output.tolist()
 # Refactored
 def initial_model_training() -> bool:
+    training_status_path = 'logs/training_status.txt'
+    if not os.path.exists(training_status_path):
+        return False
+    
+    training_status = None
+    with open(training_status_path, 'r') as f:
+        training_status = json.load(f)
+
+    if not training_status['parameters']['data-split'] or not training_status['parameters']['preprocessed']:
+        return False
+
+    if training_status['parameters']['trained']:
+        return False
+
     GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
     model_path = 'models/global_model_0.pth'
-
-    if os.path.exists(model_path):
-        return False
 
     torch.manual_seed(GLOBAL_PARAMETERS['seed'])
     
@@ -192,4 +203,9 @@ def initial_model_training() -> bool:
     
     parameters = lr_model.get_parameters(lr_model)
     torch.save(parameters, model_path)
+
+    training_status['parameters']['trained'] = True
+    with open(training_status_path, 'w') as f:
+        json.dump(training_status, f, indent=4) 
+
     return True

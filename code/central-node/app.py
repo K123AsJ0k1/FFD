@@ -4,7 +4,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 import logging
 import os
-
+# Needs refactoring
 def create_app():
     app = Flask(__name__)
 
@@ -24,11 +24,18 @@ def create_app():
 
     scheduler = BackgroundScheduler(daemon = True)
     from functions.data_functions import send_context_to_workers
+    from functions.fed_functions import central_federated_pipeline
     send_update_args = [app.logger]
     scheduler.add_job(
         func = send_context_to_workers,
         trigger = "interval",
-        seconds = 20,
+        seconds = 10,
+        args = send_update_args
+    )
+    scheduler.add_job(
+        func = central_federated_pipeline,
+        trigger = "interval",
+        seconds = 30,
         args = send_update_args
     )
     scheduler.start()

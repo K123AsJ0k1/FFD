@@ -16,18 +16,12 @@ def central_worker_data_split() -> bool:
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
 
-    if training_status['parameters']['data-splitting']:
+    if training_status['parameters']['data-split']:
         return False
     
     central_pool_path = 'data/central_pool.csv'
     worker_pool_path = 'data/worker_pool.csv'
 
-    if os.path.exists(central_pool_path):
-        return False
-    
-    if os.path.exists(worker_pool_path):
-        return False
-    
     os.environ['STATUS'] = 'data splitting'
     
     CENTRAL_PARAMETERS = current_app.config['CENTRAL_PARAMETERS']
@@ -46,7 +40,7 @@ def central_worker_data_split() -> bool:
     central_data_pool.to_csv(central_pool_path, index = False)    
     worker_data_pool.to_csv(worker_pool_path, index = False)
     
-    training_status['parameters']['data-splitting'] = True
+    training_status['parameters']['data-split'] = True
     with open(training_status_path, 'w') as f:
         json.dump(training_status, f, indent=4) 
 
@@ -58,10 +52,10 @@ def preprocess_into_train_test_and_evaluate_tensors() -> bool:
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
 
-    if not training_status['parameters']['data-splitting']:
+    if not training_status['parameters']['data-split']:
         return False
 
-    if training_status['parameters']['preprocess']:
+    if training_status['parameters']['preprocessed']:
         return False
 
     GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
@@ -72,18 +66,6 @@ def preprocess_into_train_test_and_evaluate_tensors() -> bool:
     test_tensor_path = 'tensors/test.pt'
     eval_tensor_path = 'tensors/eval.pt'
 
-    if not os.path.exists(central_pool_path):
-        return False
-    
-    if os.path.exists(train_tensor_path):
-        return False
-    
-    if os.path.exists(test_tensor_path):
-        return False
-    
-    if os.path.exists(eval_tensor_path):
-        return False
-    
     os.environ['STATUS'] = 'preprocessing'
     
     central_data_df = pd.read_csv(central_pool_path)
@@ -136,7 +118,7 @@ def preprocess_into_train_test_and_evaluate_tensors() -> bool:
     torch.save(test_tensor,test_tensor_path)
     torch.save(eval_tensor,eval_tensor_path)
 
-    training_status['parameters']['preprocess'] = True
+    training_status['parameters']['preprocessed'] = True
     with open(training_status_path, 'w') as f:
         json.dump(training_status, f, indent=4) 
     
@@ -150,25 +132,15 @@ def split_data_between_workers(
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
 
-    if not training_status['parameters']['preprocessing']:
+    if not training_status['parameters']['preprocessed']:
         return False
 
-    if training_status['parameters']['worker-splitting']:
+    if training_status['parameters']['worker-split']:
         return False
 
     worker_pool_path = 'data/worker_pool.csv'
     training_status_path = 'logs/training_status.txt'
 
-    if not os.path.exists(worker_pool_path):
-        return False
-    
-    if not os.path.exists(training_status_path):
-        return False
-    
-    training_status = None
-    with open(training_status_path, 'r') as f:
-        training_status = json.load(f)
-    
     os.environ['STATUS'] = 'worker splitting'
     
     worker_pool_df = pd.read_csv(worker_pool_path)
@@ -191,7 +163,7 @@ def split_data_between_workers(
         worker_dfs[index].to_csv(data_path, index = False)
         index = index + 1
 
-    training_status['parameters']['worker-splitting'] = True
+    training_status['parameters']['worker-split'] = True
     training_status['parameters']['columns'] = worker_pool_df.columns.tolist() 
     
     with open(training_status_path, 'w') as f:

@@ -23,24 +23,21 @@ def send_context_to_workers(
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
 
-    if not training_status['parameters']['training']:
+    if not training_status['parameters']['trained']:
         return False
     
-    if not training_status['parameters']['worker-splitting']:
+    if not training_status['parameters']['worker-split']:
         return False
 
-    if training_status['parameters']['sending']:
+    if training_status['parameters']['received']:
         return False
 
+    os.environ['STATUS'] = 'sending'
+    
     GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
     WORKER_PARAMETERS = current_app.config['WORKER_PARAMETERS']
    
     global_model_path = 'models/global_model_' + str(training_status['parameters']['cycle']) + '.pth'
-    if not os.path.exists(global_model_path):
-        return False
-    
-    os.environ['STATUS'] = 'sending'
-
     global_model = torch.load(global_model_path)
     formatted_global_model = {
         'weights': global_model['linear.weight'].numpy().tolist(),
@@ -84,13 +81,14 @@ def send_context_to_workers(
                     'Accept':'application/json'
                 }
             )
+            # Refactor
             payload_status[worker_key] = {
                 'address': worker_metadata['address'],
-                'response':response.status_code
+                'response': response.status_code
             }
         except Exception as e:
             logger.error('Context sending error' + e)
-    
+
     successes = 0
     for worker_key in payload_status.keys():
         worker_data = payload_status[worker_key]
@@ -105,11 +103,11 @@ def send_context_to_workers(
     
     if not GLOBAL_PARAMETERS['min-update-amount'] <= successes:
         return False
-
-    training_status['parameters']['sending'] = True
+    
+    training_status['parameters']['sent'] = True
     with open(training_status_path, 'w') as f:
         json.dump(training_status, f, indent=4)
-    
+
     os.environ['STATUS'] = 'waiting updates'
 
     return True
@@ -142,18 +140,25 @@ def model_fed_avg(
     ])
     return updated_global_model
 # Refactored
-def update_global_model():
+def update_global_model(
+    logger: any
+) -> bool:
     training_status_path = 'logs/training_status.txt'
     if not os.path.exists(training_status_path):
         return False
-    
+   
     training_status = None
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
 
-    update_model_path = 'models/global_model_' + str(training_status['parameters']['cycle']) + '.pth'
-    if os.path.exists(update_model_path):
+    if training_status['parameters']['updated']:
         return True
+
+    GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
+    if training_status['parameters']['worker-updates'] < GLOBAL_PARAMETERS['min-update-amount']:
+        return False
+    
+    update_model_path = 'models/global_model_' + str(training_status['parameters']['cycle']) + '.pth'
     
     files = os.listdir('models')
     available_updates = []
@@ -162,18 +167,16 @@ def update_global_model():
         if 'worker' in file:
             first_split = file.split('.')
             second_split = first_split[0].split('_')
-            worker_id = int(second_split[1])
             cycle = int(second_split[2])
             sample_size = int(second_split[3])
 
             if cycle == training_status['parameters']['cycle']:
-                if training_status['workers'][worker_id-1]['status'] == 'complete':
-                    local_model_path = 'models/' + file
-                    available_updates.append({
-                        'parameters': torch.load(local_model_path),
-                        'samples': sample_size
-                    })
-                    collective_sample_size = collective_sample_size + sample_size
+                local_model_path = 'models/' + file
+                available_updates.append({
+                    'parameters': torch.load(local_model_path),
+                    'samples': sample_size
+                })
+                collective_sample_size = collective_sample_size + sample_size
 
     new_global_model = model_fed_avg(
         updates = available_updates,
@@ -186,7 +189,9 @@ def update_global_model():
          json.dump(training_status, f, indent=4) 
     return True
 # Refactored
-def evalute_global_model():
+def evalute_global_model(
+    logger: any
+):
     training_status_path = 'logs/training_status.txt'
     if not os.path.exists(training_status_path):
         return False
@@ -194,17 +199,18 @@ def evalute_global_model():
     training_status = None
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
+
+    if training_status['parameters']['evaluated']:
+        return False
+
+    if not training_status['parameters']['updated']:
+        return False
     
     GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
     
     global_model_path = 'models/global_model_' + str(training_status['parameters']['cycle']) + '.pth'
-    if not os.path.exists(global_model_path):
-        return False
-    
     eval_tensor_path = 'tensors/evaluation.pt'
-    if not os.path.exists(eval_tensor_path):
-        return False
-    
+
     given_parameters = torch.load(global_model_path)
     
     lr_model = FederatedLogisticRegression(dim = GLOBAL_PARAMETERS['input-size'])
@@ -222,4 +228,20 @@ def evalute_global_model():
         metrics = test_metrics
     )
 
+    training_status['parameters']['evaluated'] = True  
+    with open(training_status_path, 'w') as f:
+         json.dump(training_status, f, indent=4) 
+
     return True
+# Created
+def central_federated_pipeline(
+    logger: any
+): 
+    status = update_global_model(
+        logger = logger
+    )
+    logger.warning('Global update:' + str(status))
+    status = evalute_global_model(
+        logger = logger
+    )
+    logger.warning('Global evaluation:' + str(status))

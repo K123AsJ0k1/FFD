@@ -49,14 +49,16 @@ def initilize_training_status():
 
     training_status = {
         'parameters': {
-            'data-splitting': False,
-            'preprocess': False,
-            'training': False,
-            'worker-splitting': False,
-            'sending': False,
-            'update': False,
-            'columns': None,
+            'data-split': False,
+            'preprocessed': False,
+            'trained': False,
+            'worker-split': False,
+            'sent': False,
+            'updated': False,
+            'evaluated': False,
+            'worker-updates': 0,
             'cycle': 0,
+            'columns': None,
             'global-metrics': []
         },
         'workers': {}
@@ -159,7 +161,7 @@ def store_update(
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
 
-    if not training_status['parameters']['sending']:
+    if not training_status['parameters']['sent']:
         return False
 
     model_path = 'models/worker_' + str(worker_id) + '_' + str(cycle) + '_' + str(train_size) + '.pth'
@@ -173,6 +175,7 @@ def store_update(
         if worker['id'] == worker_id:
             training_status['workers'][index]['status'] = 'complete'
 
+    training_status['parameters']['updates'] = training_status['parameters']['updates'] + 1
     with open(training_status_path, 'w') as f:
         json.dump(training_status, f, indent=4) 
 
