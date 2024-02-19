@@ -20,23 +20,23 @@ def create_app():
         app.config.from_object('config.ProdConfig')
 
     os.environ['STATUS'] = 'waiting'
-    os.environ['ID'] = '-1'
     
     scheduler = BackgroundScheduler(daemon = True)
-    from functions.data_functions import send_status_to_central
-    from functions.model_functions import send_update
-    send_update_args = [app.logger,app.config['CENTRAL_ADDRESS']]
+    from functions.fed_functions import send_status_to_central
+    from functions.fed_functions import worker_federated_pipeline
+    given_args = [app.logger,app.config['CENTRAL_ADDRESS']]
     scheduler.add_job(
         func = send_status_to_central,
         trigger = "interval",
         seconds = 5,
-        args = send_update_args
+        args = given_args
     )
+    given_args = [app.logger,app.config['CENTRAL_ADDRESS']]
     scheduler.add_job(
-        func = send_update,
+        func = worker_federated_pipeline,
         trigger = "interval",
-        seconds = 5,
-        args = send_update_args
+        seconds = 30,
+        args = given_args
     )
     scheduler.start()
     app.logger.warning('Scheduler ready')

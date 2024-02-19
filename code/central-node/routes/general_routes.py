@@ -9,14 +9,14 @@ general = Blueprint('general', __name__)
 @general.route('/demo', methods=["GET"]) 
 def demo():
     return 'Ok', 200
-# Works
+# Refactored
 @general.route('/status', methods=["POST"])
 def worker_status():
     received_worker_ip = request.remote_addr
     sent_payload = json.loads(request.json)
 
     sent_worker_status = sent_payload['status']
-    sent_worker_id = int(sent_payload['id'])
+    sent_worker_id = sent_payload['id']
 
     set_worker_id, set_message = store_worker_status(
         worker_id = sent_worker_id,
@@ -25,26 +25,20 @@ def worker_status():
     )
 
     return jsonify({'id': set_worker_id, 'message': set_message})  
-
+# Refactored
 @general.route('/start', methods=["POST"])
 def start_model_training():
-    status = initilize_training_status()
-    current_app.logger.warning(status)
-    
     status = central_worker_data_split()
-    current_app.logger.warning(status)
+    current_app.logger.warning('Global data split:' + str(status))
     
     status = preprocess_into_train_test_and_evaluate_tensors()
-    current_app.logger.warning(status)
+    current_app.logger.warning('Global preprocessing:' + str(status))
     
     status = initial_model_training()
-    current_app.logger.warning(status)
-    
-    status = send_context_to_workers()
-    current_app.logger.warning(status)
+    current_app.logger.warning('Global training:' + str(status))
     
     return 'Ok', 200
-
+# Refactored
 @general.route('/update', methods=["POST"]) 
 def worker_update(): 
     sent_payload = json.loads(request.json)
@@ -62,7 +56,7 @@ def worker_update():
     )
     
     return 'Ok', 200
-
+# Need refactoring
 @general.route('/predict', methods=["POST"])
 def inference():
     sent_payload = json.loads(request.json)

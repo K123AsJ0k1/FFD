@@ -5,139 +5,24 @@ import pandas as pd
 import torch 
 import os
 import json
-import requests
-from collections import OrderedDict
 
 from sklearn.model_selection import train_test_split
 from torch.utils.data import TensorDataset
 
-'''
-training status format:
-- entry: dict
-   - parameters: dict
-      - cycle: int
-      - global metrics: list
-         - metrics: dict
-            - confusion list
-            - recall: int
-            - selectivity: int
-            - precision: int
-            - miss-rate: int
-            - fall-out: int
-            - balanced-accuracy: int 
-            - accuracy: int
-   - workers: dict
-        - id: dict
-            - address: str
-            - status: str
-                - local metrics: list
-                    - metrics: dict
-                        - confusion list
-                        - recall: int
-                        - selectivity: int
-                        - precision: int
-                        - miss-rate: int
-                        - fall-out: int
-                        - balanced-accuracy: int 
-                        - accuracy: int
-'''
-# Refactored and works
-def initilize_training_status():
-    training_status_path = 'logs/training_status.txt'
-    if os.path.exists(training_status_path):
-        return False
-   
-    training_status = {
-        'parameters': {
-            'cycle': 0,
-            'global-metrics': []
-        },
-        'workers': {}
-    }
-   
-    with open(training_status_path, 'w') as f:
-        json.dump(training_status, f, indent=4) 
-    return True
-# refactored and works
-def store_worker_status(
-    worker_id: int,
-    worker_ip: str,
-    worker_status: str
-) -> any:
-    training_status_path = 'logs/training_status.txt'
-    
-    training_status = None
-    if not os.path.exists(training_status_path):
-        return False
-    
-    with open(training_status_path, 'r') as f:
-        training_status = json.load(f)
-
-    if worker_id == -1:
-        duplicate_id = -1
-        used_keys = []
-        
-        for worker_key in training_status['workers'].keys():
-            worker_metadata = training_status['workers'][worker_key]
-            if worker_metadata['address'] == worker_ip:
-                duplicate_id = int(worker_key)
-            used_keys.append(int(worker_key))
-            
-        set_of_used_keys = set(used_keys)
-        smallest_missing_id = 0
-        while smallest_missing_id in set_of_used_keys:
-            smallest_missing_id += 1
-        
-        local_metrics = []
-        if -1 < duplicate_id:
-            local_metrics = training_status['workers'][str(duplicate_id)]['local-metrics']
-            del training_status['workers'][str(duplicate_id)]
-
-        training_status['workers'][str(smallest_missing_id)] = {
-            'address': worker_ip,
-            'status': worker_status,
-            'local-metrics': local_metrics
-        }
-        with open(training_status_path, 'w') as f:
-            json.dump(training_status, f, indent=4)
-        
-        return smallest_missing_id, 'registered'
-    else:
-        worker_metadata = training_status['workers'][str(worker_id)]
-        if worker_metadata['address'] == worker_ip:
-            # When worker is already registered and address has stayed the same
-            training_status['workers'][str(worker_id)]['status'] = worker_status
-            with open(training_status_path, 'w') as f:
-                json.dump(training_status, f, indent=4)
-            return worker_id, 'checked'
-        else:
-            # When worker id has stayed the same, but address has changed due to load balancing
-            training_status['workers'][str(worker_id)]['status'] = worker_status
-            training_status['workers'][str(worker_id)]['address'] = worker_ip
-            with open(training_status_path, 'w') as f:
-                json.dump(training_status, f, indent=4)
-            return worker_id, 'rerouted'
-# Refactpred and works
-def store_global_metrics(
-   metrics: any
-) -> bool:
-    training_status_path = 'logs/training_status.txt'
-    if not os.path.exists(training_status_path):
-        return False
-    training_status = None
-    with open(training_status_path, 'r') as f:
-        training_status = json.load(f)
-    training_status['parameters']['global-metrics'].append(metrics)
-    with open(training_status_path, 'w') as f:
-        json.dump(training_status, f, indent=4) 
-    return True
 # Refactored and works
 def central_worker_data_split() -> bool:
+    training_status_path = 'logs/training_status.txt'
+    training_status = None
+    with open(training_status_path, 'r') as f:
+        training_status = json.load(f)
+
+    if training_status['parameters']['data-split']:
+        return False
+    
     central_pool_path = 'data/central_pool.csv'
     worker_pool_path = 'data/worker_pool.csv'
 
-    if os.path.exists(central_pool_path) or os.path.exists(worker_pool_path):
-        return False
+    os.environ['STATUS'] = 'data splitting'
     
     CENTRAL_PARAMETERS = current_app.config['CENTRAL_PARAMETERS']
     WORKER_PARAMETERS = current_app.config['WORKER_PARAMETERS']
@@ -154,24 +39,35 @@ def central_worker_data_split() -> bool:
 
     central_data_pool.to_csv(central_pool_path, index = False)    
     worker_data_pool.to_csv(worker_pool_path, index = False)
+    
+    training_status['parameters']['data-split'] = True
+    with open(training_status_path, 'w') as f:
+        json.dump(training_status, f, indent=4) 
+
     return True
 # Refactored and works
 def preprocess_into_train_test_and_evaluate_tensors() -> bool:
+    training_status_path = 'logs/training_status.txt'
+    training_status = None
+    with open(training_status_path, 'r') as f:
+        training_status = json.load(f)
+
+    if not training_status['parameters']['data-split']:
+        return False
+
+    if training_status['parameters']['preprocessed']:
+        return False
+
     GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
     CENTRAL_PARAMETERS = current_app.config['CENTRAL_PARAMETERS']
     
     central_pool_path = 'data/central_pool.csv'
-
-    if not os.path.exists(central_pool_path):
-        return False
-    
     train_tensor_path = 'tensors/train.pt'
     test_tensor_path = 'tensors/test.pt'
     eval_tensor_path = 'tensors/eval.pt'
 
-    if os.path.exists(train_tensor_path) or os.path.exists(test_tensor_path) or os.path.exists(eval_tensor_path):
-        return False
-
+    os.environ['STATUS'] = 'preprocessing'
+    
     central_data_df = pd.read_csv(central_pool_path)
     
     preprocessed_df = central_data_df[GLOBAL_PARAMETERS['used-columns']]
@@ -221,135 +117,56 @@ def preprocess_into_train_test_and_evaluate_tensors() -> bool:
     torch.save(train_tensor,train_tensor_path)
     torch.save(test_tensor,test_tensor_path)
     torch.save(eval_tensor,eval_tensor_path)
+
+    training_status['parameters']['preprocessed'] = True
+    with open(training_status_path, 'w') as f:
+        json.dump(training_status, f, indent=4) 
     
     return True
 # Refactored
 def split_data_between_workers(
-    workers: any
-) -> any:
-    worker_pool_path = 'data/worker_pool.csv'
+    logger: any
+) -> bool:
+    training_status_path = 'logs/training_status.txt'
+    training_status = None
+    with open(training_status_path, 'r') as f:
+        training_status = json.load(f)
 
-    if not os.path.exists(worker_pool_path):
-        return None, None
+    if not training_status['parameters']['preprocessed']:
+        return False
+
+    if training_status['parameters']['worker-split']:
+        return False
+
+    worker_pool_path = 'data/worker_pool.csv'
+    training_status_path = 'logs/training_status.txt'
+
+    os.environ['STATUS'] = 'worker splitting'
     
     worker_pool_df = pd.read_csv(worker_pool_path)
 
     available_workers = []
-    for worker_key in workers.keys():
-        worker_metadata = workers[worker_key]
+    for worker_key in training_status['workers'].keys():
+        worker_metadata = training_status['workers'][worker_key]
         if worker_metadata['status'] == 'waiting':
             available_workers.append(worker_key)
 
     if len(available_workers) == 0:
-        return None, None
+        return False
         
     worker_df = worker_pool_df.sample(frac = 1)
     worker_dfs = np.array_split(worker_df, len(available_workers))
     
-    data_list = {}
     index = 0
     for worker_key in available_workers:
-        worker_dfs[index].to_csv('data/worker_' + worker_key + '.csv', index = False)
-        data_list[worker_key] = worker_dfs[index].values.tolist()
+        data_path = 'data/worker_' + worker_key + '_' + str(training_status['parameters']['cycle']) + '.csv'
+        worker_dfs[index].to_csv(data_path, index = False)
         index = index + 1
 
-    return data_list, worker_pool_df.columns.tolist()     
-# Refactored
-def send_context_to_workers() -> bool:
-    GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
+    training_status['parameters']['worker-split'] = True
+    training_status['parameters']['columns'] = worker_pool_df.columns.tolist() 
     
-    training_status_path = 'logs/training_status.txt'
-    if not os.path.exists(training_status_path):
-        return False
-   
-    training_status = None
-    with open(training_status_path, 'r') as f:
-        training_status = json.load(f)
-   
-    global_model_path = 'models/global_model_' + str(training_status['parameters']['cycle']) + '.pth'
-    if not os.path.exists(global_model_path):
-        return False
-
-    global_model = torch.load(global_model_path)
-    data_list, columns = split_data_between_workers(
-        workers = training_status['workers']
-    )
-
-    if data_list == None:
-        return False
-   
-    formatted_global_model = {
-        'weights': global_model['linear.weight'].numpy().tolist(),
-        'bias': global_model['linear.bias'].numpy().tolist()
-    }
-
-    payload_status = []
-    for worker_key in training_status['workers'].keys():
-        worker_metadata = training_status['workers'][worker_key]
-        
-        if not worker_metadata['status'] == 'waiting':
-            continue
-        
-        worker_url = 'http://' + worker_metadata['address'] + ':7500/context'
-        
-        sent_worker_parameters = {
-            'id': worker_metadata['id'],
-            'address': worker_metadata['address'],
-            'status': worker_metadata['status'],
-            'columns': columns,
-            'cycle': training_status['parameters']['cycle']
-        }
-        
-        payload = {
-            'global-parameters': GLOBAL_PARAMETERS,
-            'worker-parameters': sent_worker_parameters,
-            'global-model': formatted_global_model,
-            'worker-data': data_list[worker_metadata]
-        }
-
-        json_payload = json.dumps(payload) 
-
-        try:
-            response = requests.post(
-                url = worker_url, 
-                json = json_payload,
-                headers = {
-                    'Content-type':'application/json', 
-                    'Accept':'application/json'
-                }
-            )
-            payload_status.append(response.status_code)
-        except Exception as e:
-            current_app.logger.error('Context sending error' + e)
-    return True
-# Works
-def store_update(
-    worker_id: str,
-    local_model: any,
-    cycle: int,
-    train_size: int
-) -> bool:
-    training_status_path = 'logs/training_status.txt'
-   
-    training_status = None
-    if not os.path.exists(training_status_path):
-      return False
-    
-    with open(training_status_path, 'r') as f:
-        training_status = json.load(f)
-
-    model_path = 'models/worker_' + str(worker_id) + '_' + str(cycle) + '_' + str(train_size) + '.pth'
-    if os.path.exists(model_path):
-        return False
-    
-    torch.save(local_model, model_path)
-
-    index = 0
-    for worker in training_status['workers']:
-        if worker['id'] == worker_id:
-            training_status['workers'][index]['status'] = 'complete'
-
     with open(training_status_path, 'w') as f:
         json.dump(training_status, f, indent=4) 
 
-    return True
+    return True    

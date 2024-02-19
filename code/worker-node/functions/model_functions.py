@@ -1,19 +1,15 @@
 from flask import current_app
 import os
 import json
-import numpy as np
-import pandas as pd
 import torch
 import torch.nn as nn
 from sklearn.metrics import confusion_matrix
 
-import requests 
-
-from torch.optim import SGD
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import DataLoader
 
 from functions.data_functions import *
-
+from functions.storage_functions import *
+# Refactored
 class FederatedLogisticRegression(nn.Module):
     def __init__(self, dim, bias=True):
         super().__init__()
@@ -46,7 +42,7 @@ class FederatedLogisticRegression(nn.Module):
     @staticmethod
     def apply_parameters(model, parameters):
         model.load_state_dict(parameters)
-
+# Refactored
 def get_train_test_loaders_loaders() -> any:
     global_parameters_path = 'logs/global_parameters.txt'
     GLOBAL_PARAMETERS = None
@@ -63,7 +59,7 @@ def get_train_test_loaders_loaders() -> any:
     )
     test_loader = DataLoader(test_tensor, 64)
     return train_loader,test_loader
-
+# Refactored
 def train(
     model: any,
     train_loader: any
@@ -89,13 +85,12 @@ def train(
             optimizer.step()
             optimizer.zero_grad()
         print("Epoch {}, loss = {}".format(epoch + 1, torch.sum(loss) / len(train_loader)))
-
+# Refactored
 def test(
     model: any, 
     test_loader: any
 ) -> any:
     with torch.no_grad():
-        #losses = []
         total_size = 0
         total_confusion_matrix = [0,0,0,0]
         
@@ -103,7 +98,6 @@ def test(
             total_size += len(batch[1])
             _, correct = batch
             _, preds = model.test_step(model, batch)
-            #losses.append(loss)
             
             formated_correct = correct.numpy()
             formated_preds = preds.numpy().astype(int)
@@ -119,8 +113,6 @@ def test(
             total_confusion_matrix[2] += int(tn) # True negative
             total_confusion_matrix[3] += int(fn) # False negative
  
-        #average_loss = np.array(loss).sum() / total_size
-        # 'loss': float(round(average_loss,5)),
         TP, FP, TN, FN = total_confusion_matrix
 
         TPR = TP/(TP+FN)
@@ -143,30 +135,39 @@ def test(
         }
         
         return metrics
-# Works
+# Refactored
 def local_model_training(
-    cycle: int
+    logger: any
 ) -> any:
-    global_parameters_path = 'logs/global_parameters.txt'
-    global_model_path = 'models/global_model_' + str(cycle) + '.pth'
-    local_model_path = 'models/local_model_' + str(cycle) + '.pth'
-
-    if not os.path.exists(global_parameters_path) or not os.path.exists(global_model_path):
+    worker_status_path = 'logs/worker_status.txt'
+    if not os.path.exists(worker_status_path):
         return False
+    worker_status = None
+    with open(worker_status_path, 'r') as f:
+        worker_status = json.load(f)
+
+    if not worker_status['stored'] or not worker_status['preprocessed']:
+        return False
+
+    if worker_status['trained']:
+        return False
+
+    global_parameters_path = 'logs/global_parameters.txt'
     
-    if os.path.exists(local_model_path):
+    if not os.path.exists(global_parameters_path):
         return False
 
     GLOBAL_PARAMETERS = None
     with open(global_parameters_path, 'r') as f:
         GLOBAL_PARAMETERS = json.load(f)
+    
+    global_model_path = 'models/global_model_' + str(worker_status['cycle']) + '.pth'
+    local_model_path = 'models/local_model_' + str(worker_status['cycle']) + '.pth'
+
+    os.environ['STATUS'] = 'training'
 
     given_parameters = torch.load(global_model_path)
 
-    model_path = 'models/worker_model_parameters' + str(cycle) + '.pth'
-    if os.path.exists(model_path):
-        return False
- 
     torch.manual_seed(GLOBAL_PARAMETERS['seed'])
     
     given_train_loader, given_test_loader = get_train_test_loaders_loaders()
@@ -190,66 +191,11 @@ def local_model_training(
     
     parameters = lr_model.get_parameters(lr_model)
     torch.save(parameters, local_model_path)
+
+    worker_status['trained'] = True
+    with open(worker_status_path, 'w') as f:
+        json.dump(worker_status, f, indent=4)
+
+    os.environ['STATUS'] = 'trained'
+
     return True
-
-def send_update(
-    logger: any, 
-    central_address: str
-):  
-    #logger.warning('Send update')
-    #model_folder = 'models'
-    #files = os.listdir(model_folder)
-    #cycle = 0
-    #for file in files:
-    #    if 'global_model' in file:
-    #        first_split = file.split('_')
-    #        second_split = first_split[-1].split('.')
-    #        file_cycle = int(second_split[0])
-    #        if cycle < file_cycle:
-    #            cycle = file_cycle
-    
-    worker_parameters_path = 'logs/worker_parameters.txt'
-    if not os.path.exists(worker_parameters_path):
-        return False
-
-    WORKER_PARAMETERS = None
-    with open(worker_parameters_path, 'r') as f:
-        WORKER_PARAMETERS = json.load(f)
-
-    training_status = local_model_training(
-        cycle = cycle
-    )
-    
-    local_model_path = 'models/local_model_' + str(cycle) + '.pth'
-    local_model = torch.load(local_model_path)
-
-    formatted_local_model = {
-      'weights': local_model['linear.weight'].numpy().tolist(),
-      'bias': local_model['linear.bias'].numpy().tolist()
-    }
-
-    train_tensor = torch.load('tensors/train.pt')
-    
-    payload = {
-        'worker-id': int(WORKER_PARAMETERS['worker-id']),
-        'local-model': formatted_local_model,
-        'cycle': int(cycle),
-        'train-size': len(train_tensor)
-    }
-    
-    json_payload = json.dumps(payload)
-
-    central = central_address + '/update'
-
-    try:
-         response = requests.post(
-            url = central, 
-            json = json_payload,
-            headers = {
-               'Content-type':'application/json', 
-               'Accept':'application/json'
-            }
-         )
-         print(response.status_code)
-    except Exception as e:
-        print(e)

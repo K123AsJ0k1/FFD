@@ -1,7 +1,10 @@
 from flask import Flask
 from config import Config
-import logging
+from apscheduler.schedulers.background import BackgroundScheduler
 
+import logging
+import os
+# Needs refactoring
 def create_app():
     app = Flask(__name__)
 
@@ -16,6 +19,37 @@ def create_app():
     elif enviroment == 'PROD':
         app.logger.warning('Choosen enviroment is production')
         app.config.from_object('config.ProdConfig')
+
+    os.environ['STATUS'] = 'waiting'
+
+    scheduler = BackgroundScheduler(daemon = True)
+    from functions.fed_functions import send_context_to_workers
+    from functions.fed_functions import central_federated_pipeline
+    given_args = [
+        app.logger, 
+        app.config['GLOBAL_PARAMETERS'], 
+        app.config['CENTRAL_PARAMETERS'], 
+        app.config['WORKER_PARAMETERS']
+    ]
+    scheduler.add_job(
+        func = send_context_to_workers,
+        trigger = "interval",
+        seconds = 10,
+        args = given_args 
+    )
+    given_args = [
+        app.logger, 
+        app.config['GLOBAL_PARAMETERS'], 
+        app.config['CENTRAL_PARAMETERS']
+    ]
+    scheduler.add_job(
+        func = central_federated_pipeline,
+        trigger = "interval",
+        seconds = 30,
+        args = given_args 
+    )
+    scheduler.start()
+    app.logger.warning('Scheduler ready')
 
     from routes.general_routes import general
     app.logger.warning('Routes imported')
