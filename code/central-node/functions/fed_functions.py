@@ -3,7 +3,7 @@ from flask import current_app
 import numpy as np
 import pandas as pd
 import torch 
-import os
+import os 
 import json
 import requests
 from collections import OrderedDict
@@ -131,7 +131,7 @@ def model_fed_avg(
         
         weights.append(adjusted_worker_weights.tolist())
         biases.append(adjusted_worker_bias)
-
+    
     FedAvg_weight = [np.sum(weights,axis = 0)]
     FedAvg_bias = np.sum(biases, axis = 0)
 
@@ -145,6 +145,7 @@ def update_global_model(
     logger: any,
     central_parameters: any
 ) -> bool:
+    #print('Update')
     training_status_path = 'logs/training_status.txt'
     if not os.path.exists(training_status_path):
         return False
@@ -161,9 +162,8 @@ def update_global_model(
 
     if training_status['parameters']['worker-updates'] < central_parameters['min-update-amount']:
         return False
-    
+
     update_model_path = 'models/global_model_' + str(training_status['parameters']['cycle']) + '.pth'
-    
     files = os.listdir('models')
     available_updates = []
     collective_sample_size = 0
@@ -181,20 +181,26 @@ def update_global_model(
                     'samples': sample_size
                 })
                 collective_sample_size = collective_sample_size + sample_size
-
+    
     new_global_model = model_fed_avg(
         updates = available_updates,
         total_sample_size = collective_sample_size 
     )
 
     torch.save(new_global_model, update_model_path)
+
+    with open(training_status_path, 'r') as f:
+        training_status = json.load(f)
     training_status['parameters']['updated'] = True
+    with open(training_status_path, 'w') as f:
+         json.dump(training_status, f, indent=4)
     return True
 # Refactored
 def evalute_global_model(
     logger: any,
     global_parameters: any
 ):
+    print('evaluation')
     training_status_path = 'logs/training_status.txt'
     if not os.path.exists(training_status_path):
         return False
@@ -210,11 +216,14 @@ def evalute_global_model(
         return False
     
     global_model_path = 'models/global_model_' + str(training_status['parameters']['cycle']) + '.pth'
-    eval_tensor_path = 'tensors/evaluation.pt'
+    eval_tensor_path = 'tensors/eval.pt'
+
+    #print(global_model_path)
+    #print(eval_tensor_path)
 
     given_parameters = torch.load(global_model_path)
     # Fix tensors
-    print(given_parameters)
+    #print(given_parameters)
     
     lr_model = FederatedLogisticRegression(dim = global_parameters['input-size'])
     lr_model.apply_parameters(lr_model, given_parameters)
@@ -227,10 +236,12 @@ def evalute_global_model(
         test_loader = eval_loader
     )
 
-    store_global_metrics(
+    status = store_global_metrics(
         metrics = test_metrics
     )
-
+   
+    with open(training_status_path, 'r') as f:
+        training_status = json.load(f)
     training_status['parameters']['evaluated'] = True  
     training_status['parameters']['cycle'] = training_status['parameters']['cycle'] + 1 
     with open(training_status_path, 'w') as f:

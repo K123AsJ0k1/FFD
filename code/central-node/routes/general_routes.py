@@ -52,7 +52,7 @@ def worker_update():
         worker_id = sent_worker_id,
         local_model = sent_local_model,
         cycle = sent_cycle,
-        train_size = sent_train_size
+        train_size = sent_train_size 
     )
     
     return 'Ok', 200
