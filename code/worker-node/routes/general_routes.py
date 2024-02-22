@@ -13,7 +13,7 @@ def demo():
 @general.route('/context', methods=["POST"]) 
 def set_training_context():
     sent_payload = json.loads(request.json)
-    
+     
     sent_global_parameters = sent_payload['global-parameters']
     sent_worker_parameters = sent_payload['worker-parameters']
     sent_model = sent_payload['global-model']

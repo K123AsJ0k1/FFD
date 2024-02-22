@@ -180,7 +180,7 @@ def local_model_training(
         train_loader = given_train_loader,  
     )
     
-    test_metrics = test(
+    test_metrics = test( 
         model = lr_model, 
         test_loader = given_test_loader
     )

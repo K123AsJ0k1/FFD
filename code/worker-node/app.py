@@ -36,7 +36,7 @@ def create_app():
         func = worker_federated_pipeline,
         trigger = "interval",
         seconds = 30,
-        args = given_args
+        args = given_args 
     )
     scheduler.start()
     app.logger.warning('Scheduler ready')

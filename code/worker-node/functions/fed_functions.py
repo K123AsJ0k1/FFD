@@ -9,7 +9,7 @@ from functions.data_functions import *
 from functions.model_functions import *
 from functions.storage_functions import *
 
-# Refactored and works
+# Refactored and works 
 def send_status_to_central(
     logger: any, 
     central_address: str

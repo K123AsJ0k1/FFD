@@ -47,7 +47,7 @@ def initilize_worker_status():
         'columns': None,
         'train-test-ratio': 0,
         'cycle': 0,
-        'local-metrics': []
+        'local-metrics': [] 
     }
    
     with open(worker_status_path, 'w') as f:
