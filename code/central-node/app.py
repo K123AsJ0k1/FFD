@@ -30,11 +30,11 @@ def create_app():
         app.config['GLOBAL_PARAMETERS'], 
         app.config['CENTRAL_PARAMETERS'], 
         app.config['WORKER_PARAMETERS']
-    ]
+    ] 
     scheduler.add_job(
         func = send_context_to_workers,
         trigger = "interval",
-        seconds = 10,
+        seconds = 15,
         args = given_args 
     )
     given_args = [
@@ -45,7 +45,7 @@ def create_app():
     scheduler.add_job(
         func = central_federated_pipeline,
         trigger = "interval",
-        seconds = 30,
+        seconds = 20,
         args = given_args 
     )
     scheduler.start()

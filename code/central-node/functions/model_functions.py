@@ -133,7 +133,7 @@ def test(
         }
         
         return metrics
-# Need refactoring
+# Need refactoring 
 def model_inference(
     input: any
 ) -> any:
@@ -203,8 +203,11 @@ def initial_model_training() -> bool:
     
     parameters = lr_model.get_parameters(lr_model)
     torch.save(parameters, model_path)
-
+    
+    with open(training_status_path, 'r') as f:
+        training_status = json.load(f)
     training_status['parameters']['trained'] = True
+    training_status['parameters']['cycle'] = training_status['parameters']['cycle'] + 1
     with open(training_status_path, 'w') as f:
         json.dump(training_status, f, indent=4) 
 
