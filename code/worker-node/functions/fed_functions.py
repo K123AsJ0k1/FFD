@@ -94,7 +94,7 @@ def send_update(
             worker_status['updated'] = True
             with open(worker_status_path, 'w') as f:
                 json.dump(worker_status, f, indent=4)
-            os.environ['STATUS'] = 'updated'
+            os.environ['STATUS'] = 'waiting'
             return True
         return False
     except Exception as e:

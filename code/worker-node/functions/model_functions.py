@@ -185,13 +185,15 @@ def local_model_training(
         test_loader = given_test_loader
     )
 
-    store_local_metrics(
+    status = store_local_metrics(
         metrics = test_metrics
     )
     
     parameters = lr_model.get_parameters(lr_model)
     torch.save(parameters, local_model_path)
 
+    with open(worker_status_path, 'r') as f:
+        worker_status = json.load(f)
     worker_status['trained'] = True
     with open(worker_status_path, 'w') as f:
         json.dump(worker_status, f, indent=4)

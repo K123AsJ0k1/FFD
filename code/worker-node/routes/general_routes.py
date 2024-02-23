@@ -9,7 +9,7 @@ general = Blueprint('general', __name__)
 @general.route('/demo', methods=["GET"]) 
 def demo():
     return 'Ok', 200
-# Need st obe refactored
+# Refactored
 @general.route('/context', methods=["POST"]) 
 def set_training_context():
     sent_payload = json.loads(request.json)

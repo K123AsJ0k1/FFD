@@ -47,7 +47,7 @@ def initilize_worker_status():
         'columns': None,
         'train-test-ratio': 0,
         'cycle': 0,
-        'local-metrics': [] 
+        'local-metrics': {}
     }
    
     with open(worker_status_path, 'w') as f:
@@ -120,7 +120,13 @@ def store_local_metrics(
     worker_status = None
     with open(worker_status_path, 'r') as f:
         worker_status = json.load(f)
-    worker_status['local-metrics'].append(metrics)
+
+    highest_key = 0
+    for id in worker_status['local-metrics']:
+        if highest_key < id:
+            highest_key = id
+
+    worker_status['local-metrics'][str(highest_key)] = metrics
     with open(worker_status_path, 'w') as f:
         json.dump(worker_status, f, indent=4) 
     return True
