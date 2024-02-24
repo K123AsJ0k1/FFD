@@ -9,7 +9,7 @@ general = Blueprint('general', __name__)
 @general.route('/demo', methods=["GET"]) 
 def demo():
     return 'Ok', 200
-# Refactored
+# Refactored and works
 @general.route('/status', methods=["POST"])
 def worker_status():
     received_worker_ip = request.remote_addr
@@ -25,7 +25,7 @@ def worker_status():
     )
 
     return jsonify({'id': set_worker_id, 'message': set_message})  
-# Refactored
+# Refactored and works
 @general.route('/start', methods=["POST"])
 def start_model_training():
     status = central_worker_data_split()
@@ -38,7 +38,7 @@ def start_model_training():
     current_app.logger.warning('Global training:' + str(status))
     
     return 'Ok', 200
-# Refactored
+# Refactored and works
 @general.route('/update', methods=["POST"]) 
 def worker_update(): 
     sent_payload = json.loads(request.json)
@@ -53,7 +53,7 @@ def worker_update():
         local_model = sent_local_model,
         cycle = sent_cycle,
         train_size = sent_train_size 
-    )
+    ) 
     
     return 'Ok', 200
 # Need refactoring

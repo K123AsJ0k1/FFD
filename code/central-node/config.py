@@ -22,12 +22,23 @@ class Config:
         'optimizer':'SGD',
         'epochs': 5
     }
-
+    # Needs to be refactored to have cycle and metrics thresholds
     CENTRAL_PARAMETERS = {
         'sample-pool': 100000,
         'train-eval-ratio': 0.5,
         'train-test-ratio': 0.8,
-        'min-update-amount': 1
+        'min-update-amount': 1,
+        'max-cycles':2,
+        'min-metric-sucess': 3,
+        'metric-thresholds': {
+            'recall': 0.05,
+            'selectivity': 0.05,
+            'precision': 0.05,
+            'miss-rate': 0.05,
+            'fall-out': 0.05,
+            'balanced-accuracy': 0.05,
+            'accuracy': 0.05
+        }
     }
 
     WORKER_PARAMETERS = {

@@ -26,6 +26,9 @@ def send_context_to_workers(
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
 
+    if training_status['parameters']['complete']:
+        return False
+
     if not training_status['parameters']['trained']:
         return False
     
@@ -34,7 +37,7 @@ def send_context_to_workers(
 
     if training_status['parameters']['sent']:
         return False
-
+    
     os.environ['STATUS'] = 'sending'
     
     global_model_path = 'models/global_model_' + str(training_status['parameters']['cycle']) + '.pth'
@@ -56,24 +59,36 @@ def send_context_to_workers(
         worker_data = worker_df.values.tolist()
         worker_url = 'http://' + worker_metadata['address'] + ':7500/context'
         
-        sent_worker_parameters = {
-            'id': worker_key,
-            'address': worker_metadata['address'],
-            'columns': training_status['parameters']['columns'],
-            'cycle': training_status['parameters']['cycle'],
-            'train-test-ratio': worker_parameter['train-test-ratio']
-        }
-        
-        payload = {
-            'global-parameters': global_parameters,
-            'worker-parameters': sent_worker_parameters,
-            'global-model': formatted_global_model,
-            'worker-data': worker_data
-        }
-
+        payload = None
+        if not training_status['parameters']['complete']:
+            payload = {
+                'global-parameters': global_parameters,
+                'worker-parameters': {
+                    'id': worker_key,
+                    'address': worker_metadata['address'],
+                    'columns': training_status['parameters']['columns'],
+                    'cycle': training_status['parameters']['cycle'],
+                    'train-test-ratio': worker_parameter['train-test-ratio']
+                },
+                'global-model': formatted_global_model,
+                'worker-data': worker_data
+            }
+        else:
+            payload = {
+                'global-parameters': None,
+                'worker-parameters': {
+                    'id': worker_key,
+                    'address': worker_metadata['address'],
+                    'columns': None,
+                    'cycle': training_status['parameters']['cycle'],
+                    'train-test-ratio': None
+                },
+                'global-model': formatted_global_model,
+                'worker-data': None
+            }
+    
         json_payload = json.dumps(payload) 
         try:
-
             response = requests.post(
                 url = worker_url, 
                 json = json_payload,
@@ -102,17 +117,19 @@ def send_context_to_workers(
             continue
         successes = successes + 1
     
-    if not central_parameters['min-update-amount'] <= successes:
-        return False
+    if not training_status['parameters']['complete']:
+        if not central_parameters['min-update-amount'] <= successes:
+            return False
+        os.environ['STATUS'] = 'waiting updates'
+    else:
+        os.environ['STATUS'] = 'training complete'
     
     training_status['parameters']['sent'] = True
     with open(training_status_path, 'w') as f:
         json.dump(training_status, f, indent=4)
 
-    os.environ['STATUS'] = 'waiting updates'
-
     return True
-# needs to be fixed 
+# Refactored and works(?)
 def model_fed_avg(
     updates: any,
     total_sample_size: int    
@@ -140,12 +157,11 @@ def model_fed_avg(
         ('linear.bias', torch.tensor(FedAvg_bias,dtype=torch.float32))
     ])
     return updated_global_model
-# Refactored
+# Refactored and works
 def update_global_model(
     logger: any,
     central_parameters: any
 ) -> bool:
-    #print('Update')
     training_status_path = 'logs/training_status.txt'
     if not os.path.exists(training_status_path):
         return False
@@ -153,6 +169,9 @@ def update_global_model(
     training_status = None
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
+
+    if training_status['parameters']['complete']:
+        return False
 
     if not training_status['parameters']['sent']:
         return False
@@ -198,9 +217,9 @@ def update_global_model(
 # Refactored
 def evalute_global_model(
     logger: any,
-    global_parameters: any
+    global_parameters: any,
+    central_parameters: any
 ):
-    print('evaluation')
     training_status_path = 'logs/training_status.txt'
     if not os.path.exists(training_status_path):
         return False
@@ -208,6 +227,9 @@ def evalute_global_model(
     training_status = None
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
+
+    if training_status['parameters']['updated']:
+        return False
 
     if training_status['parameters']['evaluated']:
         return False
@@ -218,12 +240,7 @@ def evalute_global_model(
     global_model_path = 'models/global_model_' + str(training_status['parameters']['cycle']) + '.pth'
     eval_tensor_path = 'tensors/eval.pt'
 
-    #print(global_model_path)
-    #print(eval_tensor_path)
-
     given_parameters = torch.load(global_model_path)
-    # Fix tensors
-    #print(given_parameters)
     
     lr_model = FederatedLogisticRegression(dim = global_parameters['input-size'])
     lr_model.apply_parameters(lr_model, given_parameters)
@@ -239,16 +256,30 @@ def evalute_global_model(
     status = store_global_metrics(
         metrics = test_metrics
     )
-   
+    
+    succesful_metrics = 0
+    thresholds = central_parameters['metric-thresholds']
+    for key,value in test_metrics.items():
+        logger.warning('Metric ' + str(key) + ' threshold:' + str(thresholds[key]))
+        if thresholds[key] <= value:
+            logger.warning('Passed with ' + str(value))
+            succesful_metrics += 1
+        else:
+            logger.warning('Failed with ' + str(value))
+
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
-    training_status['parameters']['evaluated'] = True  
-    training_status['parameters']['cycle'] = training_status['parameters']['cycle'] + 1 
+    
+    training_status['parameters']['evaluated'] = True
+    if central_parameters['min-metric-success'] <= succesful_metrics or training_status['parameters']['cycle'] == central_parameters['max-cycles']:
+        training_status['parameters']['complete'] = True
+    else:
+        training_status['parameters']['cycle'] = training_status['parameters']['cycle'] + 1 
     with open(training_status_path, 'w') as f:
          json.dump(training_status, f, indent=4) 
 
     return True
-# Created
+# Created and works
 def central_federated_pipeline(
     task_logger: any,
     task_global_parameters: any,

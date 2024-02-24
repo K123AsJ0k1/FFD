@@ -1,6 +1,6 @@
 from flask import current_app
 import torch
-import torch.nn as nn
+import torch.nn as nn 
 
 from sklearn.metrics import confusion_matrix
 from torch.utils.data import DataLoader

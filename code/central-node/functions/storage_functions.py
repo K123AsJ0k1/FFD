@@ -13,7 +13,11 @@ training status format:
       - training: bool
       - splitting: bool
       - update: bool
+      - evaluated: bool
+      - complete
+      - worker-updates: int
       - cycle: int
+      - columns: list
       - global metrics: list
          - metrics: dict
             - confusion list
@@ -56,8 +60,9 @@ def initilize_training_status():
             'sent': False,
             'updated': False,
             'evaluated': False,
+            'complete': False,
             'worker-updates': 0,
-            'cycle': 0,
+            'cycle': 0, 
             'columns': None,
             'global-metrics': {}
         },
@@ -135,11 +140,6 @@ def store_worker_status(
 def store_global_metrics(
    metrics: any
 ) -> bool:
-    # For some reason this function is unable to modify existing file
-    # but it is able to create a new file with the metrics
-    # Reason was using older training status in the parent function
-    #import copy
-    #print('Store global metrics')
     training_status_path = 'logs/training_status.txt'
     if not os.path.exists(training_status_path):
         return False
@@ -158,7 +158,7 @@ def store_global_metrics(
         json.dump(training_status, f, indent=4) 
     
     return True
-# Refactored
+# Refactored and works
 def store_update( 
     worker_id: str,
     local_model: any,
@@ -173,6 +173,9 @@ def store_update(
  
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
+
+    if training_status['parameters']['complete']:
+        return False
 
     if not training_status['parameters']['sent']:
         return False

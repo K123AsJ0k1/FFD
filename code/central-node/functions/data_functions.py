@@ -1,5 +1,5 @@
 from flask import current_app
-
+ 
 import os
 import json
 
@@ -16,6 +16,9 @@ def central_worker_data_split() -> bool:
     training_status = None
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
+
+    if training_status['parameters']['complete']:
+        return False
 
     if training_status['parameters']['data-split']:
         return False
@@ -52,6 +55,9 @@ def preprocess_into_train_test_and_evaluate_tensors() -> bool:
     training_status = None
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
+
+    if training_status['parameters']['complete']:
+        return False
 
     if not training_status['parameters']['data-split']:
         return False
@@ -124,7 +130,7 @@ def preprocess_into_train_test_and_evaluate_tensors() -> bool:
         json.dump(training_status, f, indent=4) 
     
     return True
-# Refactored
+# Refactored and works
 def split_data_between_workers(
     logger: any
 ) -> bool:
@@ -132,6 +138,9 @@ def split_data_between_workers(
     training_status = None
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
+
+    if training_status['parameters']['complete']:
+        return False
 
     if not training_status['parameters']['preprocessed']:
         return False
