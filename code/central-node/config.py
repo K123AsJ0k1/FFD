@@ -24,13 +24,17 @@ class Config:
     }
     # Needs to be refactored to have cycle and metrics thresholds
     CENTRAL_PARAMETERS = {
-        'sample-pool': 100000,
+        'sample-pool': 500000,
         'train-eval-ratio': 0.5,
         'train-test-ratio': 0.8,
         'min-update-amount': 1,
         'max-cycles':2,
         'min-metric-sucess': 3,
         'metric-thresholds': {
+            'true-positives': 2,
+            'false-positives': 2,
+            'true-negatives': 2,
+            'false-negatives': 2,
             'recall': 0.05,
             'selectivity': 0.05,
             'precision': 0.05,
@@ -42,7 +46,7 @@ class Config:
     }
 
     WORKER_PARAMETERS = {
-        'sample-pool': 10000,
+        'sample-pool': 100000,
         'train-test-ratio': 0.8
     }
 

@@ -74,9 +74,8 @@ def initilize_training_status():
     return True
 # refactored and works
 def store_worker_status(
-    worker_id: int,
-    worker_ip: str,
-    worker_status: str
+    worker_address: str,
+    worker_status: any
 ) -> any:
     training_status_path = 'logs/training_status.txt'
     
@@ -87,13 +86,13 @@ def store_worker_status(
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
 
-    if worker_id == None:
+    if worker_status['id'] == None:
         duplicate_id = -1
         used_keys = []
         
         for worker_key in training_status['workers'].keys():
             worker_metadata = training_status['workers'][worker_key]
-            if worker_metadata['address'] == worker_ip:
+            if worker_metadata['address'] == worker_status['address']:
                 duplicate_id = int(worker_key)
             used_keys.append(int(worker_key))
             
@@ -102,17 +101,17 @@ def store_worker_status(
         while smallest_missing_id in set_of_used_keys:
             smallest_missing_id += 1
         
-        local_metrics = []
+        local_metrics = {}
         if -1 < duplicate_id:
             local_metrics = training_status['workers'][str(duplicate_id)]['local-metrics']
             del training_status['workers'][str(duplicate_id)]
 
         training_status['workers'][str(smallest_missing_id)] = {
-            'address': worker_ip,
+            'address': worker_address,
             'status': worker_status,
             'stored': False,
             'preprocessed': False,
-            'training': False,
+            'trained': False,
             'updated': False,
             'cycle': 0,
             'local-metrics': local_metrics
@@ -120,22 +119,36 @@ def store_worker_status(
         with open(training_status_path, 'w') as f:
             json.dump(training_status, f, indent=4)
         
-        return smallest_missing_id, 'registered'
+        return smallest_missing_id, worker_address, 'registered'
     else:
-        worker_metadata = training_status['workers'][str(worker_id)]
-        if worker_metadata['address'] == worker_ip:
+        worker_metadata = training_status['workers'][str(worker_status['id'])]
+        if worker_metadata['address'] == worker_address:
             # When worker is already registered and address has stayed the same
-            training_status['workers'][str(worker_id)]['status'] = worker_status
+            # Add stored
+            worker_metadata['status'] = worker_status['status']
+            worker_metadata['preprocessed'] = worker_status['preprocessed']
+            worker_metadata['trained'] = worker_status['trained']
+            worker_metadata['updated'] = worker_status['updated']
+            worker_metadata['cycle'] = worker_status['cycle']
+            worker_metadata['local-metrics'] = worker_status['local-metrics']
+            training_status['workers'][str(worker_status['id'])] = worker_metadata
+
             with open(training_status_path, 'w') as f:
                 json.dump(training_status, f, indent=4)
-            return worker_id, 'checked'
+            return worker_status['id'], worker_address, 'checked'
         else:
             # When worker id has stayed the same, but address has changed due to load balancing
-            training_status['workers'][str(worker_id)]['status'] = worker_status
-            training_status['workers'][str(worker_id)]['address'] = worker_ip
+            worker_metadata['status'] = worker_status['status']
+            worker_metadata['address'] = worker_address
+            worker_metadata['preprocessed'] = worker_status['preprocessed']
+            worker_metadata['trained'] = worker_status['trained']
+            worker_metadata['updated'] = worker_status['updated']
+            worker_metadata['cycle'] = worker_status['cycle']
+            worker_metadata['local-metrics'] = worker_status['local-metrics']
+            training_status['workers'][str(worker_status['id'])] = worker_metadata
             with open(training_status_path, 'w') as f:
                 json.dump(training_status, f, indent=4)
-            return worker_id, 'rerouted'
+            return worker_status['id'], worker_address, 'rerouted'
 # Refactpred and works
 def store_global_metrics(
    metrics: any
@@ -150,7 +163,7 @@ def store_global_metrics(
 
     highest_key = 0
     for id in training_status['parameters']['global-metrics']:
-        if highest_key < id:
+        if highest_key < int(id):
             highest_key = id
     
     training_status['parameters']['global-metrics'][str(highest_key)] = metrics

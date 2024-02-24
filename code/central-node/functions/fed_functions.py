@@ -182,7 +182,7 @@ def update_global_model(
     if training_status['parameters']['worker-updates'] < central_parameters['min-update-amount']:
         return False
 
-    update_model_path = 'models/global_model_' + str(training_status['parameters']['cycle']) + '.pth'
+    update_model_path = 'models/global_model_' + str(training_status['parameters']['cycle'] + 1) + '.pth'
     files = os.listdir('models')
     available_updates = []
     collective_sample_size = 0
@@ -228,16 +228,13 @@ def evalute_global_model(
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
 
-    if training_status['parameters']['updated']:
+    if not training_status['parameters']['updated']:
         return False
 
     if training_status['parameters']['evaluated']:
         return False
-
-    if not training_status['parameters']['updated']:
-        return False
-    
-    global_model_path = 'models/global_model_' + str(training_status['parameters']['cycle']) + '.pth'
+ 
+    global_model_path = 'models/global_model_' + str(training_status['parameters']['cycle'] + 1) + '.pth'
     eval_tensor_path = 'tensors/eval.pt'
 
     given_parameters = torch.load(global_model_path)
@@ -285,8 +282,6 @@ def central_federated_pipeline(
     task_global_parameters: any,
     task_central_parameters: any
 ): 
-    status = initilize_training_status()
-    task_logger.warning('Logging creation:' + str(status))
     status = split_data_between_workers(
         logger = task_logger
     )
@@ -298,6 +293,7 @@ def central_federated_pipeline(
     task_logger.warning('Global update:' + str(status))
     status = evalute_global_model(
         logger = task_logger,
-        global_parameters = task_global_parameters
+        global_parameters = task_global_parameters,
+        central_parameters = task_central_parameters
     )
     task_logger.warning('Global evaluation:' + str(status))

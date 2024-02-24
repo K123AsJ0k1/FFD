@@ -112,17 +112,30 @@ def test(
             total_confusion_matrix[3] += int(fn) # False negative
  
         TP, FP, TN, FN = total_confusion_matrix
-
-        TPR = TP/(TP+FN)
-        TNR = TN/(TN+FP)
-        PPV = TP/(TP+FP)
-        FNR = FN/(FN+TP)
-        FPR = FP/(FP+TN)
-        BA = (TPR+TNR)/2
-        ACC = (TP + TN)/(TP + TN + FP + FN)
+        # Zero divsion can happen
+        TPR = 0
+        TNR = 0
+        PPV = 0
+        FNR = 0
+        FPR = 0
+        BA = 0
+        ACC = 0
+        try:
+            TPR = TP/(TP+FN)
+            TNR = TN/(TN+FP)
+            PPV = TP/(TP+FP)
+            FNR = FN/(FN+TP)
+            FPR = FP/(FP+TN)
+            BA = (TPR+TNR)/2
+            ACC = (TP + TN)/(TP + TN + FP + FN)
+        except Exception as e:
+            current_app.logger.warning(e)
         
         metrics = {
-            'confusion': total_confusion_matrix,
+            'true-positives': TP,
+            'false-positives': FP,
+            'true-negatives': TN,
+            'false-negatives': FN,
             'recall': float(round(TPR,5)),
             'selectivity': float(round(TNR,5)),
             'precision': float(round(PPV,5)),
@@ -207,7 +220,6 @@ def initial_model_training() -> bool:
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
     training_status['parameters']['trained'] = True
-    training_status['parameters']['cycle'] = training_status['parameters']['cycle'] + 1
     with open(training_status_path, 'w') as f:
         json.dump(training_status, f, indent=4) 
 

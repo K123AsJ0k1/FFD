@@ -19,9 +19,10 @@ def create_app():
     elif enviroment == 'PROD':
         app.logger.warning('Choosen enviroment is production')
         app.config.from_object('config.ProdConfig')
-
-    os.environ['STATUS'] = 'waiting'
-
+    from functions.storage_functions import initilize_training_status
+    status = initilize_training_status()
+    app.logger.warning('Training status created: ' + str(status))
+    
     scheduler = BackgroundScheduler(daemon = True)
     from functions.fed_functions import send_context_to_workers
     from functions.fed_functions import central_federated_pipeline
@@ -34,7 +35,7 @@ def create_app():
     scheduler.add_job(
         func = send_context_to_workers,
         trigger = "interval",
-        seconds = 15,
+        seconds = 30,
         args = given_args 
     )
     given_args = [
@@ -45,7 +46,7 @@ def create_app():
     scheduler.add_job(
         func = central_federated_pipeline,
         trigger = "interval",
-        seconds = 20,
+        seconds = 60,
         args = given_args 
     )
     scheduler.start()
@@ -57,5 +58,5 @@ def create_app():
     app.register_blueprint(general)
     app.logger.warning('Routes registered')
     
-    app.logger.warning('Node ready')
+    app.logger.warning('Central ready')
     return app

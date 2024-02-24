@@ -13,18 +13,14 @@ def demo():
 @general.route('/status', methods=["POST"])
 def worker_status():
     received_worker_ip = request.remote_addr
-    sent_payload = json.loads(request.json)
+    sent_worker_status = json.loads(request.json)
 
-    sent_worker_status = sent_payload['status']
-    sent_worker_id = sent_payload['id']
-
-    set_worker_id, set_message = store_worker_status(
-        worker_id = sent_worker_id,
-        worker_ip = received_worker_ip,
+    set_worker_id, set_worker_ip, set_message = store_worker_status(
+        worker_address = received_worker_ip,
         worker_status = sent_worker_status
     )
 
-    return jsonify({'id': set_worker_id, 'message': set_message})  
+    return jsonify({'id': set_worker_id, 'address': set_worker_ip, 'message': set_message})  
 # Refactored and works
 @general.route('/start', methods=["POST"])
 def start_model_training():
