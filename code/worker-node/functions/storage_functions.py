@@ -30,7 +30,7 @@ worker status format:
             - balanced-accuracy: int 
             - accuracy: int
 '''
-# Created
+# Refactored and works
 def initilize_worker_status():
     worker_status_path = 'logs/worker_status.txt'
     if os.path.exists(worker_status_path):
@@ -44,6 +44,7 @@ def initilize_worker_status():
         'preprocessed': False,
         'trained': False,
         'updated': False,
+        'complete': False,
         'columns': None,
         'train-test-ratio': 0,
         'cycle': 0,
@@ -76,19 +77,26 @@ def store_training_context(
     if worker_status['stored'] and not worker_status['updated']:
         return 'ongoing jobs'
     
-    worker_status['address'] = worker_parameters['address']
-    worker_status['columns'] = worker_parameters['columns']
-    worker_status['train-test-ratio'] = worker_parameters['train-test-ratio']
-    worker_status['cycle'] = worker_parameters['cycle']
+    if global_parameters == None:
+        worker_status['address'] = worker_parameters['address']
+        worker_status['completed'] = True
+        worker_status['cycle'] = worker_parameters['cycle']
+    else:
+        worker_status['address'] = worker_parameters['address']
+        worker_status['trained'] = False
+        worker_status['updated'] = False
+        worker_status['completed'] = False
+        worker_status['columns'] = worker_parameters['columns']
+        worker_status['train-test-ratio'] = worker_parameters['train-test-ratio']
+        worker_status['cycle'] = worker_parameters['cycle']
     
-    global_parameters_path = 'logs/global_parameters.txt'
-    with open(global_parameters_path, 'w') as f:
-        json.dump(global_parameters, f, indent=4)
+        global_parameters_path = 'logs/global_parameters.txt'
+        with open(global_parameters_path, 'w') as f:
+            json.dump(global_parameters, f, indent=4)
     
     os.environ['STATUS'] = 'storing'
     
     global_model_path = 'models/global_model_' + str(worker_parameters['cycle']) + '.pth'
-    worker_data_path = 'data/used_data_' + str(worker_parameters['cycle']) + '.csv'
     
     weights = global_model['weights']
     bias = global_model['bias']
@@ -99,9 +107,11 @@ def store_training_context(
     ])
     
     torch.save(formated_parameters, global_model_path)
-       
-    worker_df = pd.DataFrame(worker_data)
-    worker_df.to_csv(worker_data_path, index = False)
+    if not worker_data == None:
+        worker_data_path = 'data/used_data_' + str(worker_parameters['cycle']) + '.csv'
+        worker_df = pd.DataFrame(worker_data)
+        worker_df.to_csv(worker_data_path, index = False)
+        worker_status['preprocessed'] = False
 
     worker_status['stored'] = True
     with open(worker_status_path, 'w') as f:

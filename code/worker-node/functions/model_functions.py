@@ -146,6 +146,9 @@ def local_model_training(
     with open(worker_status_path, 'r') as f:
         worker_status = json.load(f)
 
+    if worker_status['completed']:
+        return False
+
     if not worker_status['stored'] or not worker_status['preprocessed']:
         return False
 

@@ -57,6 +57,9 @@ def send_update(
     if not worker_status['stored'] or not worker_status['preprocessed'] or not worker_status['trained']:
         return False
 
+    if worker_status['completed']:
+        return False
+
     if worker_status['updated']:
         return False
 

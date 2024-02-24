@@ -21,6 +21,9 @@ def preprocess_into_train_and_test_tensors(
     with open(worker_status_path, 'r') as f:
         worker_status = json.load(f)
 
+    if worker_status['completed']:
+        return False
+
     if not worker_status['stored']:
         return False
 
