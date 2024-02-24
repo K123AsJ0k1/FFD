@@ -124,8 +124,8 @@ def store_worker_status(
         worker_metadata = training_status['workers'][str(worker_status['id'])]
         if worker_metadata['address'] == worker_address:
             # When worker is already registered and address has stayed the same
-            # Add stored
             worker_metadata['status'] = worker_status['status']
+            worker_metadata['stored'] = worker_status['stored']
             worker_metadata['preprocessed'] = worker_status['preprocessed']
             worker_metadata['trained'] = worker_status['trained']
             worker_metadata['updated'] = worker_status['updated']
@@ -140,6 +140,7 @@ def store_worker_status(
             # When worker id has stayed the same, but address has changed due to load balancing
             worker_metadata['status'] = worker_status['status']
             worker_metadata['address'] = worker_address
+            worker_metadata['stored'] = worker_status['stored']
             worker_metadata['preprocessed'] = worker_status['preprocessed']
             worker_metadata['trained'] = worker_status['trained']
             worker_metadata['updated'] = worker_status['updated']

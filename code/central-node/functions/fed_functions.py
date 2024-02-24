@@ -115,7 +115,7 @@ def send_context_to_workers(
                 worker_status = 'failure'
             )
             continue
-        successes = successes + 1
+        successes = successes + 1 
     
     if not training_status['parameters']['complete']:
         if not central_parameters['min-update-amount'] <= successes:
@@ -257,7 +257,7 @@ def evalute_global_model(
     succesful_metrics = 0
     thresholds = central_parameters['metric-thresholds']
     for key,value in test_metrics.items():
-        logger.warning('Metric ' + str(key) + ' threshold:' + str(thresholds[key]))
+        logger.warning('Metric ' + str(key) + ' with threshold:' + str(thresholds[key]))
         if thresholds[key] <= value:
             logger.warning('Passed with ' + str(value))
             succesful_metrics += 1

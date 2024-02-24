@@ -59,4 +59,5 @@ def create_app():
     app.logger.warning('Routes registered')
     
     app.logger.warning('Central ready')
+    os.environ['STATUS'] = 'waiting'
     return app

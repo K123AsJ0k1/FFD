@@ -29,11 +29,11 @@ class Config:
         'train-test-ratio': 0.8,
         'min-update-amount': 1,
         'max-cycles':2,
-        'min-metric-sucess': 3,
+        'min-metric-success': 3,
         'metric-thresholds': {
             'true-positives': 2,
             'false-positives': 2,
-            'true-negatives': 2,
+            'true-negatives': 2, 
             'false-negatives': 2,
             'recall': 0.05,
             'selectivity': 0.05,
