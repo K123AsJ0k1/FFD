@@ -53,8 +53,7 @@ def initilize_worker_status():
    
     with open(worker_status_path, 'w') as f:
         json.dump(worker_status, f, indent=4)
-
-    os.environ['STATUS'] = 'waiting' 
+ 
     return True
 # Refactored
 def store_training_context(

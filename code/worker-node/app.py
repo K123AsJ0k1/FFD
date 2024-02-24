@@ -49,4 +49,5 @@ def create_app():
     app.logger.warning('Routes registered')
     
     app.logger.warning('Worker ready')
+    os.environ['STATUS'] = 'waiting'
     return app
