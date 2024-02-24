@@ -18,8 +18,9 @@ def create_app():
     elif enviroment == 'PROD':
         app.logger.warning('Choosen enviroment is production')
         app.config.from_object('config.ProdConfig')
-
-    os.environ['STATUS'] = 'waiting'
+    from functions.storage_functions import initilize_worker_status
+    status = initilize_worker_status()
+    app.logger.warning('Worker status created: ' + str(status))
     
     scheduler = BackgroundScheduler(daemon = True)
     from functions.fed_functions import send_status_to_central
@@ -35,7 +36,7 @@ def create_app():
     scheduler.add_job(
         func = worker_federated_pipeline,
         trigger = "interval",
-        seconds = 30,
+        seconds = 50,
         args = given_args 
     )
     scheduler.start()
@@ -47,5 +48,5 @@ def create_app():
     app.register_blueprint(general)
     app.logger.warning('Routes registered')
     
-    app.logger.warning('Node ready')
+    app.logger.warning('Worker ready')
     return app

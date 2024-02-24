@@ -36,6 +36,8 @@ def send_status_to_central(
         )
         given_data = json.loads(response.text)
         worker_status['id'] = given_data['id']
+        worker_status['address'] = given_data['address']
+        logger.warning('Central message: ' + given_data['message'])
         with open(worker_status_path, 'w') as f:
             json.dump(worker_status, f, indent=4) 
         return True

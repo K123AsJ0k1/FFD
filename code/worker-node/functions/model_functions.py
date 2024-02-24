@@ -87,6 +87,7 @@ def train(
         print("Epoch {}, loss = {}".format(epoch + 1, torch.sum(loss) / len(train_loader)))
 # Refactored
 def test(
+    logger: any,
     model: any, 
     test_loader: any
 ) -> any:
@@ -112,19 +113,32 @@ def test(
             total_confusion_matrix[1] += int(fp) # False positive
             total_confusion_matrix[2] += int(tn) # True negative
             total_confusion_matrix[3] += int(fn) # False negative
- 
-        TP, FP, TN, FN = total_confusion_matrix
 
-        TPR = TP/(TP+FN)
-        TNR = TN/(TN+FP)
-        PPV = TP/(TP+FP)
-        FNR = FN/(FN+TP)
-        FPR = FP/(FP+TN)
-        BA = (TPR+TNR)/2
-        ACC = (TP + TN)/(TP + TN + FP + FN)
-        
+        TP, FP, TN, FN = total_confusion_matrix
+        # Zero division can happen
+        TPR = 0
+        TNR = 0
+        PPV = 0
+        FNR = 0
+        FPR = 0
+        BA = 0
+        ACC = 0
+        try:
+            TPR = TP/(TP+FN)
+            TNR = TN/(TN+FP)
+            PPV = TP/(TP+FP)
+            FNR = FN/(FN+TP)
+            FPR = FP/(FP+TN)
+            BA = (TPR+TNR)/2
+            ACC = (TP + TN)/(TP + TN + FP + FN)
+        except Exception as e:
+            logger.warning(e)
+
         metrics = {
-            'confusion': total_confusion_matrix,
+            'true-positives': TP,
+            'false-positives': FP,
+            'true-negatives': TN,
+            'false-negatives': FN,
             'recall': float(round(TPR,5)),
             'selectivity': float(round(TNR,5)),
             'precision': float(round(PPV,5)),
@@ -184,6 +198,7 @@ def local_model_training(
     )
     
     test_metrics = test( 
+        logger = logger,
         model = lr_model, 
         test_loader = given_test_loader
     )

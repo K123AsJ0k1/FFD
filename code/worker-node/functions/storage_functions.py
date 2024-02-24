@@ -44,7 +44,7 @@ def initilize_worker_status():
         'preprocessed': False,
         'trained': False,
         'updated': False,
-        'complete': False,
+        'completed': False,
         'columns': None,
         'train-test-ratio': 0,
         'cycle': 0,
@@ -133,7 +133,7 @@ def store_local_metrics(
 
     highest_key = 0
     for id in worker_status['local-metrics']:
-        if highest_key < id:
+        if highest_key < int(id):
             highest_key = id
 
     worker_status['local-metrics'][str(highest_key)] = metrics
