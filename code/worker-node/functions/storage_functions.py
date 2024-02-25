@@ -134,9 +134,11 @@ def store_local_metrics(
     highest_key = 0
     for id in worker_status['local-metrics']:
         if highest_key < int(id):
-            highest_key = id
-
-    worker_status['local-metrics'][str(highest_key + 1)] = metrics
+            highest_key = int(id)
+    if not highest_key == 0:
+        highest_key += 1
+    
+    worker_status['local-metrics'][str(highest_key)] = metrics
     with open(worker_status_path, 'w') as f:
         json.dump(worker_status, f, indent=4) 
     return True
