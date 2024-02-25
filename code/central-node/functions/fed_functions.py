@@ -10,7 +10,18 @@ from collections import OrderedDict
 
 from functions.storage_functions import *
 from functions.model_functions import *
-
+# Created
+def start_training():
+    training_status_path = 'logs/training_status.txt'
+    if not os.path.exists(training_status_path):
+        return False
+    training_status = None
+    with open(training_status_path, 'r') as f:
+        training_status = json.load(f)
+    training_status['parameters']['start'] = True
+    with open(training_status_path, 'w') as f:
+        json.dump(training_status, f, indent=4) 
+    return True
 # Refactored
 def send_context_to_workers(
     logger: any,
@@ -26,7 +37,7 @@ def send_context_to_workers(
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
 
-    if training_status['parameters']['complete']:
+    if not training_status['parameters']['start']:
         return False
 
     if not training_status['parameters']['trained']:
@@ -54,13 +65,12 @@ def send_context_to_workers(
         if not worker_metadata['status'] == 'waiting':
             continue
 
-        data_path = 'data/worker_' + worker_key + '_' + str(training_status['parameters']['cycle']) + '.csv'
-        worker_df = pd.read_csv(data_path)
-        worker_data = worker_df.values.tolist()
         worker_url = 'http://' + worker_metadata['address'] + ':7500/context'
-        
         payload = None
         if not training_status['parameters']['complete']:
+            data_path = 'data/worker_' + worker_key + '_' + str(training_status['parameters']['cycle']) + '.csv'
+            worker_df = pd.read_csv(data_path)
+            worker_data = worker_df.values.tolist()
             payload = {
                 'global-parameters': global_parameters,
                 'worker-parameters': {
@@ -170,6 +180,9 @@ def update_global_model(
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
 
+    if not training_status['parameters']['start']:
+        return False
+
     if training_status['parameters']['complete']:
         return False
 
@@ -228,6 +241,9 @@ def evalute_global_model(
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
 
+    if not training_status['parameters']['start']:
+        return False
+
     if not training_status['parameters']['updated']:
         return False
 
@@ -275,8 +291,15 @@ def evalute_global_model(
     training_status['parameters']['evaluated'] = True
     if central_parameters['min-metric-success'] <= succesful_metrics or training_status['parameters']['cycle'] == central_parameters['max-cycles']:
         training_status['parameters']['complete'] = True
-    else:
-        training_status['parameters']['cycle'] = training_status['parameters']['cycle'] + 1 
+        training_status['parameters']['sent'] = False
+        training_status['parameters']['cycle'] = training_status['parameters']['cycle'] + 1
+    else: 
+        training_status['parameters']['worker-split'] = False
+        training_status['parameters']['sent'] = False
+        training_status['parameters']['updated'] = False
+        training_status['parameters']['evaluated'] = False
+        training_status['parameters']['worker-updates'] = 0
+        training_status['parameters']['cycle'] = training_status['parameters']['cycle'] + 1
     with open(training_status_path, 'w') as f:
          json.dump(training_status, f, indent=4) 
 
@@ -285,17 +308,40 @@ def evalute_global_model(
 def central_federated_pipeline(
     task_logger: any,
     task_global_parameters: any,
-    task_central_parameters: any
+    task_central_parameters: any,
+    task_worker_parameters: any
 ): 
+    status = central_worker_data_split(
+        logger = task_logger,
+        central_parameters = task_central_parameters,
+        worker_parameters = task_worker_parameters
+    )
+    task_logger.warning('Global data split:' + str(status))
+    
+    status = preprocess_into_train_test_and_evaluate_tensors(
+        logger = task_logger,
+        global_parameters = task_global_parameters,
+        central_parameters = task_central_parameters
+    )
+    task_logger.warning('Global preprocessing:' + str(status))
+    
+    status = initial_model_training(
+        logger = task_logger,
+        global_parameters = task_global_parameters
+    )
+    task_logger.warning('Global training:' + str(status))
+    
     status = split_data_between_workers(
         logger = task_logger
     )
     task_logger.warning('Global splitting:' + str(status))
+    
     status = update_global_model(
         logger = task_logger,
         central_parameters = task_central_parameters
     )
     task_logger.warning('Global update:' + str(status))
+    
     status = evalute_global_model(
         logger = task_logger,
         global_parameters = task_global_parameters,

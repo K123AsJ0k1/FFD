@@ -41,7 +41,8 @@ def create_app():
     given_args = [
         app.logger, 
         app.config['GLOBAL_PARAMETERS'], 
-        app.config['CENTRAL_PARAMETERS']
+        app.config['CENTRAL_PARAMETERS'],
+        app.config['WORKER_PARAMETERS']
     ]
     scheduler.add_job(
         func = central_federated_pipeline,

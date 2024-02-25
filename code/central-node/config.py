@@ -17,14 +17,14 @@ class Config:
         'scaled-columns': [
             'amount'
         ],
-        'learning-rate': 0.001,
-        'sample-rate': 0.01,
+        'learning-rate': 0.005,
+        'sample-rate': 0.10,
         'optimizer':'SGD',
-        'epochs': 5
+        'epochs': 20
     }
     
     CENTRAL_PARAMETERS = {
-        'sample-pool': 500000,
+        'sample-pool': 3000000,
         'train-eval-ratio': 0.5,
         'train-test-ratio': 0.8,
         'min-update-amount': 1,
@@ -43,7 +43,7 @@ class Config:
             'balanced-accuracy': 0.85,
             'accuracy': 0.99
         },
-        'metric-condition': {
+        'metric-conditions': {
             'true-positives': '>=',
             'false-positives': '<=',
             'true-negatives': '>=', 
@@ -59,7 +59,7 @@ class Config:
     }
 
     WORKER_PARAMETERS = {
-        'sample-pool': 100000,
+        'sample-pool': 500000,
         'train-test-ratio': 0.8
     }
 

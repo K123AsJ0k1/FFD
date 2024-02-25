@@ -53,6 +53,7 @@ def initilize_training_status():
 
     training_status = {
         'parameters': {
+            'start': False,
             'data-split': False,
             'preprocessed': False,
             'trained': False,
@@ -79,10 +80,10 @@ def store_worker_status(
 ) -> any:
     training_status_path = 'logs/training_status.txt'
     
-    training_status = None
     if not os.path.exists(training_status_path):
         return False
     
+    training_status = None
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
 
@@ -102,23 +103,31 @@ def store_worker_status(
             smallest_missing_id += 1
         
         local_metrics = {}
+        local_stored = False
+        local_preprocessed = False
+        local_trained = False
+        local_updated = False
         if -1 < duplicate_id:
+            local_stored = training_status['workers'][str(duplicate_id)]['stored']
+            local_preprocessed = training_status['workers'][str(duplicate_id)]['preprocessed']
+            local_trained = training_status['workers'][str(duplicate_id)]['trained']
+            local_updated = training_status['workers'][str(duplicate_id)]['updated']
             local_metrics = training_status['workers'][str(duplicate_id)]['local-metrics']
             del training_status['workers'][str(duplicate_id)]
 
-        old_worker_data_path = 'worker_' + str(worker_key) + '_' + training_status['parameters']['cycle'] + '.csv'
+        old_worker_data_path = 'worker_' + str(duplicate_id) + '_' + str(training_status['parameters']['cycle']) + '.csv'
         if os.path.exists(old_worker_data_path):
-            new_worker_data_path = 'worker_' + str(smallest_missing_id) + '_' + training_status['parameters']['cycle'] + '.csv'
+            new_worker_data_path = 'worker_' + str(smallest_missing_id) + '_' + str(training_status['parameters']['cycle']) + '.csv'
             os.rename(old_worker_data_path,new_worker_data_path)
 
         training_status['workers'][str(smallest_missing_id)] = {
             'address': worker_address,
-            'status': worker_status,
-            'stored': False,
-            'preprocessed': False,
-            'trained': False,
-            'updated': False,
-            'cycle': 0,
+            'status': worker_status['status'],
+            'stored': local_stored,
+            'preprocessed': local_preprocessed,
+            'trained': local_trained,
+            'updated': local_updated,
+            'cycle': training_status['parameters']['cycle'],
             'local-metrics': local_metrics
         }
         with open(training_status_path, 'w') as f:
@@ -170,9 +179,11 @@ def store_global_metrics(
     highest_key = 0
     for id in training_status['parameters']['global-metrics']:
         if highest_key < int(id):
-            highest_key = id
-    
-    training_status['parameters']['global-metrics'][str(highest_key + 1)] = metrics
+            highest_key = int(id)
+    if not highest_key == 0:
+        highest_key += 1
+
+    training_status['parameters']['global-metrics'][str(highest_key)] = metrics
     with open(training_status_path, 'w') as f:
         json.dump(training_status, f, indent=4) 
     
@@ -192,6 +203,9 @@ def store_update(
  
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
+
+    if not training_status['parameters']['start']:
+        return False
 
     if training_status['parameters']['complete']:
         return False

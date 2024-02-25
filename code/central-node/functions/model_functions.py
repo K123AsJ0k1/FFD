@@ -47,34 +47,33 @@ class FederatedLogisticRegression(nn.Module):
     def apply_parameters(model, parameters):
         model.load_state_dict(parameters)
 # Refactored
-def get_train_test_loaders() -> any:
-    GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
-    
+def get_train_test_loaders(
+    global_parameters: any 
+) -> any:
     train_tensor = torch.load('tensors/train.pt')
     test_tensor = torch.load('tensors/test.pt')
 
     train_loader = DataLoader(
         train_tensor,
-        batch_size = int(len(train_tensor) * GLOBAL_PARAMETERS['sample-rate']),
-        generator = torch.Generator().manual_seed(GLOBAL_PARAMETERS['seed'])
+        batch_size = int(len(train_tensor) * global_parameters['sample-rate']),
+        generator = torch.Generator().manual_seed(global_parameters['seed'])
     )
     test_loader = DataLoader(test_tensor, 64)
     return train_loader,test_loader
 # Refactored
 def train(
     model: any,
-    train_loader: any
+    train_loader: any,
+    global_parameters: any
 ):
-    GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
-    
     opt_func = None
-    if GLOBAL_PARAMETERS['optimizer'] == 'SGD':
+    if global_parameters['optimizer'] == 'SGD':
         opt_func = torch.optim.SGD
 
-    optimizer = opt_func(model.parameters(), GLOBAL_PARAMETERS['learning-rate'])
+    optimizer = opt_func(model.parameters(), global_parameters['learning-rate'])
     model_type = type(model)
     
-    for epoch in range(GLOBAL_PARAMETERS['epochs']):
+    for epoch in range(global_parameters['epochs']):
         losses = []
         for batch in train_loader:
             loss = model_type.train_step(model, batch)
@@ -176,7 +175,10 @@ def model_inference(
 
     return output.tolist()
 # Refactored
-def initial_model_training() -> bool:
+def initial_model_training(
+    logger: any,
+    global_parameters: any
+) -> bool:
     training_status_path = 'logs/training_status.txt'
     if not os.path.exists(training_status_path):
         return False
@@ -185,24 +187,29 @@ def initial_model_training() -> bool:
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
 
+    if not training_status['parameters']['start']:
+        return False
+
     if not training_status['parameters']['data-split'] or not training_status['parameters']['preprocessed']:
         return False
 
     if training_status['parameters']['trained']:
         return False
 
-    GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
     model_path = 'models/global_model_0.pth'
 
-    torch.manual_seed(GLOBAL_PARAMETERS['seed'])
+    torch.manual_seed(global_parameters['seed'])
     
-    given_train_loader, given_test_loader = get_train_test_loaders()
+    given_train_loader, given_test_loader = get_train_test_loaders(
+        global_parameters = global_parameters
+    )
 
-    lr_model = FederatedLogisticRegression(dim = GLOBAL_PARAMETERS['input-size'])
+    lr_model = FederatedLogisticRegression(dim = global_parameters['input-size'])
     
     train(
         model = lr_model, 
         train_loader = given_train_loader,  
+        global_parameters = global_parameters
     )
     
     test_metrics = test(
