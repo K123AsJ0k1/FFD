@@ -4,24 +4,26 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 import logging
 import os
-# Needs refactoring
+# Refactored and works
 def create_app():
     app = Flask(__name__)
+    
+    central_log_path = 'logs/central.log'
+    if os.path.exists(central_log_path):
+        os.remove(central_log_path)
 
     app.config.from_object(Config)
-    logging.basicConfig(level = logging.WARNING, format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
-    
-    enviroment = 'PROD'
-    if enviroment == 'DEV':
-        logging.basicConfig(level = logging.INFO, format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
-        app.logger.warning('Choosen enviroment is development')
-        app.config.from_object('config.DevConfig')
-    elif enviroment == 'PROD':
-        app.logger.warning('Choosen enviroment is production')
-        app.config.from_object('config.ProdConfig')
+    logger = logging.getLogger('central-logger')
+    logger.setLevel(logging.INFO)
+    file_handler = logging.FileHandler('logs/central.log')
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+    app.logger = logger
+
     from functions.storage_functions import initilize_training_status
     status = initilize_training_status()
-    app.logger.warning('Training status created: ' + str(status))
+    app.logger.info('Training status created: ' + str(status))
     
     scheduler = BackgroundScheduler(daemon = True)
     from functions.fed_functions import send_context_to_workers
@@ -51,14 +53,14 @@ def create_app():
         args = given_args 
     )
     scheduler.start()
-    app.logger.warning('Scheduler ready')
+    app.logger.info('Scheduler ready')
 
     from routes.general_routes import general
-    app.logger.warning('Routes imported')
+    app.logger.info('Routes imported')
 
     app.register_blueprint(general)
-    app.logger.warning('Routes registered')
+    app.logger.info('Routes registered')
     
-    app.logger.warning('Central ready')
+    app.logger.info('Central ready')
     os.environ['STATUS'] = 'waiting'
     return app

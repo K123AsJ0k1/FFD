@@ -274,16 +274,16 @@ def evalute_global_model(
     thresholds = central_parameters['metric-thresholds']
     conditions = central_parameters['metric-conditions']
     for key,value in test_metrics.items():
-        logger.warning('Metric ' + str(key) + ' with threshold ' + str(thresholds[key]) + ' and condition ' + str(conditions[key]))
+        logger.info('Metric ' + str(key) + ' with threshold ' + str(thresholds[key]) + ' and condition ' + str(conditions[key]))
         if conditions[key] == '>=' and thresholds[key] <= value:
-            logger.warning('Passed with ' + str(value))
+            logger.info('Passed with ' + str(value))
             succesful_metrics += 1
             continue
         if conditions[key] == '<=' and value <= thresholds[key]:
-            logger.warning('Passed with ' + str(value))
+            logger.info('Passed with ' + str(value))
             succesful_metrics += 1
             continue
-        logger.warning('Failed with ' + str(value))
+        logger.info('Failed with ' + str(value))
 
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
@@ -316,35 +316,35 @@ def central_federated_pipeline(
         central_parameters = task_central_parameters,
         worker_parameters = task_worker_parameters
     )
-    task_logger.warning('Global data split:' + str(status))
+    task_logger.info('Global data split:' + str(status))
     
     status = preprocess_into_train_test_and_evaluate_tensors(
         logger = task_logger,
         global_parameters = task_global_parameters,
         central_parameters = task_central_parameters
     )
-    task_logger.warning('Global preprocessing:' + str(status))
+    task_logger.info('Global preprocessing:' + str(status))
     
     status = initial_model_training(
         logger = task_logger,
         global_parameters = task_global_parameters
     )
-    task_logger.warning('Global training:' + str(status))
+    task_logger.info('Global training:' + str(status))
     
     status = split_data_between_workers(
         logger = task_logger
     )
-    task_logger.warning('Global splitting:' + str(status))
+    task_logger.info('Global splitting:' + str(status))
     
     status = update_global_model(
         logger = task_logger,
         central_parameters = task_central_parameters
     )
-    task_logger.warning('Global update:' + str(status))
+    task_logger.info('Global update:' + str(status))
     
     status = evalute_global_model(
         logger = task_logger,
         global_parameters = task_global_parameters,
         central_parameters = task_central_parameters
     )
-    task_logger.warning('Global evaluation:' + str(status))
+    task_logger.info('Global evaluation:' + str(status))

@@ -1,4 +1,4 @@
-from flask import Blueprint, current_app, request, jsonify
+from flask import Blueprint, current_app, request, jsonify, render_template
 import json
 
 from functions.data_functions import *
@@ -10,6 +10,11 @@ general = Blueprint('general', __name__)
 @general.route('/demo', methods=["GET"]) 
 def demo():
     return 'Ok', 200
+@general.route('/logs', methods=["GET"]) 
+def central_logs():
+    with open('logs/central.log', 'r') as f:
+        logs = f.readlines()
+    return render_template('logs.html', logs = logs)
 # Refactored and works
 @general.route('/status', methods=["POST"])
 def worker_status():
