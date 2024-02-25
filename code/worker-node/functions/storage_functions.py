@@ -6,7 +6,7 @@ import os
 import json
 
 from collections import OrderedDict
-
+ 
 '''
 worker status format:
 - status dict
@@ -14,8 +14,9 @@ worker status format:
     - address: str
     - stored: str
     - preprocessed: bool
-    - training: bool
-    - updating: bool
+    - trained: bool
+    - updated: bool
+    - completed: bool
     - columns: list
     - train-test-ratio: float
     - cycle: int
@@ -55,7 +56,7 @@ def initilize_worker_status():
         json.dump(worker_status, f, indent=4)
  
     return True
-# Refactored
+# Refactored and works
 def store_training_context(
     global_parameters: any,
     worker_parameters: any,
@@ -119,7 +120,7 @@ def store_training_context(
     os.environ['STATUS'] = 'stored'
 
     return 'stored'
-# Refactored
+# Refactored and works
 def store_local_metrics(
    metrics: any
 ) -> bool:
@@ -135,7 +136,7 @@ def store_local_metrics(
         if highest_key < int(id):
             highest_key = id
 
-    worker_status['local-metrics'][str(highest_key)] = metrics
+    worker_status['local-metrics'][str(highest_key + 1)] = metrics
     with open(worker_status_path, 'w') as f:
         json.dump(worker_status, f, indent=4) 
     return True

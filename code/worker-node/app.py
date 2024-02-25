@@ -18,6 +18,7 @@ def create_app():
     elif enviroment == 'PROD':
         app.logger.warning('Choosen enviroment is production')
         app.config.from_object('config.ProdConfig')
+    
     from functions.storage_functions import initilize_worker_status
     status = initilize_worker_status()
     app.logger.warning('Worker status created: ' + str(status))

@@ -8,7 +8,7 @@ import json
 from functions.data_functions import *
 from functions.model_functions import *
 from functions.storage_functions import *
-
+ 
 # Refactored and works 
 def send_status_to_central(
     logger: any, 
@@ -46,7 +46,7 @@ def send_status_to_central(
     except Exception as e:
         logger.error('Status sending error:' +  str(e)) 
         return False
-# Created    
+# Refactored and works
 def send_update(
     logger: any, 
     central_address: str
@@ -107,13 +107,11 @@ def send_update(
     except Exception as e:
         logger.error('Status sending error:' + str(e))
         return False
-# Created
+# Refactored and works
 def worker_federated_pipeline(
     task_logger: any,
     task_central_address: str
 ):
-    status = initilize_worker_status()
-    task_logger.warning('Logging creation:' + str(status))
     status = preprocess_into_train_and_test_tensors(
         logger = task_logger
     )
