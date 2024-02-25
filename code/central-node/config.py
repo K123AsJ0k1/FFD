@@ -22,26 +22,39 @@ class Config:
         'optimizer':'SGD',
         'epochs': 5
     }
-    # Needs to be refactored to have cycle and metrics thresholds
+    
     CENTRAL_PARAMETERS = {
         'sample-pool': 500000,
         'train-eval-ratio': 0.5,
         'train-test-ratio': 0.8,
         'min-update-amount': 1,
-        'max-cycles':2,
-        'min-metric-success': 3,
+        'max-cycles':5,
+        'min-metric-success': 6,
         'metric-thresholds': {
-            'true-positives': 2,
-            'false-positives': 2,
-            'true-negatives': 2, 
-            'false-negatives': 2,
-            'recall': 0.05,
-            'selectivity': 0.05,
-            'precision': 0.05,
+            'true-positives': 50,
+            'false-positives': 100,
+            'true-negatives': 1000, 
+            'false-negatives': 100,
+            'recall': 0.40,
+            'selectivity': 0.99,
+            'precision': 0.80,
             'miss-rate': 0.05,
             'fall-out': 0.05,
-            'balanced-accuracy': 0.05,
-            'accuracy': 0.05
+            'balanced-accuracy': 0.85,
+            'accuracy': 0.99
+        },
+        'metric-condition': {
+            'true-positives': '>=',
+            'false-positives': '<=',
+            'true-negatives': '>=', 
+            'false-negatives': '<=',
+            'recall': '>=',
+            'selectivity': '>=',
+            'precision': '>=',
+            'miss-rate': '<=',
+            'fall-out': '<=',
+            'balanced-accuracy': '>=',
+            'accuracy': '>='
         }
     }
 

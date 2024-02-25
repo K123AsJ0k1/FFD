@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 
 from functions.data_functions import * 
 from functions.storage_functions import *
-# Refactored
+# Refactored 
 class FederatedLogisticRegression(nn.Module):
     def __init__(self, dim, bias=True):
         super().__init__()

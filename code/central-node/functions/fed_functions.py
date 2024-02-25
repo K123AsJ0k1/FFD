@@ -256,13 +256,18 @@ def evalute_global_model(
     
     succesful_metrics = 0
     thresholds = central_parameters['metric-thresholds']
+    conditions = central_parameters['metric-conditions']
     for key,value in test_metrics.items():
-        logger.warning('Metric ' + str(key) + ' with threshold:' + str(thresholds[key]))
-        if thresholds[key] <= value:
+        logger.warning('Metric ' + str(key) + ' with threshold ' + str(thresholds[key]) + ' and condition ' + str(conditions[key]))
+        if conditions[key] == '>=' and thresholds[key] <= value:
             logger.warning('Passed with ' + str(value))
             succesful_metrics += 1
-        else:
-            logger.warning('Failed with ' + str(value))
+            continue
+        if conditions[key] == '<=' and value <= thresholds[key]:
+            logger.warning('Passed with ' + str(value))
+            succesful_metrics += 1
+            continue
+        logger.warning('Failed with ' + str(value))
 
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)

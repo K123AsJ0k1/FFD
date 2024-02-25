@@ -3,7 +3,7 @@ from flask import current_app
 import torch 
 import os
 import json
-
+ 
 '''
 training status format:
 - entry: dict
@@ -106,6 +106,11 @@ def store_worker_status(
             local_metrics = training_status['workers'][str(duplicate_id)]['local-metrics']
             del training_status['workers'][str(duplicate_id)]
 
+        old_worker_data_path = 'worker_' + str(worker_key) + '_' + training_status['parameters']['cycle'] + '.csv'
+        if os.path.exists(old_worker_data_path):
+            new_worker_data_path = 'worker_' + str(smallest_missing_id) + '_' + training_status['parameters']['cycle'] + '.csv'
+            os.rename(old_worker_data_path,new_worker_data_path)
+
         training_status['workers'][str(smallest_missing_id)] = {
             'address': worker_address,
             'status': worker_status,
@@ -151,7 +156,7 @@ def store_worker_status(
                 json.dump(training_status, f, indent=4)
             return worker_status['id'], worker_address, 'rerouted'
 # Refactpred and works
-def store_global_metrics(
+def store_global_metrics( 
    metrics: any
 ) -> bool:
     training_status_path = 'logs/training_status.txt'
@@ -167,7 +172,7 @@ def store_global_metrics(
         if highest_key < int(id):
             highest_key = id
     
-    training_status['parameters']['global-metrics'][str(highest_key)] = metrics
+    training_status['parameters']['global-metrics'][str(highest_key + 1)] = metrics
     with open(training_status_path, 'w') as f:
         json.dump(training_status, f, indent=4) 
     
@@ -196,7 +201,6 @@ def store_update(
 
     model_path = 'models/worker_' + str(worker_id) + '_' + str(cycle) + '_' + str(train_size) + '.pth'
     torch.save(local_model, model_path)
-    # Fix the inconsistent string worker id
     for worker_key in training_status['workers'].keys():
         if worker_key == str(worker_id):
             training_status['workers'][worker_key]['status'] = 'complete'
