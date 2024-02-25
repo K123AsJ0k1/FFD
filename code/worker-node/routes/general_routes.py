@@ -1,4 +1,4 @@
-from flask import Blueprint, current_app, request, jsonify
+from flask import Blueprint, current_app, request, jsonify, render_template
 import json
 
 from functions.data_functions import *
@@ -9,6 +9,12 @@ general = Blueprint('general', __name__)
 @general.route('/demo', methods=["GET"]) 
 def demo():
     return 'Ok', 200
+# Created
+@general.route('/logs', methods=["GET"]) 
+def worker_logs():
+    with open('logs/worker.log', 'r') as f:
+        logs = f.readlines()
+    return render_template('logs.html', logs = logs)
 # Refactored
 @general.route('/context', methods=["POST"]) 
 def set_training_context():

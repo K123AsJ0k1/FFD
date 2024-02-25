@@ -39,7 +39,7 @@ def send_status_to_central(
             worker_status = json.load(f)
         worker_status['id'] = given_data['id']
         worker_status['address'] = given_data['address']
-        logger.warning('Central message: ' + given_data['message'])
+        logger.info('Central message: ' + given_data['message'])
         with open(worker_status_path, 'w') as f:
             json.dump(worker_status, f, indent=4) 
         return True
@@ -115,13 +115,13 @@ def worker_federated_pipeline(
     status = preprocess_into_train_and_test_tensors(
         logger = task_logger
     )
-    task_logger.warning('Local preprocessing:' + str(status))
+    task_logger.info('Local preprocessing:' + str(status))
     status = local_model_training(
         logger = task_logger
     )
-    task_logger.warning('Local training:' + str(status))
+    task_logger.info('Local training:' + str(status))
     status = send_update(
         logger = task_logger,
         central_address = task_central_address
     )
-    task_logger.warning('Local updating:' + str(status))
+    task_logger.info('Local updating:' + str(status))
