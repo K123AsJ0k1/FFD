@@ -5,11 +5,11 @@ import pandas as pd
 import torch  
 import os
 import json
-
+ 
 from sklearn.model_selection import train_test_split
 from torch.utils.data import TensorDataset
 
-# Refactored
+# Refactored and works
 def preprocess_into_train_and_test_tensors(
     logger: any
 ) -> bool:
@@ -20,6 +20,9 @@ def preprocess_into_train_and_test_tensors(
     worker_status = None
     with open(worker_status_path, 'r') as f:
         worker_status = json.load(f)
+
+    if worker_status['completed']:
+        return False
 
     if not worker_status['stored']:
         return False
@@ -83,4 +86,4 @@ def preprocess_into_train_and_test_tensors(
 
     os.environ['STATUS'] = 'preprocessed'
 
-    return True
+    return True 

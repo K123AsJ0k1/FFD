@@ -1,21 +1,31 @@
 from flask import current_app
-
+ 
 import os
 import json
 
 import numpy as np
 import pandas as pd
 import torch 
-
+ 
 from sklearn.model_selection import train_test_split
 from torch.utils.data import TensorDataset
 
 # Refactored and works
-def central_worker_data_split() -> bool:
+def central_worker_data_split(
+    logger: any,  
+    central_parameters: any,
+    worker_parameters: any 
+) -> bool:
     training_status_path = 'logs/training_status.txt'
     training_status = None
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
+
+    if not training_status['parameters']['start']:
+        return False
+
+    if training_status['parameters']['complete']:
+        return False
 
     if training_status['parameters']['data-split']:
         return False
@@ -25,18 +35,15 @@ def central_worker_data_split() -> bool:
 
     os.environ['STATUS'] = 'data splitting'
     
-    CENTRAL_PARAMETERS = current_app.config['CENTRAL_PARAMETERS']
-    WORKER_PARAMETERS = current_app.config['WORKER_PARAMETERS']
-
     data_path = 'data/formated_fraud_detection_data.csv'
     source_df = pd.read_csv(data_path)
 
     splitted_data_df = source_df.drop('step', axis = 1)
     
-    central_data_pool = splitted_data_df.sample(n =  CENTRAL_PARAMETERS['sample-pool'])
+    central_data_pool = splitted_data_df.sample(n = central_parameters['sample-pool'])
     central_indexes = central_data_pool.index.tolist()
     splitted_data_df.drop(central_indexes)
-    worker_data_pool = splitted_data_df.sample(n =  WORKER_PARAMETERS['sample-pool'])
+    worker_data_pool = splitted_data_df.sample(n = worker_parameters['sample-pool'])
 
     central_data_pool.to_csv(central_pool_path, index = False)    
     worker_data_pool.to_csv(worker_pool_path, index = False)
@@ -47,11 +54,21 @@ def central_worker_data_split() -> bool:
 
     return True
 # Refactored and works
-def preprocess_into_train_test_and_evaluate_tensors() -> bool:
+def preprocess_into_train_test_and_evaluate_tensors(
+    logger: any,
+    global_parameters: any,
+    central_parameters: any
+) -> bool:
     training_status_path = 'logs/training_status.txt'
     training_status = None
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
+
+    if not training_status['parameters']['start']:
+        return False
+
+    if training_status['parameters']['complete']:
+        return False
 
     if not training_status['parameters']['data-split']:
         return False
@@ -59,9 +76,6 @@ def preprocess_into_train_test_and_evaluate_tensors() -> bool:
     if training_status['parameters']['preprocessed']:
         return False
 
-    GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
-    CENTRAL_PARAMETERS = current_app.config['CENTRAL_PARAMETERS']
-    
     central_pool_path = 'data/central_pool.csv'
     train_tensor_path = 'tensors/train.pt'
     test_tensor_path = 'tensors/test.pt'
@@ -71,27 +85,27 @@ def preprocess_into_train_test_and_evaluate_tensors() -> bool:
     
     central_data_df = pd.read_csv(central_pool_path)
     
-    preprocessed_df = central_data_df[GLOBAL_PARAMETERS['used-columns']]
-    for column in GLOBAL_PARAMETERS['scaled-columns']:
+    preprocessed_df = central_data_df[global_parameters['used-columns']]
+    for column in global_parameters['scaled-columns']:
         mean = preprocessed_df[column].mean()
         std_dev = preprocessed_df[column].std()
         preprocessed_df[column] = (preprocessed_df[column] - mean)/std_dev
 
-    X = preprocessed_df.drop(GLOBAL_PARAMETERS['target-column'], axis = 1).values
-    y = preprocessed_df[GLOBAL_PARAMETERS['target-column']].values
+    X = preprocessed_df.drop(global_parameters['target-column'], axis = 1).values
+    y = preprocessed_df[global_parameters['target-column']].values
         
     X_train_test, X_eval, y_train_test, y_eval = train_test_split(
         X, 
         y, 
-        train_size = CENTRAL_PARAMETERS['train-eval-ratio'], 
-        random_state = GLOBAL_PARAMETERS['seed']
+        train_size = central_parameters['train-eval-ratio'], 
+        random_state = global_parameters['seed']
     )
 
     X_train, X_test, y_train, y_test = train_test_split(
         X_train_test, 
         y_train_test, 
-        train_size = CENTRAL_PARAMETERS['train-test-ratio'], 
-        random_state = GLOBAL_PARAMETERS['seed']
+        train_size = central_parameters['train-test-ratio'], 
+        random_state = global_parameters['seed']
     )
 
     X_train = np.array(X_train, dtype=np.float32)
@@ -124,7 +138,7 @@ def preprocess_into_train_test_and_evaluate_tensors() -> bool:
         json.dump(training_status, f, indent=4) 
     
     return True
-# Refactored
+# Refactored and works
 def split_data_between_workers(
     logger: any
 ) -> bool:
@@ -132,6 +146,12 @@ def split_data_between_workers(
     training_status = None
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
+
+    if not training_status['parameters']['start']:
+        return False
+
+    if training_status['parameters']['complete']:
+        return False
 
     if not training_status['parameters']['preprocessed']:
         return False

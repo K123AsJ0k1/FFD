@@ -8,8 +8,8 @@ import json
 from functions.data_functions import *
 from functions.model_functions import *
 from functions.storage_functions import *
-
-# Refactored and works
+ 
+# Refactored and works 
 def send_status_to_central(
     logger: any, 
     central_address: str
@@ -35,14 +35,18 @@ def send_status_to_central(
             }
         )
         given_data = json.loads(response.text)
+        with open(worker_status_path, 'r') as f:
+            worker_status = json.load(f)
         worker_status['id'] = given_data['id']
+        worker_status['address'] = given_data['address']
+        logger.info('Central message: ' + given_data['message'])
         with open(worker_status_path, 'w') as f:
             json.dump(worker_status, f, indent=4) 
         return True
     except Exception as e:
         logger.error('Status sending error:' +  str(e)) 
         return False
-# Created    
+# Refactored and works
 def send_update(
     logger: any, 
     central_address: str
@@ -55,6 +59,9 @@ def send_update(
         worker_status = json.load(f)
 
     if not worker_status['stored'] or not worker_status['preprocessed'] or not worker_status['trained']:
+        return False
+
+    if worker_status['completed']:
         return False
 
     if worker_status['updated']:
@@ -94,29 +101,27 @@ def send_update(
             worker_status['updated'] = True
             with open(worker_status_path, 'w') as f:
                 json.dump(worker_status, f, indent=4)
-            os.environ['STATUS'] = 'updated'
+            os.environ['STATUS'] = 'waiting'
             return True
         return False
     except Exception as e:
         logger.error('Status sending error:' + str(e))
         return False
-# Created
+# Refactored and works
 def worker_federated_pipeline(
     task_logger: any,
     task_central_address: str
 ):
-    status = initilize_worker_status()
-    task_logger.warning('Logging creation:' + str(status))
     status = preprocess_into_train_and_test_tensors(
         logger = task_logger
     )
-    task_logger.warning('Local preprocessing:' + str(status))
+    task_logger.info('Local preprocessing:' + str(status))
     status = local_model_training(
         logger = task_logger
     )
-    task_logger.warning('Local training:' + str(status))
+    task_logger.info('Local training:' + str(status))
     status = send_update(
         logger = task_logger,
         central_address = task_central_address
     )
-    task_logger.warning('Local updating:' + str(status))
+    task_logger.info('Local updating:' + str(status))

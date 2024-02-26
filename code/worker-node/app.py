@@ -7,19 +7,22 @@ import os
 def create_app():
     app = Flask(__name__)
 
-    app.config.from_object(Config)
-    logging.basicConfig(level = logging.WARNING, format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
-    
-    enviroment = 'PROD'
-    if enviroment == 'DEV':
-        logging.basicConfig(level = logging.INFO, format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
-        app.logger.warning('Choosen enviroment is development')
-        app.config.from_object('config.DevConfig')
-    elif enviroment == 'PROD':
-        app.logger.warning('Choosen enviroment is production')
-        app.config.from_object('config.ProdConfig')
+    worker_log_path = 'logs/worker.log'
+    if os.path.exists(worker_log_path):
+        os.remove(worker_log_path)
 
-    os.environ['STATUS'] = 'waiting'
+    app.config.from_object(Config)
+    logger = logging.getLogger('worker-logger')
+    logger.setLevel(logging.INFO)
+    file_handler = logging.FileHandler(worker_log_path)
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+    app.logger = logger
+    
+    from functions.storage_functions import initilize_worker_status
+    status = initilize_worker_status()
+    app.logger.info('Worker status created: ' + str(status))
     
     scheduler = BackgroundScheduler(daemon = True)
     from functions.fed_functions import send_status_to_central
@@ -35,17 +38,18 @@ def create_app():
     scheduler.add_job(
         func = worker_federated_pipeline,
         trigger = "interval",
-        seconds = 30,
-        args = given_args
+        seconds = 50,
+        args = given_args 
     )
     scheduler.start()
-    app.logger.warning('Scheduler ready')
+    app.logger.info('Scheduler ready')
 
     from routes.general_routes import general
-    app.logger.warning('Routes imported')
+    app.logger.info('Routes imported')
 
     app.register_blueprint(general)
-    app.logger.warning('Routes registered')
+    app.logger.info('Routes registered')
     
-    app.logger.warning('Node ready')
+    app.logger.info('Worker ready')
+    os.environ['STATUS'] = 'waiting'
     return app

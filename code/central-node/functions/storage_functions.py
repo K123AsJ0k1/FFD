@@ -3,7 +3,7 @@ from flask import current_app
 import torch 
 import os
 import json
-
+ 
 '''
 training status format:
 - entry: dict
@@ -13,7 +13,11 @@ training status format:
       - training: bool
       - splitting: bool
       - update: bool
+      - evaluated: bool
+      - complete
+      - worker-updates: int
       - cycle: int
+      - columns: list
       - global metrics: list
          - metrics: dict
             - confusion list
@@ -49,6 +53,7 @@ def initilize_training_status():
 
     training_status = {
         'parameters': {
+            'start': False,
             'data-split': False,
             'preprocessed': False,
             'trained': False,
@@ -56,8 +61,9 @@ def initilize_training_status():
             'sent': False,
             'updated': False,
             'evaluated': False,
+            'complete': False,
             'worker-updates': 0,
-            'cycle': 0,
+            'cycle': 0, 
             'columns': None,
             'global-metrics': {}
         },
@@ -69,26 +75,25 @@ def initilize_training_status():
     return True
 # refactored and works
 def store_worker_status(
-    worker_id: int,
-    worker_ip: str,
-    worker_status: str
+    worker_address: str,
+    worker_status: any
 ) -> any:
     training_status_path = 'logs/training_status.txt'
     
-    training_status = None
     if not os.path.exists(training_status_path):
         return False
     
+    training_status = None
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
 
-    if worker_id == None:
+    if worker_status['id'] == None:
         duplicate_id = -1
         used_keys = []
         
         for worker_key in training_status['workers'].keys():
             worker_metadata = training_status['workers'][worker_key]
-            if worker_metadata['address'] == worker_ip:
+            if worker_metadata['address'] == worker_status['address']:
                 duplicate_id = int(worker_key)
             used_keys.append(int(worker_key))
             
@@ -97,49 +102,72 @@ def store_worker_status(
         while smallest_missing_id in set_of_used_keys:
             smallest_missing_id += 1
         
-        local_metrics = []
+        local_metrics = {}
+        local_stored = False
+        local_preprocessed = False
+        local_trained = False
+        local_updated = False
         if -1 < duplicate_id:
+            local_stored = training_status['workers'][str(duplicate_id)]['stored']
+            local_preprocessed = training_status['workers'][str(duplicate_id)]['preprocessed']
+            local_trained = training_status['workers'][str(duplicate_id)]['trained']
+            local_updated = training_status['workers'][str(duplicate_id)]['updated']
             local_metrics = training_status['workers'][str(duplicate_id)]['local-metrics']
             del training_status['workers'][str(duplicate_id)]
 
+        old_worker_data_path = 'worker_' + str(duplicate_id) + '_' + str(training_status['parameters']['cycle']) + '.csv'
+        if os.path.exists(old_worker_data_path):
+            new_worker_data_path = 'worker_' + str(smallest_missing_id) + '_' + str(training_status['parameters']['cycle']) + '.csv'
+            os.rename(old_worker_data_path,new_worker_data_path)
+
         training_status['workers'][str(smallest_missing_id)] = {
-            'address': worker_ip,
-            'status': worker_status,
-            'stored': False,
-            'preprocessed': False,
-            'training': False,
-            'updated': False,
-            'cycle': 0,
+            'address': worker_address,
+            'status': worker_status['status'],
+            'stored': local_stored,
+            'preprocessed': local_preprocessed,
+            'trained': local_trained,
+            'updated': local_updated,
+            'cycle': training_status['parameters']['cycle'],
             'local-metrics': local_metrics
         }
         with open(training_status_path, 'w') as f:
             json.dump(training_status, f, indent=4)
         
-        return smallest_missing_id, 'registered'
+        return smallest_missing_id, worker_address, 'registered'
     else:
-        worker_metadata = training_status['workers'][str(worker_id)]
-        if worker_metadata['address'] == worker_ip:
+        worker_metadata = training_status['workers'][str(worker_status['id'])]
+        if worker_metadata['address'] == worker_address:
             # When worker is already registered and address has stayed the same
-            training_status['workers'][str(worker_id)]['status'] = worker_status
+            worker_metadata['status'] = worker_status['status']
+            worker_metadata['stored'] = worker_status['stored']
+            worker_metadata['preprocessed'] = worker_status['preprocessed']
+            worker_metadata['trained'] = worker_status['trained']
+            worker_metadata['updated'] = worker_status['updated']
+            worker_metadata['cycle'] = worker_status['cycle']
+            worker_metadata['local-metrics'] = worker_status['local-metrics']
+            training_status['workers'][str(worker_status['id'])] = worker_metadata
+
             with open(training_status_path, 'w') as f:
                 json.dump(training_status, f, indent=4)
-            return worker_id, 'checked'
+            return worker_status['id'], worker_address, 'checked'
         else:
             # When worker id has stayed the same, but address has changed due to load balancing
-            training_status['workers'][str(worker_id)]['status'] = worker_status
-            training_status['workers'][str(worker_id)]['address'] = worker_ip
+            worker_metadata['status'] = worker_status['status']
+            worker_metadata['address'] = worker_address
+            worker_metadata['stored'] = worker_status['stored']
+            worker_metadata['preprocessed'] = worker_status['preprocessed']
+            worker_metadata['trained'] = worker_status['trained']
+            worker_metadata['updated'] = worker_status['updated']
+            worker_metadata['cycle'] = worker_status['cycle']
+            worker_metadata['local-metrics'] = worker_status['local-metrics']
+            training_status['workers'][str(worker_status['id'])] = worker_metadata
             with open(training_status_path, 'w') as f:
                 json.dump(training_status, f, indent=4)
-            return worker_id, 'rerouted'
+            return worker_status['id'], worker_address, 'rerouted'
 # Refactpred and works
-def store_global_metrics(
+def store_global_metrics( 
    metrics: any
 ) -> bool:
-    # For some reason this function is unable to modify existing file
-    # but it is able to create a new file with the metrics
-    # Reason was using older training status in the parent function
-    #import copy
-    #print('Store global metrics')
     training_status_path = 'logs/training_status.txt'
     if not os.path.exists(training_status_path):
         return False
@@ -150,15 +178,17 @@ def store_global_metrics(
 
     highest_key = 0
     for id in training_status['parameters']['global-metrics']:
-        if highest_key < id:
-            highest_key = id
-    
+        if highest_key < int(id):
+            highest_key = int(id)
+    if not highest_key == 0:
+        highest_key += 1
+
     training_status['parameters']['global-metrics'][str(highest_key)] = metrics
     with open(training_status_path, 'w') as f:
         json.dump(training_status, f, indent=4) 
     
     return True
-# Refactored
+# Refactored and works
 def store_update( 
     worker_id: str,
     local_model: any,
@@ -174,12 +204,17 @@ def store_update(
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
 
+    if not training_status['parameters']['start']:
+        return False
+
+    if training_status['parameters']['complete']:
+        return False
+
     if not training_status['parameters']['sent']:
         return False
 
     model_path = 'models/worker_' + str(worker_id) + '_' + str(cycle) + '_' + str(train_size) + '.pth'
     torch.save(local_model, model_path)
-    # Fix the inconsistent string worker id
     for worker_key in training_status['workers'].keys():
         if worker_key == str(worker_id):
             training_status['workers'][worker_key]['status'] = 'complete'

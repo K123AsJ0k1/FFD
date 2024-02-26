@@ -1,13 +1,13 @@
 from flask import current_app
 import torch
-import torch.nn as nn
+import torch.nn as nn 
 
 from sklearn.metrics import confusion_matrix
 from torch.utils.data import DataLoader
 
 from functions.data_functions import * 
 from functions.storage_functions import *
-# Refactored
+# Refactored and works
 class FederatedLogisticRegression(nn.Module):
     def __init__(self, dim, bias=True):
         super().__init__()
@@ -46,35 +46,34 @@ class FederatedLogisticRegression(nn.Module):
     @staticmethod
     def apply_parameters(model, parameters):
         model.load_state_dict(parameters)
-# Refactored
-def get_train_test_loaders() -> any:
-    GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
-    
+# Refactored and works
+def get_train_test_loaders(
+    global_parameters: any 
+) -> any:
     train_tensor = torch.load('tensors/train.pt')
     test_tensor = torch.load('tensors/test.pt')
 
     train_loader = DataLoader(
         train_tensor,
-        batch_size = int(len(train_tensor) * GLOBAL_PARAMETERS['sample-rate']),
-        generator = torch.Generator().manual_seed(GLOBAL_PARAMETERS['seed'])
+        batch_size = int(len(train_tensor) * global_parameters['sample-rate']),
+        generator = torch.Generator().manual_seed(global_parameters['seed'])
     )
     test_loader = DataLoader(test_tensor, 64)
     return train_loader,test_loader
-# Refactored
+# Refactored and works
 def train(
     model: any,
-    train_loader: any
+    train_loader: any,
+    global_parameters: any
 ):
-    GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
-    
     opt_func = None
-    if GLOBAL_PARAMETERS['optimizer'] == 'SGD':
+    if global_parameters['optimizer'] == 'SGD':
         opt_func = torch.optim.SGD
 
-    optimizer = opt_func(model.parameters(), GLOBAL_PARAMETERS['learning-rate'])
+    optimizer = opt_func(model.parameters(), global_parameters['learning-rate'])
     model_type = type(model)
     
-    for epoch in range(GLOBAL_PARAMETERS['epochs']):
+    for epoch in range(global_parameters['epochs']):
         losses = []
         for batch in train_loader:
             loss = model_type.train_step(model, batch)
@@ -83,7 +82,7 @@ def train(
             optimizer.step()
             optimizer.zero_grad()
         print("Epoch {}, loss = {}".format(epoch + 1, torch.sum(loss) / len(train_loader)))
-# Refactored
+# Refactored and works
 def test(
     model: any, 
     test_loader: any
@@ -112,17 +111,30 @@ def test(
             total_confusion_matrix[3] += int(fn) # False negative
  
         TP, FP, TN, FN = total_confusion_matrix
-
-        TPR = TP/(TP+FN)
-        TNR = TN/(TN+FP)
-        PPV = TP/(TP+FP)
-        FNR = FN/(FN+TP)
-        FPR = FP/(FP+TN)
-        BA = (TPR+TNR)/2
-        ACC = (TP + TN)/(TP + TN + FP + FN)
+        # Zero divsion can happen
+        TPR = 0
+        TNR = 0
+        PPV = 0
+        FNR = 0
+        FPR = 0
+        BA = 0
+        ACC = 0
+        try:
+            TPR = TP/(TP+FN)
+            TNR = TN/(TN+FP)
+            PPV = TP/(TP+FP)
+            FNR = FN/(FN+TP)
+            FPR = FP/(FP+TN)
+            BA = (TPR+TNR)/2
+            ACC = (TP + TN)/(TP + TN + FP + FN)
+        except Exception as e:
+            current_app.logger.warning(e)
         
         metrics = {
-            'confusion': total_confusion_matrix,
+            'true-positives': TP,
+            'false-positives': FP,
+            'true-negatives': TN,
+            'false-negatives': FN,
             'recall': float(round(TPR,5)),
             'selectivity': float(round(TNR,5)),
             'precision': float(round(PPV,5)),
@@ -162,8 +174,11 @@ def model_inference(
         output = lr_model.prediction(lr_model,given_input)
 
     return output.tolist()
-# Refactored
-def initial_model_training() -> bool:
+# Refactored and works
+def initial_model_training(
+    logger: any,
+    global_parameters: any
+) -> bool:
     training_status_path = 'logs/training_status.txt'
     if not os.path.exists(training_status_path):
         return False
@@ -172,24 +187,29 @@ def initial_model_training() -> bool:
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
 
+    if not training_status['parameters']['start']:
+        return False
+
     if not training_status['parameters']['data-split'] or not training_status['parameters']['preprocessed']:
         return False
 
     if training_status['parameters']['trained']:
         return False
 
-    GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
     model_path = 'models/global_model_0.pth'
 
-    torch.manual_seed(GLOBAL_PARAMETERS['seed'])
+    torch.manual_seed(global_parameters['seed'])
     
-    given_train_loader, given_test_loader = get_train_test_loaders()
+    given_train_loader, given_test_loader = get_train_test_loaders(
+        global_parameters = global_parameters
+    )
 
-    lr_model = FederatedLogisticRegression(dim = GLOBAL_PARAMETERS['input-size'])
+    lr_model = FederatedLogisticRegression(dim = global_parameters['input-size'])
     
     train(
         model = lr_model, 
         train_loader = given_train_loader,  
+        global_parameters = global_parameters
     )
     
     test_metrics = test(
@@ -207,7 +227,6 @@ def initial_model_training() -> bool:
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
     training_status['parameters']['trained'] = True
-    training_status['parameters']['cycle'] = training_status['parameters']['cycle'] + 1
     with open(training_status_path, 'w') as f:
         json.dump(training_status, f, indent=4) 
 
