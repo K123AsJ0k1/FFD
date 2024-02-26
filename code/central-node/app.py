@@ -15,7 +15,7 @@ def create_app():
     app.config.from_object(Config)
     logger = logging.getLogger('central-logger')
     logger.setLevel(logging.INFO)
-    file_handler = logging.FileHandler('logs/central.log')
+    file_handler = logging.FileHandler(central_log_path)
     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - %(message)s')
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)

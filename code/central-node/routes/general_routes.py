@@ -10,11 +10,19 @@ general = Blueprint('general', __name__)
 @general.route('/demo', methods=["GET"]) 
 def demo():
     return 'Ok', 200
+# Created and works
 @general.route('/logs', methods=["GET"]) 
 def central_logs():
     with open('logs/central.log', 'r') as f:
         logs = f.readlines()
     return render_template('logs.html', logs = logs)
+@general.route('/training', methods=["GET"]) 
+def training_status():
+    training_status_path = 'logs/training_status.txt'
+    training_status = None
+    with open(training_status_path, 'r') as f:
+        training_status = json.load(f)
+    return jsonify({'status':training_status})
 # Refactored and works
 @general.route('/status', methods=["POST"])
 def worker_status():

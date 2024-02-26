@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 
 from functions.data_functions import * 
 from functions.storage_functions import *
-# Refactored 
+# Refactored and works
 class FederatedLogisticRegression(nn.Module):
     def __init__(self, dim, bias=True):
         super().__init__()
@@ -46,7 +46,7 @@ class FederatedLogisticRegression(nn.Module):
     @staticmethod
     def apply_parameters(model, parameters):
         model.load_state_dict(parameters)
-# Refactored
+# Refactored and works
 def get_train_test_loaders(
     global_parameters: any 
 ) -> any:
@@ -60,7 +60,7 @@ def get_train_test_loaders(
     )
     test_loader = DataLoader(test_tensor, 64)
     return train_loader,test_loader
-# Refactored
+# Refactored and works
 def train(
     model: any,
     train_loader: any,
@@ -82,7 +82,7 @@ def train(
             optimizer.step()
             optimizer.zero_grad()
         print("Epoch {}, loss = {}".format(epoch + 1, torch.sum(loss) / len(train_loader)))
-# Refactored
+# Refactored and works
 def test(
     model: any, 
     test_loader: any
@@ -174,7 +174,7 @@ def model_inference(
         output = lr_model.prediction(lr_model,given_input)
 
     return output.tolist()
-# Refactored
+# Refactored and works
 def initial_model_training(
     logger: any,
     global_parameters: any

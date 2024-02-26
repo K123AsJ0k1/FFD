@@ -10,7 +10,7 @@ from collections import OrderedDict
 
 from functions.storage_functions import *
 from functions.model_functions import *
-# Created
+# Created and works
 def start_training():
     training_status_path = 'logs/training_status.txt'
     if not os.path.exists(training_status_path):
@@ -22,7 +22,7 @@ def start_training():
     with open(training_status_path, 'w') as f:
         json.dump(training_status, f, indent=4) 
     return True
-# Refactored
+# Refactored and works
 def send_context_to_workers(
     logger: any,
     global_parameters: any,

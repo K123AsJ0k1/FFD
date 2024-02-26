@@ -76,9 +76,6 @@ def preprocess_into_train_test_and_evaluate_tensors(
     if training_status['parameters']['preprocessed']:
         return False
 
-    #GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
-    #CENTRAL_PARAMETERS = current_app.config['CENTRAL_PARAMETERS']
-    
     central_pool_path = 'data/central_pool.csv'
     train_tensor_path = 'tensors/train.pt'
     test_tensor_path = 'tensors/test.pt'
