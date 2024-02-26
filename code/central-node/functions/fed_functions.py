@@ -10,7 +10,7 @@ from collections import OrderedDict
 
 from functions.storage_functions import *
 from functions.model_functions import *
-# Created and works
+# Created and works 
 def start_training():
     training_status_path = 'logs/training_status.txt'
     if not os.path.exists(training_status_path):
@@ -22,7 +22,7 @@ def start_training():
     with open(training_status_path, 'w') as f:
         json.dump(training_status, f, indent=4) 
     return True
-# Refactored and works
+# Refactor
 def send_context_to_workers(
     logger: any,
     global_parameters: any,
@@ -51,8 +51,27 @@ def send_context_to_workers(
     
     os.environ['STATUS'] = 'sending'
     
-    global_model_path = 'models/global_model_' + str(training_status['parameters']['cycle']) + '.pth'
-    global_model = torch.load(global_model_path)
+    models_folder_path = 'models'
+    if not os.path.exists(models_folder_path):
+        return False
+    
+    files = os.listdir(models_folder_path)
+    if len(files) == 0:
+        return False   
+    
+    current_global_model = 'models/'
+    highest_key = 0
+    for file in files:
+        first_split = file.split('.')
+        second_split = first_split[0].split('_')
+        name = str(second_split[0])
+        if name == 'global':
+            cycle = int(second_split[1])
+            if highest_key < cycle:
+                highest_key = cycle
+                current_global_model = current_global_model + file   
+
+    global_model = torch.load(current_global_model)
     formatted_global_model = {
         'weights': global_model['linear.weight'].numpy().tolist(),
         'bias': global_model['linear.bias'].numpy().tolist()
@@ -139,19 +158,22 @@ def send_context_to_workers(
         json.dump(training_status, f, indent=4)
 
     return True
-# Refactored and works(?)
+# Refactored
 def model_fed_avg(
     updates: any,
     total_sample_size: int    
 ) -> any:
+    # Refactor to use ordered dict
     weights = []
     biases = []
     for update in updates:
         parameters = update['parameters']
         worker_sample_size = update['samples']
-
-        worker_weights = np.array(parameters['weights'][0])
-        worker_bias = np.array(parameters['bias'])
+        
+        #worker_weights = np.array(parameters['weights'][0])
+        #worker_bias = np.array(parameters['bias'])
+        worker_weights = np.array(parameters['linear.weight'].tolist()[0])
+        worker_bias = np.array(parameters['linear.bias'].tolist()[0])
         
         adjusted_worker_weights = worker_weights * (worker_sample_size/total_sample_size)
         adjusted_worker_bias = worker_bias * (worker_sample_size/total_sample_size)
@@ -167,7 +189,7 @@ def model_fed_avg(
         ('linear.bias', torch.tensor(FedAvg_bias,dtype=torch.float32))
     ])
     return updated_global_model
-# Refactored and works
+# Refactored
 def update_global_model(
     logger: any,
     central_parameters: any
@@ -194,8 +216,7 @@ def update_global_model(
 
     if training_status['parameters']['worker-updates'] < central_parameters['min-update-amount']:
         return False
-
-    update_model_path = 'models/global_model_' + str(training_status['parameters']['cycle'] + 1) + '.pth'
+    
     files = os.listdir('models')
     available_updates = []
     collective_sample_size = 0
@@ -218,7 +239,7 @@ def update_global_model(
         updates = available_updates,
         total_sample_size = collective_sample_size 
     )
-
+    update_model_path = 'models/global_' + str(training_status['parameters']['cycle'] + 1) + '_' + str(len(available_updates)) + '_' + str(collective_sample_size) + '.pth'
     torch.save(new_global_model, update_model_path)
 
     with open(training_status_path, 'r') as f:
@@ -249,11 +270,29 @@ def evalute_global_model(
 
     if training_status['parameters']['evaluated']:
         return False
+    
+    models_folder_path = 'models'
+    if not os.path.exists(models_folder_path):
+        return False
+    
+    files = os.listdir(models_folder_path)
+    if len(files) == 0:
+        return False  
+    
+    current_global_model = 'models/'
+    highest_key = 0
+    for file in files:
+        first_split = file.split('.')
+        second_split = first_split[0].split('_')
+        name = str(second_split[0])
+        if name == 'global':
+            cycle = int(second_split[1])
+            if highest_key < cycle:
+                highest_key = cycle
+                current_global_model = current_global_model + file 
  
-    global_model_path = 'models/global_model_' + str(training_status['parameters']['cycle'] + 1) + '.pth'
     eval_tensor_path = 'tensors/eval.pt'
-
-    given_parameters = torch.load(global_model_path)
+    given_parameters = torch.load(current_global_model)
     
     lr_model = FederatedLogisticRegression(dim = global_parameters['input-size'])
     lr_model.apply_parameters(lr_model, given_parameters)
@@ -265,7 +304,7 @@ def evalute_global_model(
         model = lr_model, 
         test_loader = eval_loader
     )
-
+    
     status = store_global_metrics(
         metrics = test_metrics
     )

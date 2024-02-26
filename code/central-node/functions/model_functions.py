@@ -145,10 +145,11 @@ def test(
         }
         
         return metrics
-# Refactored and works
+# Refactored
 def initial_model_training(
     logger: any,
-    global_parameters: any
+    global_parameters: any,
+    central_parameters: any
 ) -> bool:
     training_status_path = 'logs/training_status.txt'
     if not os.path.exists(training_status_path):
@@ -166,9 +167,8 @@ def initial_model_training(
 
     if training_status['parameters']['trained']:
         return False
-
-    model_path = 'models/global_model_0.pth'
-
+    #global_(cycle)_(updates)_(samples).pth
+    model_path = 'models/global_0_0' + str(training_status['parameters']['samples']) + '.pth'
     torch.manual_seed(global_parameters['seed'])
     
     given_train_loader, given_test_loader = get_train_test_loaders(
@@ -232,3 +232,40 @@ def model_inference(
         output = lr_model.prediction(lr_model,given_input)
 
     return output.tolist()
+# Created
+def get_models() -> any:
+    print('get models')
+    #models_folder_path = 'models'
+    #if not os.path.exists(models_folder_path):
+    #    return None
+    #files = os.listdir(models_folder_path)
+    #if len(files) == 0:
+    #    return None
+    #stored_models = {
+    #    'global': {},
+    #    'workers': {}
+    #}
+    #for file in files:
+    #    print(file)
+    #    first_split = file.split('.')[0]
+    #    second_split = first_split.split('_')
+    #    model = torch.load(models_folder_path + '/' + file) 
+    #    print(model)
+        #formatted_local_model = {
+        #    'weights': model['linear.weight'].numpy().tolist(),
+        #    'bias': model['linear.bias'].numpy().tolist()
+        #}
+        # It would be benefiticial to change global model names into
+        # global_(cycle)_(update amount)_(pool amount).pth
+        #if second_split[0] == 'global':
+        #    cycle = str(second_split[2])
+        #    stored_models['global'][cycle] = formatted_local_model
+        #if second_split[0] == 'worker':
+        #    id = str(second_split[1])
+        #    cycle = str(second_split[2])
+        #    samples = str(second_split[3])
+        #    stored_models['workers'][id][cycle] = {
+        #        'parameters': formatted_local_model,
+        #        'samples': samples
+        #    }
+    #print(stored_models)
