@@ -122,7 +122,7 @@ def store_training_context(
     os.environ['STATUS'] = 'stored'
 
     return 'stored'
-# Refactored and works
+# Refactor
 def store_local_metrics(
    metrics: any
 ) -> bool:
@@ -133,14 +133,8 @@ def store_local_metrics(
     with open(worker_status_path, 'r') as f:
         worker_status = json.load(f)
 
-    highest_key = 0
-    for id in worker_status['local-metrics']:
-        if highest_key < int(id):
-            highest_key = int(id)
-    if not highest_key == 0:
-        highest_key += 1
-    
-    worker_status['local-metrics'][str(highest_key)] = metrics
+    new_key = len(worker_status['local-metrics'])
+    worker_status['local-metrics'][str(new_key)] = metrics
     with open(worker_status_path, 'w') as f:
         json.dump(worker_status, f, indent=4) 
     return True

@@ -30,7 +30,7 @@ def preprocess_into_train_and_test_tensors(
     if worker_status['preprocessed']:
         return False
     
-    worker_data_path = 'data/used_data_' + str(worker_status['cycle']) + '.csv'
+    worker_data_path = 'data/sample_' + str(worker_status['cycle']) + '.csv'
     if not os.path.exists(worker_data_path):
        return False
     

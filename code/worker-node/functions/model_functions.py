@@ -70,6 +70,7 @@ def train(
     model: any,
     train_loader: any
 ):
+    # Refactor to use logger
     global_parameters_path = 'logs/global_parameters.txt'
     GLOBAL_PARAMETERS = None
     with open(global_parameters_path, 'r') as f:
