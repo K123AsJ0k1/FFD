@@ -39,8 +39,8 @@ def worker_status():
 # Refactored and works
 @general.route('/models', methods=["GET"])
 def stored_models():
-    get_models()
-    return 'Ok', 200 
+    models = get_models()
+    return jsonify({'models': models})
 # Refactored and works
 @general.route('/start', methods=["POST"])
 def start_model_training():
