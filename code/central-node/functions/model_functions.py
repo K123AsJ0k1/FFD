@@ -66,6 +66,7 @@ def train(
     train_loader: any,
     global_parameters: any
 ):
+    # refactor to use logger
     opt_func = None
     if global_parameters['optimizer'] == 'SGD':
         opt_func = torch.optim.SGD
@@ -145,10 +146,11 @@ def test(
         }
         
         return metrics
-# Refactored and works
+# Refactored
 def initial_model_training(
     logger: any,
-    global_parameters: any
+    global_parameters: any,
+    central_parameters: any
 ) -> bool:
     training_status_path = 'logs/training_status.txt'
     if not os.path.exists(training_status_path):
@@ -166,9 +168,8 @@ def initial_model_training(
 
     if training_status['parameters']['trained']:
         return False
-
-    model_path = 'models/global_model_0.pth'
-
+    #global_(cycle)_(updates)_(samples).pth
+    model_path = 'models/global_0_0_' + str(training_status['parameters']['train-amount']) + '.pth'
     torch.manual_seed(global_parameters['seed'])
     
     given_train_loader, given_test_loader = get_train_test_loaders(
@@ -232,3 +233,57 @@ def model_inference(
         output = lr_model.prediction(lr_model,given_input)
 
     return output.tolist()
+# Created
+def get_models() -> any:
+    #print('get models')
+    training_status_path = 'logs/training_status.txt'
+    if not os.path.exists(training_status_path):
+        return False
+    
+    training_status = None
+    with open(training_status_path, 'r') as f:
+        training_status = json.load(f)
+
+    models_folder_path = 'models'
+    files = os.listdir(models_folder_path)
+    if len(files) == 0:
+        return None
+    stored_models = {
+        'global': {},
+        'workers': {}
+    }
+    for model_key in range(0, training_status['parameters']['cycle']):
+        stored_models['global'] = {str(model_key): {}}
+    for worker_key in training_status['workers'].keys():
+        stored_models['workers'] = {str(worker_key): {}}
+        for metric_key in range(0, training_status['parameters']['cycle']):
+            stored_models['workers'][str(worker_key)] = {str(metric_key): {}}
+
+    for file in files:
+        #print(file)
+        first_split = file.split('.')[0]
+        second_split = first_split.split('_')
+        model = torch.load(models_folder_path + '/' + file) 
+        #print(model)
+        formatted_local_model = {
+            'weights': model['linear.weight'].numpy().tolist(),
+            'bias': model['linear.bias'].numpy().tolist()
+        }
+        if second_split[0] == 'global':
+            cycle = str(second_split[1])
+            updates = str(second_split[2])
+            train_amount = str(second_split[3])
+            stored_models['global'][cycle] = {
+                'parameters': formatted_local_model,
+                'updates': updates,
+                'train-amount': train_amount
+            }
+        if second_split[0] == 'worker':
+            id = str(second_split[1])
+            cycle = str(second_split[2])
+            train_amount = str(second_split[3])
+            stored_models['workers'][id][cycle] = {
+                'parameters': formatted_local_model,
+                'train-amount': train_amount
+            }
+    return stored_models

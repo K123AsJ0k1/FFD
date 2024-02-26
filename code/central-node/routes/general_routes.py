@@ -37,6 +37,11 @@ def worker_status():
 
     return jsonify({'id': set_worker_id, 'address': set_worker_ip, 'message': set_message})  
 # Refactored and works
+@general.route('/models', methods=["GET"])
+def stored_models():
+    models = get_models()
+    return jsonify({'models': models})
+# Refactored and works
 @general.route('/start', methods=["POST"])
 def start_model_training():
     status = start_training()
@@ -72,3 +77,4 @@ def inference():
     )
 
     return jsonify({'predictions': given_output})
+

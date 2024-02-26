@@ -69,7 +69,7 @@ def send_update(
 
     os.environ['STATUS'] = 'updating'
 
-    local_model_path = 'models/local_model_' + str(worker_status['cycle']) + '.pth'
+    local_model_path = 'models/local_' + str(worker_status['cycle']) + '.pth'
     local_model = torch.load(local_model_path)
 
     formatted_local_model = {

@@ -134,11 +134,14 @@ def preprocess_into_train_test_and_evaluate_tensors(
     torch.save(eval_tensor,eval_tensor_path)
 
     training_status['parameters']['preprocessed'] = True
+    training_status['parameters']['train-amount'] = X_train.shape[0]
+    training_status['parameters']['test-amount'] = X_test.shape[0]
+    training_status['parameters']['eval-amount'] = X_eval.shape[0]
     with open(training_status_path, 'w') as f:
         json.dump(training_status, f, indent=4) 
     
     return True
-# Refactored and works
+# Refactor
 def split_data_between_workers(
     logger: any
 ) -> bool:
@@ -158,7 +161,7 @@ def split_data_between_workers(
 
     if training_status['parameters']['worker-split']:
         return False
-
+    # Add data augmentation
     worker_pool_path = 'data/worker_pool.csv'
     training_status_path = 'logs/training_status.txt'
 

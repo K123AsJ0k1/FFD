@@ -3,6 +3,8 @@ from flask import current_app
 import torch 
 import os
 import json
+
+from collections import OrderedDict
  
 '''
 training status format:
@@ -62,6 +64,9 @@ def initilize_training_status():
             'updated': False,
             'evaluated': False,
             'complete': False,
+            'train-amount': 0,
+            'test-amount': 0,
+            'eval-amount': 0,
             'worker-updates': 0,
             'cycle': 0, 
             'columns': None,
@@ -164,7 +169,7 @@ def store_worker_status(
             with open(training_status_path, 'w') as f:
                 json.dump(training_status, f, indent=4)
             return worker_status['id'], worker_address, 'rerouted'
-# Refactpred and works
+# Refactor
 def store_global_metrics( 
    metrics: any
 ) -> bool:
@@ -176,19 +181,13 @@ def store_global_metrics(
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
 
-    highest_key = 0
-    for id in training_status['parameters']['global-metrics']:
-        if highest_key < int(id):
-            highest_key = int(id)
-    if not highest_key == 0:
-        highest_key += 1
-
-    training_status['parameters']['global-metrics'][str(highest_key)] = metrics
+    new_key = len(training_status['parameters']['global-metrics'])
+    training_status['parameters']['global-metrics'][str(new_key)] = metrics
     with open(training_status_path, 'w') as f:
         json.dump(training_status, f, indent=4) 
     
     return True
-# Refactored and works
+# Refactored
 def store_update( 
     worker_id: str,
     local_model: any,
@@ -212,9 +211,15 @@ def store_update(
 
     if not training_status['parameters']['sent']:
         return False
-
+    
     model_path = 'models/worker_' + str(worker_id) + '_' + str(cycle) + '_' + str(train_size) + '.pth'
-    torch.save(local_model, model_path)
+    
+    formatted_model = OrderedDict([
+        ('linear.weight', torch.tensor(local_model['weights'],dtype=torch.float32)),
+        ('linear.bias', torch.tensor(local_model['bias'],dtype=torch.float32))
+    ])
+    
+    torch.save(formatted_model, model_path)
     for worker_key in training_status['workers'].keys():
         if worker_key == str(worker_id):
             training_status['workers'][worker_key]['status'] = 'complete'

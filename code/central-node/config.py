@@ -20,15 +20,15 @@ class Config:
         'learning-rate': 0.005,
         'sample-rate': 0.10,
         'optimizer':'SGD',
-        'epochs': 20
+        'epochs': 5
     }
     
     CENTRAL_PARAMETERS = {
-        'sample-pool': 3000000,
+        'sample-pool': 50000,
         'train-eval-ratio': 0.5,
         'train-test-ratio': 0.8,
         'min-update-amount': 1,
-        'max-cycles':5,
+        'max-cycles':2,
         'min-metric-success': 6,
         'metric-thresholds': {
             'true-positives': 50,
@@ -59,7 +59,7 @@ class Config:
     }
 
     WORKER_PARAMETERS = {
-        'sample-pool': 500000,
+        'sample-pool': 50000,
         'train-test-ratio': 0.8
     }
 
