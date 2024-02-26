@@ -16,6 +16,7 @@ def central_logs():
     with open('logs/central.log', 'r') as f:
         logs = f.readlines()
     return render_template('logs.html', logs = logs)
+# Created and works
 @general.route('/training', methods=["GET"]) 
 def training_status():
     training_status_path = 'logs/training_status.txt'
@@ -58,14 +59,16 @@ def worker_update():
     ) 
     
     return 'Ok', 200
-# Need refactoring
+# Refactored and works
 @general.route('/predict', methods=["POST"])
 def inference():
     sent_payload = json.loads(request.json)
     sent_input = sent_payload['input']
+    sent_cycle = sent_payload['cycle']
 
     given_output = model_inference(
-        input = sent_input
+        input = sent_input,
+        cycle = sent_cycle
     )
 
     return jsonify({'predictions': given_output})

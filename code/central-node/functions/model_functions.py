@@ -145,35 +145,6 @@ def test(
         }
         
         return metrics
-# Need refactoring 
-def model_inference(
-    input: any
-) -> any:
-    training_status_path = 'logs/training_status.txt'
-    if not os.path.exists(training_status_path):
-        return False
-    
-    training_status = None
-    with open(training_status_path, 'r') as f:
-        training_status = json.load(f)
-
-    GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
-
-    global_model_path = 'models/global_model_' + str(training_status['parameters']['cycle']) + '.pth'
-    if not os.path.exists(global_model_path):
-        return None
-    
-    given_parameters = torch.load(global_model_path)
-    
-    lr_model = FederatedLogisticRegression(dim = GLOBAL_PARAMETERS['input-size'])
-    lr_model.apply_parameters(lr_model, given_parameters)
-    
-    given_input = torch.tensor(np.array(input, dtype=np.float32))
-
-    with torch.no_grad():
-        output = lr_model.prediction(lr_model,given_input)
-
-    return output.tolist()
 # Refactored and works
 def initial_model_training(
     logger: any,
@@ -231,3 +202,33 @@ def initial_model_training(
         json.dump(training_status, f, indent=4) 
 
     return True
+# Refactored and works
+def model_inference(
+    input: any,
+    cycle: int
+) -> any:
+    training_status_path = 'logs/training_status.txt'
+    if not os.path.exists(training_status_path):
+        return False
+    # Might be useful for recoding inference amounts
+    training_status = None
+    with open(training_status_path, 'r') as f:
+        training_status = json.load(f)
+
+    GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
+
+    global_model_path = 'models/global_model_' + str(cycle) + '.pth'
+    if not os.path.exists(global_model_path):
+        return None
+    
+    given_parameters = torch.load(global_model_path)
+    
+    lr_model = FederatedLogisticRegression(dim = GLOBAL_PARAMETERS['input-size'])
+    lr_model.apply_parameters(lr_model, given_parameters)
+    
+    given_input = torch.tensor(np.array(input, dtype=np.float32))
+
+    with torch.no_grad():
+        output = lr_model.prediction(lr_model,given_input)
+
+    return output.tolist()
