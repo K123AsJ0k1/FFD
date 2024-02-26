@@ -66,6 +66,7 @@ def train(
     train_loader: any,
     global_parameters: any
 ):
+    # refactor to use logger
     opt_func = None
     if global_parameters['optimizer'] == 'SGD':
         opt_func = torch.optim.SGD
@@ -168,7 +169,7 @@ def initial_model_training(
     if training_status['parameters']['trained']:
         return False
     #global_(cycle)_(updates)_(samples).pth
-    model_path = 'models/global_0_0' + str(training_status['parameters']['samples']) + '.pth'
+    model_path = 'models/global_0_0_' + str(training_status['parameters']['train-amount']) + '.pth'
     torch.manual_seed(global_parameters['seed'])
     
     given_train_loader, given_test_loader = get_train_test_loaders(

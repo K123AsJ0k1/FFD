@@ -59,7 +59,7 @@ def send_context_to_workers(
     if len(files) == 0:
         return False   
     
-    current_global_model = 'models/'
+    current_global_model = ''
     highest_key = 0
     for file in files:
         first_split = file.split('.')
@@ -67,10 +67,10 @@ def send_context_to_workers(
         name = str(second_split[0])
         if name == 'global':
             cycle = int(second_split[1])
-            if highest_key < cycle:
+            if highest_key <= cycle:
                 highest_key = cycle
-                current_global_model = current_global_model + file   
-
+                current_global_model = 'models/' + file   
+    
     global_model = torch.load(current_global_model)
     formatted_global_model = {
         'weights': global_model['linear.weight'].numpy().tolist(),
@@ -158,20 +158,17 @@ def send_context_to_workers(
         json.dump(training_status, f, indent=4)
 
     return True
-# Refactored
+# Refactored and works
 def model_fed_avg(
     updates: any,
     total_sample_size: int    
 ) -> any:
-    # Refactor to use ordered dict
     weights = []
     biases = []
     for update in updates:
         parameters = update['parameters']
         worker_sample_size = update['samples']
         
-        #worker_weights = np.array(parameters['weights'][0])
-        #worker_bias = np.array(parameters['bias'])
         worker_weights = np.array(parameters['linear.weight'].tolist()[0])
         worker_bias = np.array(parameters['linear.bias'].tolist()[0])
         
@@ -182,14 +179,14 @@ def model_fed_avg(
         biases.append(adjusted_worker_bias)
     
     FedAvg_weight = [np.sum(weights,axis = 0)]
-    FedAvg_bias = np.sum(biases, axis = 0)
+    FedAvg_bias = [np.sum(biases, axis = 0)]
 
     updated_global_model = OrderedDict([
         ('linear.weight', torch.tensor(FedAvg_weight,dtype=torch.float32)),
         ('linear.bias', torch.tensor(FedAvg_bias,dtype=torch.float32))
     ])
     return updated_global_model
-# Refactored
+# Refactored and works
 def update_global_model(
     logger: any,
     central_parameters: any
@@ -279,7 +276,7 @@ def evalute_global_model(
     if len(files) == 0:
         return False  
     
-    current_global_model = 'models/'
+    current_global_model = ''
     highest_key = 0
     for file in files:
         first_split = file.split('.')
@@ -289,8 +286,8 @@ def evalute_global_model(
             cycle = int(second_split[1])
             if highest_key < cycle:
                 highest_key = cycle
-                current_global_model = current_global_model + file 
- 
+                current_global_model = 'models/' + file 
+    
     eval_tensor_path = 'tensors/eval.pt'
     given_parameters = torch.load(current_global_model)
     
@@ -366,7 +363,8 @@ def central_federated_pipeline(
     
     status = initial_model_training(
         logger = task_logger,
-        global_parameters = task_global_parameters
+        global_parameters = task_global_parameters,
+        central_parameters = task_central_parameters
     )
     task_logger.info('Global training:' + str(status))
     

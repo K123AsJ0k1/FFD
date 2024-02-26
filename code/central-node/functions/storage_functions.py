@@ -169,7 +169,7 @@ def store_worker_status(
             with open(training_status_path, 'w') as f:
                 json.dump(training_status, f, indent=4)
             return worker_status['id'], worker_address, 'rerouted'
-# Refactpred and works
+# Refactor
 def store_global_metrics( 
    metrics: any
 ) -> bool:
@@ -181,14 +181,8 @@ def store_global_metrics(
     with open(training_status_path, 'r') as f:
         training_status = json.load(f)
 
-    highest_key = 0
-    for id in training_status['parameters']['global-metrics']:
-        if highest_key < int(id):
-            highest_key = int(id)
-    if not highest_key == 0:
-        highest_key += 1
-
-    training_status['parameters']['global-metrics'][str(highest_key)] = metrics
+    new_key = len(training_status['parameters']['global-metrics'])
+    training_status['parameters']['global-metrics'][str(new_key)] = metrics
     with open(training_status_path, 'w') as f:
         json.dump(training_status, f, indent=4) 
     
