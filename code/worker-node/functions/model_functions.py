@@ -155,7 +155,7 @@ def test(
         }
         
         return metrics
-# Refactored and works
+# Refactored
 def local_model_training(
     logger: any
 ) -> any:
@@ -184,8 +184,8 @@ def local_model_training(
     with open(global_parameters_path, 'r') as f:
         GLOBAL_PARAMETERS = json.load(f)
     
-    global_model_path = 'models/global_model_' + str(worker_status['cycle']) + '.pth'
-    local_model_path = 'models/local_model_' + str(worker_status['cycle']) + '.pth'
+    global_model_path = 'models/global_' + str(worker_status['cycle']) + '.pth'
+    local_model_path = 'models/local_' + str(worker_status['cycle']) + '.pth'
 
     os.environ['STATUS'] = 'training'
 
@@ -208,7 +208,8 @@ def local_model_training(
         model = lr_model, 
         test_loader = given_test_loader
     )
-
+    test_metrics['train-amount'] = worker_status['train-amount']
+    test_metrics['test-amount'] = worker_status['test-amount']
     status = store_local_metrics(
         metrics = test_metrics
     )
@@ -246,7 +247,7 @@ def model_inference(
     with open(global_parameters_path, 'r') as f:
         GLOBAL_PARAMETERS = json.load(f)
 
-    global_model_path = 'models/global_model_' + str(cycle) + '.pth'
+    global_model_path = 'models/global_' + str(cycle) + '.pth'
     if not os.path.exists(global_model_path):
         return None
     

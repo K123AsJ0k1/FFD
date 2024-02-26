@@ -47,6 +47,8 @@ def initilize_worker_status():
         'updated': False,
         'completed': False,
         'columns': None,
+        'train-amount': 0,
+        'test-amount': 0,
         'train-test-ratio': 0,
         'cycle': 0,
         'local-metrics': {}
@@ -96,7 +98,7 @@ def store_training_context(
     
     os.environ['STATUS'] = 'storing'
     
-    global_model_path = 'models/global_model_' + str(worker_parameters['cycle']) + '.pth'
+    global_model_path = 'models/global_' + str(worker_parameters['cycle']) + '.pth'
     
     weights = global_model['weights']
     bias = global_model['bias']
@@ -108,7 +110,7 @@ def store_training_context(
     
     torch.save(formated_parameters, global_model_path)
     if not worker_data == None:
-        worker_data_path = 'data/used_data_' + str(worker_parameters['cycle']) + '.csv'
+        worker_data_path = 'data/sample_' + str(worker_parameters['cycle']) + '.csv'
         worker_df = pd.DataFrame(worker_data)
         worker_df.to_csv(worker_data_path, index = False)
         worker_status['preprocessed'] = False

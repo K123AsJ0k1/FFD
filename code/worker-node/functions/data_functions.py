@@ -81,6 +81,8 @@ def preprocess_into_train_and_test_tensors(
     torch.save(test_tensor,test_tensor_path)
 
     worker_status['preprocessed'] = True
+    worker_status['train-amount'] = X_train.shape[0]
+    worker_status['test-amount'] = X_test.shape[0]
     with open(worker_status_path, 'w') as f:
         json.dump(worker_status, f, indent=4)
 
