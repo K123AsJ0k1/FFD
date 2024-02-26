@@ -36,6 +36,12 @@ class FederatedLogisticRegression(nn.Module):
         return loss, preds
 
     @staticmethod
+    def prediction(model, x):
+        out = model(x)
+        preds = out > 0
+        return preds
+
+    @staticmethod
     def get_parameters(model):
         return model.state_dict()
 
@@ -219,3 +225,39 @@ def local_model_training(
     os.environ['STATUS'] = 'trained'
 
     return True
+# Refactored and works
+def model_inference(
+    input: any,
+    cycle: int
+) -> any:
+    worker_status_path = 'logs/worker_status.txt'
+    if not os.path.exists(worker_status_path):
+        return False
+    # Might be useful for recoding inference amounts
+    worker_status = None
+    with open(worker_status_path, 'r') as f:
+        worker_status = json.load(f)
+
+    global_parameters_path = 'logs/global_parameters.txt'
+    if not os.path.exists(global_parameters_path):
+        return False
+
+    GLOBAL_PARAMETERS = None
+    with open(global_parameters_path, 'r') as f:
+        GLOBAL_PARAMETERS = json.load(f)
+
+    global_model_path = 'models/global_model_' + str(cycle) + '.pth'
+    if not os.path.exists(global_model_path):
+        return None
+    
+    given_parameters = torch.load(global_model_path)
+    
+    lr_model = FederatedLogisticRegression(dim = GLOBAL_PARAMETERS['input-size'])
+    lr_model.apply_parameters(lr_model, given_parameters)
+    
+    given_input = torch.tensor(np.array(input, dtype=np.float32))
+
+    with torch.no_grad():
+        output = lr_model.prediction(lr_model,given_input)
+
+    return output.tolist()

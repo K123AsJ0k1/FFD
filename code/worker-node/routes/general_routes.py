@@ -42,3 +42,16 @@ def set_training_context():
     current_app.logger.warning('Local context:' + status)
 
     return 'Ok', 200
+# Refactored and works
+@general.route('/predict', methods=["POST"])
+def inference():
+    sent_payload = json.loads(request.json)
+    sent_input = sent_payload['input']
+    sent_cycle = sent_payload['cycle']
+
+    given_output = model_inference(
+        input = sent_input,
+        cycle = sent_cycle
+    )
+
+    return jsonify({'predictions': given_output})
