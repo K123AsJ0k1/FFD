@@ -53,7 +53,26 @@ def central_worker_data_split(
         json.dump(training_status, f, indent=4) 
 
     return True
-# Refactored and works
+
+def data_augmented_sample(
+    pool_df: any,
+    sample_pool: int,
+    ratio: int
+) -> any:
+    fraud_cases = pool_df[pool_df['isFraud'] == 1]
+    non_fraud_cases = pool_df[pool_df['isFraud'] == 0]
+
+    wanted_fraud_amount = int(sample_pool * ratio)
+    wanted_non_fraud_amount = sample_pool-wanted_fraud_amount
+
+    frauds_df = fraud_cases.sample(n = wanted_fraud_amount, replace = True)
+    non_fraud_df = non_fraud_cases.sample(n = wanted_non_fraud_amount, replace = True)
+
+    augmented_sample_df = pd.concat([frauds_df,non_fraud_df])
+    randomized_sample_df = augmented_sample_df.sample(frac = 1, replace = False)
+    return randomized_sample_df
+
+# Refactored
 def preprocess_into_train_test_and_evaluate_tensors(
     logger: any,
     global_parameters: any,
@@ -84,8 +103,18 @@ def preprocess_into_train_test_and_evaluate_tensors(
     os.environ['STATUS'] = 'preprocessing'
     
     central_data_df = pd.read_csv(central_pool_path)
+
+    preprocessed_df = None
+    if central_parameters['data-augmentation']['active']:
+        used_data_df = data_augmented_sample(
+            pool_df = central_data_df,
+            sample_pool = central_parameters['data-augmentation']['sample-pool'],
+            ratio = central_parameters['data-augmentation']['1-0-ratio']
+        )
+        preprocessed_df = used_data_df[global_parameters['used-columns']]
+    else:
+        preprocessed_df = central_data_df[global_parameters['used-columns']]
     
-    preprocessed_df = central_data_df[global_parameters['used-columns']]
     for column in global_parameters['scaled-columns']:
         mean = preprocessed_df[column].mean()
         std_dev = preprocessed_df[column].std()
@@ -141,9 +170,10 @@ def preprocess_into_train_test_and_evaluate_tensors(
         json.dump(training_status, f, indent=4) 
     
     return True
-# Refactor
+# Refactored
 def split_data_between_workers(
-    logger: any
+    logger: any,
+    worker_parameters: any
 ) -> bool:
     training_status_path = 'logs/training_status.txt'
     training_status = None
@@ -161,7 +191,7 @@ def split_data_between_workers(
 
     if training_status['parameters']['worker-split']:
         return False
-    # Add data augmentation
+
     worker_pool_path = 'data/worker_pool.csv'
     training_status_path = 'logs/training_status.txt'
 
@@ -177,15 +207,24 @@ def split_data_between_workers(
 
     if len(available_workers) == 0:
         return False
-        
-    worker_df = worker_pool_df.sample(frac = 1)
-    worker_dfs = np.array_split(worker_df, len(available_workers))
     
-    index = 0
-    for worker_key in available_workers:
-        data_path = 'data/worker_' + worker_key + '_' + str(training_status['parameters']['cycle']) + '.csv'
-        worker_dfs[index].to_csv(data_path, index = False)
-        index = index + 1
+    if worker_parameters['data-augmentation']['active']:
+        for worker_key in available_workers:
+            worker_sample_df = data_augmented_sample(
+                pool_df = worker_pool_df,
+                sample_pool = worker_parameters['data-augmentation']['sample-pool'],
+                ratio = worker_parameters['data-augmentation']['1-0-ratio']
+            )
+            data_path = 'data/worker_' + worker_key + '_' + str(training_status['parameters']['cycle']) + '.csv'
+            worker_sample_df.to_csv(data_path, index = False)
+    else:
+        worker_df = worker_pool_df.sample(frac = 1)
+        worker_dfs = np.array_split(worker_df, len(available_workers))
+        index = 0
+        for worker_key in available_workers:
+            data_path = 'data/worker_' + worker_key + '_' + str(training_status['parameters']['cycle']) + '.csv'
+            worker_dfs[index].to_csv(data_path, index = False)
+            index = index + 1
 
     training_status['parameters']['worker-split'] = True
     training_status['parameters']['columns'] = worker_pool_df.columns.tolist() 

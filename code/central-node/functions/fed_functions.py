@@ -369,7 +369,8 @@ def central_federated_pipeline(
     task_logger.info('Global training:' + str(status))
     
     status = split_data_between_workers(
-        logger = task_logger
+        logger = task_logger,
+        worker_parameters = task_worker_parameters
     )
     task_logger.info('Global splitting:' + str(status))
     

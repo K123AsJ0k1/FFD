@@ -18,13 +18,18 @@ class Config:
             'amount'
         ],
         'learning-rate': 0.005,
-        'sample-rate': 0.10,
+        'sample-rate': 0.20,
         'optimizer':'SGD',
         'epochs': 5
     }
     
     CENTRAL_PARAMETERS = {
         'sample-pool': 50000,
+        'data-augmentation': {
+            'active': True,
+            'sample-pool': 50000,
+            '1-0-ratio': 0.2
+        },
         'train-eval-ratio': 0.5,
         'train-test-ratio': 0.8,
         'min-update-amount': 1,
@@ -59,7 +64,13 @@ class Config:
     }
 
     WORKER_PARAMETERS = {
-        'sample-pool': 50000,
+        'data-augemntation': True,
+        'sample-pool': 10000,
+        'data-augmentation': {
+            'active': True,
+            'sample-pool': 10000,
+            '1-0-ratio': 0.2
+        },
         'train-test-ratio': 0.8
     }
 

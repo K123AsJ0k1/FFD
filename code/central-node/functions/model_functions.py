@@ -62,6 +62,7 @@ def get_train_test_loaders(
     return train_loader,test_loader
 # Refactored and works
 def train(
+    logger: any,
     model: any,
     train_loader: any,
     global_parameters: any
@@ -82,7 +83,7 @@ def train(
             losses.append(loss)
             optimizer.step()
             optimizer.zero_grad()
-        print("Epoch {}, loss = {}".format(epoch + 1, torch.sum(loss) / len(train_loader)))
+        logger.info('Epoch ' + str(epoch + 1) + ', loss = ' + str(torch.sum(loss) / len(train_loader)))
 # Refactored and works
 def test(
     model: any, 
@@ -179,6 +180,7 @@ def initial_model_training(
     lr_model = FederatedLogisticRegression(dim = global_parameters['input-size'])
     
     train(
+        logger = logger,
         model = lr_model, 
         train_loader = given_train_loader,  
         global_parameters = global_parameters
@@ -233,9 +235,8 @@ def model_inference(
         output = lr_model.prediction(lr_model,given_input)
 
     return output.tolist()
-# Created
+# Created and works
 def get_models() -> any:
-    #print('get models')
     training_status_path = 'logs/training_status.txt'
     if not os.path.exists(training_status_path):
         return False
@@ -260,11 +261,9 @@ def get_models() -> any:
             stored_models['workers'][str(worker_key)] = {str(metric_key): {}}
 
     for file in files:
-        #print(file)
         first_split = file.split('.')[0]
         second_split = first_split.split('_')
         model = torch.load(models_folder_path + '/' + file) 
-        #print(model)
         formatted_local_model = {
             'weights': model['linear.weight'].numpy().tolist(),
             'bias': model['linear.bias'].numpy().tolist()
