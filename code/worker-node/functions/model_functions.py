@@ -67,10 +67,10 @@ def get_train_test_loaders_loaders() -> any:
     return train_loader,test_loader
 # Refactored and works
 def train(
+    logger: any,
     model: any,
     train_loader: any
 ):
-    # Refactor to use logger
     global_parameters_path = 'logs/global_parameters.txt'
     GLOBAL_PARAMETERS = None
     with open(global_parameters_path, 'r') as f:
@@ -91,7 +91,7 @@ def train(
             losses.append(loss)
             optimizer.step()
             optimizer.zero_grad()
-        print("Epoch {}, loss = {}".format(epoch + 1, torch.sum(loss) / len(train_loader)))
+        logger.info('Epoch ' + str(epoch + 1) + ', loss = ' + str(torch.sum(loss) / len(train_loader)))
 # Refactored and works
 def test(
     logger: any,
@@ -139,7 +139,7 @@ def test(
             BA = (TPR+TNR)/2
             ACC = (TP + TN)/(TP + TN + FP + FN)
         except Exception as e:
-            logger.warning(e)
+            logger.error(e)
 
         metrics = {
             'true-positives': TP,
@@ -200,6 +200,7 @@ def local_model_training(
     lr_model.apply_parameters(lr_model, given_parameters)
 
     train(
+        logger = logger,
         model = lr_model, 
         train_loader = given_train_loader,  
     )
