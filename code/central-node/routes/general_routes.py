@@ -10,13 +10,29 @@ general = Blueprint('general', __name__)
 @general.route('/demo', methods=["GET"]) 
 def demo():
     return 'Ok', 200
-# Created and works
+# Refactored and works
+@general.route('/context', methods=["POST"]) 
+def set_training_context():
+    sent_payload = json.loads(request.json)
+
+    sent_parameters = sent_payload['parameters']
+    sent_data = sent_payload['data']
+    sent_columns = sent_payload['columns']
+
+    status = store_training_context(
+        parameters = sent_parameters,
+        df_data = sent_data,
+        df_columns = sent_columns
+    )
+
+    return jsonify({'stored': status})
+# Refactored and works
 @general.route('/logs', methods=["GET"]) 
 def central_logs():
     with open('logs/central.log', 'r') as f:
         logs = f.readlines()
     return render_template('logs.html', logs = logs)
-# Created and works
+# Refactor
 @general.route('/training', methods=["GET"]) 
 def training_status():
     training_status_path = 'logs/training_status.txt'
@@ -41,12 +57,12 @@ def worker_status():
 def stored_models():
     models = get_models()
     return jsonify({'models': models})
-# Refactored and works
+# Refactor
 @general.route('/start', methods=["POST"])
 def start_model_training():
     status = start_training()
     return 'Ok', 200
-# Refactored and works
+# Refactor
 @general.route('/update', methods=["POST"]) 
 def worker_update(): 
     sent_payload = json.loads(request.json)
@@ -64,7 +80,7 @@ def worker_update():
     ) 
     
     return 'Ok', 200
-# Refactored and works
+# Refactor
 @general.route('/predict', methods=["POST"])
 def inference():
     sent_payload = json.loads(request.json)

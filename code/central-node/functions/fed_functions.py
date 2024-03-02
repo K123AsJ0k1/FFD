@@ -10,24 +10,24 @@ from collections import OrderedDict
 
 from functions.storage_functions import *
 from functions.model_functions import *
-# Created and works 
+# Refactored
 def start_training():
-    training_status_path = 'logs/training_status.txt'
-    if not os.path.exists(training_status_path):
+    current_experiment_number = get_current_experiment_number()
+    central_status_path = 'status/experiment_' + str(current_experiment_number) + '/central.txt'
+    if not os.path.exists(central_status_path):
         return False
-    training_status = None
-    with open(training_status_path, 'r') as f:
-        training_status = json.load(f)
-    training_status['parameters']['start'] = True
-    with open(training_status_path, 'w') as f:
-        json.dump(training_status, f, indent=4) 
+    
+    central_status = None
+    with open(central_status_path, 'r') as f:
+        central_status = json.load(f)
+
+    central_status['start'] = True
+    with open(central_status_path, 'w') as f:
+        json.dump(central_status, f, indent=4) 
     return True
 # Refactor
 def send_context_to_workers(
-    logger: any,
-    global_parameters: any,
-    central_parameters: any,
-    worker_parameter: any
+    logger: any
 ) -> bool:
     training_status_path = 'logs/training_status.txt'
     if not os.path.exists(training_status_path):
@@ -186,10 +186,9 @@ def model_fed_avg(
         ('linear.bias', torch.tensor(FedAvg_bias,dtype=torch.float32))
     ])
     return updated_global_model
-# Refactored and works
+# Refactor
 def update_global_model(
-    logger: any,
-    central_parameters: any
+    logger: any
 ) -> bool:
     training_status_path = 'logs/training_status.txt'
     if not os.path.exists(training_status_path):
@@ -245,11 +244,9 @@ def update_global_model(
     with open(training_status_path, 'w') as f:
          json.dump(training_status, f, indent=4)
     return True
-# Refactored
+# Refactor
 def evalute_global_model(
-    logger: any,
-    global_parameters: any,
-    central_parameters: any
+    logger: any
 ):
     training_status_path = 'logs/training_status.txt'
     if not os.path.exists(training_status_path):
@@ -340,49 +337,37 @@ def evalute_global_model(
          json.dump(training_status, f, indent=4) 
 
     return True
-# Created and works
+# Refactor
 def central_federated_pipeline(
-    task_logger: any,
-    task_global_parameters: any,
-    task_central_parameters: any,
-    task_worker_parameters: any
-): 
+    task_logger: any
+):  
+    # Ok
     status = central_worker_data_split(
-        logger = task_logger,
-        central_parameters = task_central_parameters,
-        worker_parameters = task_worker_parameters
+        logger = task_logger
     )
     task_logger.info('Global data split:' + str(status))
-    
+    # Ok
     status = preprocess_into_train_test_and_evaluate_tensors(
-        logger = task_logger,
-        global_parameters = task_global_parameters,
-        central_parameters = task_central_parameters
+        logger = task_logger
     )
     task_logger.info('Global preprocessing:' + str(status))
-    
+    # Ok
     status = initial_model_training(
-        logger = task_logger,
-        global_parameters = task_global_parameters,
-        central_parameters = task_central_parameters
+        logger = task_logger
     )
     task_logger.info('Global training:' + str(status))
+    ## Ok
+    #status = split_data_between_workers(
+    #    logger = task_logger
+    #)
+    #task_logger.info('Global splitting:' + str(status))
     
-    status = split_data_between_workers(
-        logger = task_logger,
-        worker_parameters = task_worker_parameters
-    )
-    task_logger.info('Global splitting:' + str(status))
+    #status = update_global_model(
+    #    logger = task_logger
+    #)
+    #task_logger.info('Global update:' + str(status))
     
-    status = update_global_model(
-        logger = task_logger,
-        central_parameters = task_central_parameters
-    )
-    task_logger.info('Global update:' + str(status))
-    
-    status = evalute_global_model(
-        logger = task_logger,
-        global_parameters = task_global_parameters,
-        central_parameters = task_central_parameters
-    )
-    task_logger.info('Global evaluation:' + str(status))
+    #status = evalute_global_model(
+    #    logger = task_logger
+    #)
+    #task_logger.info('Global evaluation:' + str(status))

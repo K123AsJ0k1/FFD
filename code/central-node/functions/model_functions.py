@@ -1,6 +1,7 @@
 from flask import current_app
 import torch
 import torch.nn as nn 
+import psutil
 
 from sklearn.metrics import confusion_matrix
 from torch.utils.data import DataLoader
@@ -46,17 +47,16 @@ class FederatedLogisticRegression(nn.Module):
     @staticmethod
     def apply_parameters(model, parameters):
         model.load_state_dict(parameters)
-# Refactored and works
+# Refactored
 def get_train_test_loaders(
-    global_parameters: any 
+    train_tensor: any,
+    test_tensor: any,
+    model_parameters: any 
 ) -> any:
-    train_tensor = torch.load('tensors/train.pt')
-    test_tensor = torch.load('tensors/test.pt')
-
     train_loader = DataLoader(
         train_tensor,
-        batch_size = int(len(train_tensor) * global_parameters['sample-rate']),
-        generator = torch.Generator().manual_seed(global_parameters['seed'])
+        batch_size = int(len(train_tensor) * model_parameters['sample-rate']),
+        generator = torch.Generator().manual_seed(model_parameters['seed'])
     )
     test_loader = DataLoader(test_tensor, 64)
     return train_loader,test_loader
@@ -65,17 +65,20 @@ def train(
     logger: any,
     model: any,
     train_loader: any,
-    global_parameters: any
+    model_parameters: any
 ):
-    # refactor to use logger
     opt_func = None
-    if global_parameters['optimizer'] == 'SGD':
+    if model_parameters['optimizer'] == 'SGD':
         opt_func = torch.optim.SGD
 
-    optimizer = opt_func(model.parameters(), global_parameters['learning-rate'])
+    optimizer = opt_func(model.parameters(), model_parameters['learning-rate'])
     model_type = type(model)
-    
-    for epoch in range(global_parameters['epochs']):
+
+    cpu_start = psutil.cpu_percent(interval=5)
+    time_start = time.time()
+    mem_start = psutil.virtual_memory().used 
+    disk_start = psutil.disk_usage('.').used
+    for epoch in range(model_parameters['epochs']):
         losses = []
         for batch in train_loader:
             loss = model_type.train_step(model, batch)
@@ -83,7 +86,40 @@ def train(
             losses.append(loss)
             optimizer.step()
             optimizer.zero_grad()
-        logger.info('Epoch ' + str(epoch + 1) + ', loss = ' + str(torch.sum(loss) / len(train_loader)))
+        loss = torch.sum(loss) / len(train_loader)
+        loss_value = loss.item()
+        logger.info('Epoch ' + str(epoch + 1) + ', loss = ' + str(loss_value))
+
+    time_end = time.time()
+    cpu_end = psutil.cpu_percent(interval=5)
+    mem_end = psutil.virtual_memory().used 
+    disk_end = psutil.disk_usage('.').used
+
+    time_diff = (time_end - time_start) # seconds
+    cpu_diff = cpu_end - cpu_start # percentage
+    mem_diff = (mem_end - mem_start) / (1024 ** 2) # megabytes
+    disk_diff = (disk_end - disk_start) / (1024 ** 2) # megabytes
+
+    average_time = time_diff / model_parameters['epochs']
+    average_cpu = cpu_diff / model_parameters['epochs']
+    average_mem = mem_diff / model_parameters['epochs']
+    average_diffs = disk_diff / model_parameters['epochs']
+
+    resource_metrics = {
+        'model': 'logistic-regression',
+        'epochs': model_parameters['epochs'],
+        'average-epoch-time-seconds': round(average_time,5),
+        'average-epoch-cpu-percentage': round(average_cpu,5),
+        'average-epoch-ram-megabytes': round(average_mem,5),
+        'average-epoch-disk-megabytes': round(average_diffs,5)
+    }
+
+    status = store_metrics(
+        type = 'resources',
+        subject = 'training',
+        metrics = resource_metrics
+    )
+    
 # Refactored and works
 def test(
     model: any, 
@@ -149,63 +185,108 @@ def test(
         return metrics
 # Refactored
 def initial_model_training(
-    logger: any,
-    global_parameters: any,
-    central_parameters: any
+    logger: any
 ) -> bool:
-    training_status_path = 'logs/training_status.txt'
-    if not os.path.exists(training_status_path):
+    current_experiment_number = get_current_experiment_number()
+    central_status_path = 'status/experiment_' + str(current_experiment_number) + '/central.txt'
+    if not os.path.exists(central_status_path):
         return False
     
-    training_status = None
-    with open(training_status_path, 'r') as f:
-        training_status = json.load(f)
+    central_status = None
+    with open(central_status_path, 'r') as f:
+        central_status = json.load(f)
 
-    if not training_status['parameters']['start']:
+    if not central_status['start']:
         return False
 
-    if not training_status['parameters']['data-split'] or not training_status['parameters']['preprocessed']:
+    if not central_status['data-split'] or not central_status['preprocessed']:
         return False
 
-    if training_status['parameters']['trained']:
+    if central_status['trained']:
         return False
-    #global_(cycle)_(updates)_(samples).pth
-    model_path = 'models/global_0_0_' + str(training_status['parameters']['train-amount']) + '.pth'
-    torch.manual_seed(global_parameters['seed'])
     
+    cpu_start = psutil.cpu_percent(interval=5)
+    time_start = time.time()
+    mem_start = psutil.virtual_memory().used 
+    disk_start = psutil.disk_usage('.').used
+    
+    model_parameters_path = 'parameters/experiment_' + str(current_experiment_number) + '/model.txt'
+    model_parameters = None
+    with open(model_parameters_path, 'r') as f:
+        model_parameters = json.load(f)
+
+    tensor_folder_path = 'tensors/experiment_' + str(current_experiment_number)
+    train_tensor_path = tensor_folder_path +  '/train_0.pt'
+    test_tensor_path = tensor_folder_path +  '/test_0.pt'
+
+    train_tensor = torch.load(train_tensor_path)
+    test_tensor = torch.load(test_tensor_path)
+
+    torch.manual_seed(model_parameters['seed'])
     given_train_loader, given_test_loader = get_train_test_loaders(
-        global_parameters = global_parameters
+        train_tensor = train_tensor,
+        test_tensor = test_tensor,
+        model_parameters = model_parameters
     )
-
-    lr_model = FederatedLogisticRegression(dim = global_parameters['input-size'])
+    lr_model = FederatedLogisticRegression(dim = model_parameters['input-size'])
     
     train(
         logger = logger,
         model = lr_model, 
         train_loader = given_train_loader,  
-        global_parameters = global_parameters
+        model_parameters = model_parameters
     )
     
     test_metrics = test(
         model = lr_model, 
         test_loader = given_test_loader
     )
-
-    store_global_metrics(
+    print
+    test_metrics['train-amount'] = len(train_tensor)
+    test_metrics['test-amount'] = len(test_tensor)
+    status = store_metrics(
+        type = 'global',
+        subject = '',
         metrics = test_metrics
     )
     
+    #The used format for models is global_(cycle)_(updates)_(samples).pth
+    model_experiment_folder = 'models/experiment_' + str(current_experiment_number)
+    os.makedirs(model_experiment_folder, exist_ok = True)
+    model_path = model_experiment_folder + '/global_0_0_' + str(central_status['train-amount']) + '.pth'
     parameters = lr_model.get_parameters(lr_model)
     torch.save(parameters, model_path)
     
-    with open(training_status_path, 'r') as f:
-        training_status = json.load(f)
-    training_status['parameters']['trained'] = True
-    with open(training_status_path, 'w') as f:
-        json.dump(training_status, f, indent=4) 
+    central_status['trained'] = True
+    with open(central_status_path, 'w') as f:
+        json.dump(central_status, f, indent=4) 
+
+    time_end = time.time()
+    cpu_end = psutil.cpu_percent(interval=5)
+    mem_end = psutil.virtual_memory().used 
+    disk_end = psutil.disk_usage('.').used
+
+    time_diff = (time_end - time_start) # seconds
+    cpu_diff = cpu_end - cpu_start # percentage
+    mem_diff = (mem_end - mem_start) / (1024 ** 2) # megabytes
+    disk_diff = (disk_end - disk_start) / (1024 ** 2) # megabytes
+
+    resource_metrics = {
+        'name': 'initial_model_training',
+        'time-seconds': time_diff,
+        'cpu-percentage': cpu_diff,
+        'ram-megabytes': mem_diff,
+        'disk-megabytes': disk_diff
+    }
+
+    status = store_metrics(
+        type = 'resources',
+        subject = 'function',
+        metrics = resource_metrics
+    )
 
     return True
-# Refactored and works
+# Refactor
 def model_inference(
     input: any,
     cycle: int
@@ -220,11 +301,22 @@ def model_inference(
 
     GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
 
-    global_model_path = 'models/global_model_' + str(cycle) + '.pth'
-    if not os.path.exists(global_model_path):
+    files = os.listdir('models')
+
+    wanted_global_model = ''
+    for file in files:
+        first_split = file.split('.')
+        second_split = first_split[0].split('_')
+        name = str(second_split[0])
+        if name == 'global':
+            model_cycle = int(second_split[1])
+            if cycle == model_cycle:
+                wanted_global_model = 'models/' + file 
+
+    if not os.path.exists(wanted_global_model):
         return None
     
-    given_parameters = torch.load(global_model_path)
+    given_parameters = torch.load(wanted_global_model)
     
     lr_model = FederatedLogisticRegression(dim = GLOBAL_PARAMETERS['input-size'])
     lr_model.apply_parameters(lr_model, given_parameters)
@@ -235,7 +327,7 @@ def model_inference(
         output = lr_model.prediction(lr_model,given_input)
 
     return output.tolist()
-# Created and works
+# Refactor
 def get_models() -> any:
     training_status_path = 'logs/training_status.txt'
     if not os.path.exists(training_status_path):

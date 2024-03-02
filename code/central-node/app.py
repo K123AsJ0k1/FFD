@@ -1,18 +1,24 @@
 from flask import Flask
-from config import Config
 from apscheduler.schedulers.background import BackgroundScheduler
 
 import logging
 import os
-# Refactored and works
+# Refactor
 def create_app():
     app = Flask(__name__)
+
+    os.makedirs('logs', exist_ok=True)
+    os.makedirs('parameters', exist_ok=True)
+    os.makedirs('status', exist_ok=True)
+    os.makedirs('data', exist_ok=True)
+    os.makedirs('models', exist_ok=True)
+    os.makedirs('metrics', exist_ok=True)
+    os.makedirs('tensors', exist_ok=True)
     
     central_log_path = 'logs/central.log'
     if os.path.exists(central_log_path):
         os.remove(central_log_path)
 
-    app.config.from_object(Config)
     logger = logging.getLogger('central-logger')
     logger.setLevel(logging.INFO)
     file_handler = logging.FileHandler(central_log_path)
@@ -21,31 +27,26 @@ def create_app():
     logger.addHandler(file_handler)
     app.logger = logger
 
-    from functions.storage_functions import initilize_training_status
-    status = initilize_training_status()
-    app.logger.info('Training status created: ' + str(status))
+    from functions.storage_functions import initilize_storage_templates
+    initilize_storage_templates()
+    #app.logger.info('Training status created: ' + str(status))
     
     scheduler = BackgroundScheduler(daemon = True)
-    from functions.fed_functions import send_context_to_workers
+    #from functions.fed_functions import send_context_to_workers
     from functions.fed_functions import central_federated_pipeline
     given_args = [
-        app.logger, 
-        app.config['GLOBAL_PARAMETERS'], 
-        app.config['CENTRAL_PARAMETERS'], 
-        app.config['WORKER_PARAMETERS']
+        app.logger
     ] 
-    scheduler.add_job(
-        func = send_context_to_workers,
-        trigger = "interval",
-        seconds = 30,
-        args = given_args 
-    )
-    given_args = [
-        app.logger, 
-        app.config['GLOBAL_PARAMETERS'], 
-        app.config['CENTRAL_PARAMETERS'],
-        app.config['WORKER_PARAMETERS']
-    ]
+    
+    #scheduler.add_job(
+    #    func = send_context_to_workers,
+    #    trigger = "interval",
+    #    seconds = 30,
+    #    args = given_args 
+    #)
+    #given_args = [
+    #    app.logger
+    #]
     scheduler.add_job(
         func = central_federated_pipeline,
         trigger = "interval",

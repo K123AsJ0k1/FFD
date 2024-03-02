@@ -6,38 +6,60 @@ import json
 import numpy as np
 import pandas as pd
 import torch 
+
+import time
+import psutil
  
 from sklearn.model_selection import train_test_split
 from torch.utils.data import TensorDataset
 
+from functions.storage_functions import *
+
 # Refactored and works
 def central_worker_data_split(
-    logger: any,  
-    central_parameters: any,
-    worker_parameters: any 
+    logger: any
 ) -> bool:
-    training_status_path = 'logs/training_status.txt'
-    training_status = None
-    with open(training_status_path, 'r') as f:
-        training_status = json.load(f)
-
-    if not training_status['parameters']['start']:
-        return False
-
-    if training_status['parameters']['complete']:
-        return False
-
-    if training_status['parameters']['data-split']:
+    current_experiment_number = get_current_experiment_number()
+    central_status_path = 'status/experiment_' + str(current_experiment_number) + '/central.txt'
+    if not os.path.exists(central_status_path):
         return False
     
-    central_pool_path = 'data/central_pool.csv'
-    worker_pool_path = 'data/worker_pool.csv'
+    central_status = None
+    with open(central_status_path, 'r') as f:
+        central_status = json.load(f)
+
+    if not central_status['start']:
+        return False
+
+    if central_status['complete']:
+        return False
+
+    if central_status['data-split']:
+        return False
+    
+    cpu_start = psutil.cpu_percent(interval=5)
+    time_start = time.time()
+    mem_start = psutil.virtual_memory().used 
+    disk_start = psutil.disk_usage('.').used
+
+    central_parameters_path = 'parameters/experiment_' + str(current_experiment_number) + '/central.txt'
+    central_parameters = None
+    with open(central_parameters_path, 'r') as f:
+        central_parameters = json.load(f)
+
+    worker_parameters_path = 'parameters/experiment_' + str(current_experiment_number) + '/worker.txt'
+    worker_parameters = None
+    with open(worker_parameters_path, 'r') as f:
+        worker_parameters = json.load(f)
+    
+    data_experiment_folder = 'data/experiment_' + str(current_experiment_number)
+    source_data_path = data_experiment_folder + '/source.csv'
+    central_pool_path = data_experiment_folder + '/central_pool.csv'
+    worker_pool_path = data_experiment_folder + '/worker_pool.csv'
 
     os.environ['STATUS'] = 'data splitting'
     
-    data_path = 'data/formated_fraud_detection_data.csv'
-    source_df = pd.read_csv(data_path)
-
+    source_df = pd.read_csv(source_data_path)
     splitted_data_df = source_df.drop('step', axis = 1)
     
     central_data_pool = splitted_data_df.sample(n = central_parameters['sample-pool'])
@@ -48,12 +70,36 @@ def central_worker_data_split(
     central_data_pool.to_csv(central_pool_path, index = False)    
     worker_data_pool.to_csv(worker_pool_path, index = False)
     
-    training_status['parameters']['data-split'] = True
-    with open(training_status_path, 'w') as f:
-        json.dump(training_status, f, indent=4) 
+    central_status['data-split'] = True
+    with open(central_status_path, 'w') as f:
+        json.dump(central_status, f, indent=4) 
+    
+    time_end = time.time()
+    cpu_end = psutil.cpu_percent(interval=5)
+    mem_end = psutil.virtual_memory().used 
+    disk_end = psutil.disk_usage('.').used
+
+    time_diff = (time_end - time_start) 
+    cpu_diff = cpu_end - cpu_start 
+    mem_diff = (mem_end - mem_start) / (1024 ** 2) 
+    disk_diff = (disk_end - disk_start) / (1024 ** 2) 
+
+    resource_metrics = {
+        'name': 'central-worker-data-split',
+        'time-seconds': round(time_diff,5),
+        'cpu-percentage': round(cpu_diff,5),
+        'ram-megabytes': round(mem_diff,5),
+        'disk-megabytes': round(disk_diff,5)
+    }
+
+    status = store_metrics(
+        type = 'resources',
+        subject = 'function',
+        metrics = resource_metrics
+    )
 
     return True
-
+# Created and works
 def data_augmented_sample(
     pool_df: any,
     sample_pool: int,
@@ -71,37 +117,56 @@ def data_augmented_sample(
     augmented_sample_df = pd.concat([frauds_df,non_fraud_df])
     randomized_sample_df = augmented_sample_df.sample(frac = 1, replace = False)
     return randomized_sample_df
-
-# Refactored
+# Refactored and works
 def preprocess_into_train_test_and_evaluate_tensors(
-    logger: any,
-    global_parameters: any,
-    central_parameters: any
+    logger: any
 ) -> bool:
-    training_status_path = 'logs/training_status.txt'
-    training_status = None
-    with open(training_status_path, 'r') as f:
-        training_status = json.load(f)
+    current_experiment_number = get_current_experiment_number()
+    central_status_path = 'status/experiment_' + str(current_experiment_number) + '/central.txt'
+    if not os.path.exists(central_status_path):
+        return False
+    
+    central_status = None
+    with open(central_status_path, 'r') as f:
+        central_status = json.load(f)
 
-    if not training_status['parameters']['start']:
+    if not central_status['start']:
         return False
 
-    if training_status['parameters']['complete']:
+    if central_status['complete']:
         return False
 
-    if not training_status['parameters']['data-split']:
+    if not central_status['data-split']:
         return False
 
-    if training_status['parameters']['preprocessed']:
+    if central_status['preprocessed']:
         return False
-
-    central_pool_path = 'data/central_pool.csv'
-    train_tensor_path = 'tensors/train.pt'
-    test_tensor_path = 'tensors/test.pt'
-    eval_tensor_path = 'tensors/eval.pt'
-
+    
     os.environ['STATUS'] = 'preprocessing'
     
+    cpu_start = psutil.cpu_percent(interval=5)
+    time_start = time.time()
+    mem_start = psutil.virtual_memory().used 
+    disk_start = psutil.disk_usage('.').used
+    
+    central_parameters_path = 'parameters/experiment_' + str(current_experiment_number) + '/central.txt'
+    central_parameters = None
+    with open(central_parameters_path, 'r') as f:
+        central_parameters = json.load(f)
+
+    model_parameters_path = 'parameters/experiment_' + str(current_experiment_number) + '/model.txt'
+    model_parameters = None
+    with open(model_parameters_path, 'r') as f:
+        model_parameters = json.load(f)
+
+    central_pool_path= 'data/experiment_' + str(current_experiment_number) + '/central_pool.csv'
+    # tensors have format train/test/eval_(cycle)
+    tensor_experiment_folder = 'tensors/experiment_' + str(current_experiment_number)
+    os.makedirs(tensor_experiment_folder, exist_ok = True)
+    train_tensor_path = tensor_experiment_folder + '/train_0.pt'
+    test_tensor_path = tensor_experiment_folder + '/test_0.pt'
+    eval_tensor_path = tensor_experiment_folder + '/eval_0.pt'
+
     central_data_df = pd.read_csv(central_pool_path)
 
     preprocessed_df = None
@@ -111,30 +176,30 @@ def preprocess_into_train_test_and_evaluate_tensors(
             sample_pool = central_parameters['data-augmentation']['sample-pool'],
             ratio = central_parameters['data-augmentation']['1-0-ratio']
         )
-        preprocessed_df = used_data_df[global_parameters['used-columns']]
+        preprocessed_df = used_data_df[model_parameters['used-columns']]
     else:
-        preprocessed_df = central_data_df[global_parameters['used-columns']]
+        preprocessed_df = central_data_df[model_parameters['used-columns']]
     
-    for column in global_parameters['scaled-columns']:
+    for column in model_parameters['scaled-columns']:
         mean = preprocessed_df[column].mean()
         std_dev = preprocessed_df[column].std()
         preprocessed_df[column] = (preprocessed_df[column] - mean)/std_dev
 
-    X = preprocessed_df.drop(global_parameters['target-column'], axis = 1).values
-    y = preprocessed_df[global_parameters['target-column']].values
+    X = preprocessed_df.drop(model_parameters['target-column'], axis = 1).values
+    y = preprocessed_df[model_parameters['target-column']].values
         
     X_train_test, X_eval, y_train_test, y_eval = train_test_split(
         X, 
         y, 
         train_size = central_parameters['train-eval-ratio'], 
-        random_state = global_parameters['seed']
+        random_state = model_parameters['seed']
     )
 
     X_train, X_test, y_train, y_test = train_test_split(
         X_train_test, 
         y_train_test, 
         train_size = central_parameters['train-test-ratio'], 
-        random_state = global_parameters['seed']
+        random_state = model_parameters['seed']
     )
 
     X_train = np.array(X_train, dtype=np.float32)
@@ -162,52 +227,98 @@ def preprocess_into_train_test_and_evaluate_tensors(
     torch.save(test_tensor,test_tensor_path)
     torch.save(eval_tensor,eval_tensor_path)
 
-    training_status['parameters']['preprocessed'] = True
-    training_status['parameters']['train-amount'] = X_train.shape[0]
-    training_status['parameters']['test-amount'] = X_test.shape[0]
-    training_status['parameters']['eval-amount'] = X_eval.shape[0]
-    with open(training_status_path, 'w') as f:
-        json.dump(training_status, f, indent=4) 
+    central_status['preprocessed'] = True
+    central_status['train-amount'] = X_train.shape[0]
+    central_status['test-amount'] = X_test.shape[0]
+    central_status['eval-amount'] = X_eval.shape[0]
+    with open(central_status_path, 'w') as f:
+        json.dump(central_status, f, indent=4) 
+
+    time_end = time.time()
+    cpu_end = psutil.cpu_percent(interval=5)
+    mem_end = psutil.virtual_memory().used 
+    disk_end = psutil.disk_usage('.').used
+
+    time_diff = (time_end - time_start) 
+    cpu_diff = cpu_end - cpu_start 
+    mem_diff = (mem_end - mem_start) / (1024 ** 2) 
+    disk_diff = (disk_end - disk_start) / (1024 ** 2)
+
+    resource_metrics = {
+        'name': 'preprocess-into-train-test-and-evalute-tensors',
+        'time-seconds': round(time_diff,5),
+        'cpu-percentage': cpu_diff,
+        'ram-megabytes': round(mem_diff,5),
+        'disk-megabytes': round(disk_diff,5)
+    }
+
+    status = store_metrics(
+        type = 'resources',
+        subject = 'function',
+        metrics = resource_metrics
+    )
     
     return True
 # Refactored
 def split_data_between_workers(
-    logger: any,
-    worker_parameters: any
+    logger: any
 ) -> bool:
-    training_status_path = 'logs/training_status.txt'
-    training_status = None
-    with open(training_status_path, 'r') as f:
-        training_status = json.load(f)
+    current_experiment_number = current_experiment_number()
+    central_status_path = 'status/experiment_' + str(current_experiment_number) + '/central.txt'
+    if not os.path.exists(central_status_path):
+        return False
+    
+    central_status = None
+    with open(central_status_path, 'r') as f:
+        central_status = json.load(f)
 
-    if not training_status['parameters']['start']:
+    if not central_status['start']:
         return False
 
-    if training_status['parameters']['complete']:
+    if central_status['complete']:
         return False
 
-    if not training_status['parameters']['preprocessed']:
+    if not central_status['preprocessed']:
+        return False
+    
+    if not central_status['trained']:
         return False
 
-    if training_status['parameters']['worker-split']:
+    if central_status['worker-split']:
+        return False
+    
+    worker_status_path = 'status/experiment_' + str(current_experiment_number) + '/worker.txt'
+    if not os.path.exists(central_status_path):
         return False
 
-    worker_pool_path = 'data/worker_pool.csv'
-    training_status_path = 'logs/training_status.txt'
+    worker_status = None
+    with open(worker_status_path, 'r') as f:
+        worker_status = json.load(f)
+
+    worker_parameters_path = 'parameters/experiment_' + str(current_experiment_number) + '/worker.txt'
+    if not os.path.exists(central_status_path):
+        return False
+    
+    worker_parameters = None
+    with open(worker_parameters_path, 'r') as f:
+        worker_parameters = json.load(f)
+
+    data_experiment_folder = 'data/experiment_' + str(current_experiment_number)
+    worker_pool_path = data_experiment_folder + '/worker_pool.csv'
 
     os.environ['STATUS'] = 'worker splitting'
     
     worker_pool_df = pd.read_csv(worker_pool_path)
 
     available_workers = []
-    for worker_key in training_status['workers'].keys():
-        worker_metadata = training_status['workers'][worker_key]
+    for worker_key in worker_status.keys():
+        worker_metadata = worker_status[worker_key]
         if worker_metadata['status'] == 'waiting':
             available_workers.append(worker_key)
 
     if len(available_workers) == 0:
         return False
-    
+    # Format for worker data is worker_(id)_(cycle)_(size).csv
     if worker_parameters['data-augmentation']['active']:
         for worker_key in available_workers:
             worker_sample_df = data_augmented_sample(
@@ -215,21 +326,21 @@ def split_data_between_workers(
                 sample_pool = worker_parameters['data-augmentation']['sample-pool'],
                 ratio = worker_parameters['data-augmentation']['1-0-ratio']
             )
-            data_path = 'data/worker_' + worker_key + '_' + str(training_status['parameters']['cycle']) + '.csv'
+            sample_size = worker_sample_df.shape[0]
+            data_path = data_experiment_folder + '/worker_' + worker_key + '_' + str(central_status['cycle']) + '_' + str(sample_size) + '.csv'
             worker_sample_df.to_csv(data_path, index = False)
     else:
         worker_df = worker_pool_df.sample(frac = 1)
         worker_dfs = np.array_split(worker_df, len(available_workers))
         index = 0
         for worker_key in available_workers:
-            data_path = 'data/worker_' + worker_key + '_' + str(training_status['parameters']['cycle']) + '.csv'
+            sample_size = worker_dfs[index].shape[0]
+            data_path = data_experiment_folder + '/worker_' + worker_key + '_' + str(central_status['cycle']) + '_' + str(sample_size) + '.csv'
             worker_dfs[index].to_csv(data_path, index = False)
             index = index + 1
 
-    training_status['parameters']['worker-split'] = True
-    training_status['parameters']['columns'] = worker_pool_df.columns.tolist() 
-    
-    with open(training_status_path, 'w') as f:
-        json.dump(training_status, f, indent=4) 
+    central_status['worker-split'] = True
+    with open(central_status_path, 'w') as f:
+        json.dump(central_status, f, indent=4) 
 
     return True    
