@@ -37,11 +37,13 @@ def central_worker_data_split(
     if central_status['data-split']:
         return False
     
-    cpu_start = psutil.cpu_percent(interval=5)
-    time_start = time.time()
+    this_process = psutil.Process(os.getpid())
+    
     mem_start = psutil.virtual_memory().used 
     disk_start = psutil.disk_usage('.').used
-
+    cpu_start = this_process.cpu_percent(interval=0.2)
+    time_start = time.time()
+    
     central_parameters_path = 'parameters/experiment_' + str(current_experiment_number) + '/central.txt'
     central_parameters = None
     with open(central_parameters_path, 'r') as f:
@@ -75,7 +77,7 @@ def central_worker_data_split(
         json.dump(central_status, f, indent=4) 
     
     time_end = time.time()
-    cpu_end = psutil.cpu_percent(interval=5)
+    cpu_end = this_process.cpu_percent(interval=0.2)
     mem_end = psutil.virtual_memory().used 
     disk_end = psutil.disk_usage('.').used
 
@@ -143,11 +145,13 @@ def preprocess_into_train_test_and_evaluate_tensors(
         return False
     
     os.environ['STATUS'] = 'preprocessing'
+
+    this_process = psutil.Process(os.getpid())
     
-    cpu_start = psutil.cpu_percent(interval=5)
-    time_start = time.time()
     mem_start = psutil.virtual_memory().used 
     disk_start = psutil.disk_usage('.').used
+    cpu_start = this_process.cpu_percent(interval=0.2)
+    time_start = time.time()
     
     central_parameters_path = 'parameters/experiment_' + str(current_experiment_number) + '/central.txt'
     central_parameters = None
@@ -235,10 +239,10 @@ def preprocess_into_train_test_and_evaluate_tensors(
         json.dump(central_status, f, indent=4) 
 
     time_end = time.time()
-    cpu_end = psutil.cpu_percent(interval=5)
+    cpu_end = this_process.cpu_percent(interval=0.2)
     mem_end = psutil.virtual_memory().used 
     disk_end = psutil.disk_usage('.').used
-
+    
     time_diff = (time_end - time_start) 
     cpu_diff = cpu_end - cpu_start 
     mem_diff = (mem_end - mem_start) / (1024 ** 2) 

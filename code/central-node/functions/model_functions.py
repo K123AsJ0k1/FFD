@@ -47,7 +47,7 @@ class FederatedLogisticRegression(nn.Module):
     @staticmethod
     def apply_parameters(model, parameters):
         model.load_state_dict(parameters)
-# Refactored
+# Refactored and works
 def get_train_test_loaders(
     train_tensor: any,
     test_tensor: any,
@@ -73,11 +73,14 @@ def train(
 
     optimizer = opt_func(model.parameters(), model_parameters['learning-rate'])
     model_type = type(model)
-
-    cpu_start = psutil.cpu_percent(interval=5)
-    time_start = time.time()
+    
+    this_process = psutil.Process(os.getpid())
+    
     mem_start = psutil.virtual_memory().used 
     disk_start = psutil.disk_usage('.').used
+    cpu_start = this_process.cpu_percent(interval=0.2)
+    time_start = time.time()
+    
     for epoch in range(model_parameters['epochs']):
         losses = []
         for batch in train_loader:
@@ -91,7 +94,7 @@ def train(
         logger.info('Epoch ' + str(epoch + 1) + ', loss = ' + str(loss_value))
 
     time_end = time.time()
-    cpu_end = psutil.cpu_percent(interval=5)
+    cpu_end = this_process.cpu_percent(interval=0.2)
     mem_end = psutil.virtual_memory().used 
     disk_end = psutil.disk_usage('.').used
 
@@ -183,7 +186,7 @@ def test(
         }
         
         return metrics
-# Refactored
+# Refactored and works
 def initial_model_training(
     logger: any
 ) -> bool:
@@ -205,10 +208,12 @@ def initial_model_training(
     if central_status['trained']:
         return False
     
-    cpu_start = psutil.cpu_percent(interval=5)
-    time_start = time.time()
+    this_process = psutil.Process(os.getpid())
+    
     mem_start = psutil.virtual_memory().used 
     disk_start = psutil.disk_usage('.').used
+    cpu_start = this_process.cpu_percent(interval=0.2)
+    time_start = time.time()
     
     model_parameters_path = 'parameters/experiment_' + str(current_experiment_number) + '/model.txt'
     model_parameters = None
@@ -241,7 +246,7 @@ def initial_model_training(
         model = lr_model, 
         test_loader = given_test_loader
     )
-    print
+    
     test_metrics['train-amount'] = len(train_tensor)
     test_metrics['test-amount'] = len(test_tensor)
     status = store_metrics(
@@ -262,7 +267,7 @@ def initial_model_training(
         json.dump(central_status, f, indent=4) 
 
     time_end = time.time()
-    cpu_end = psutil.cpu_percent(interval=5)
+    cpu_end = this_process.cpu_percent(interval=0.2)
     mem_end = psutil.virtual_memory().used 
     disk_end = psutil.disk_usage('.').used
 
@@ -272,7 +277,7 @@ def initial_model_training(
     disk_diff = (disk_end - disk_start) / (1024 ** 2) # megabytes
 
     resource_metrics = {
-        'name': 'initial_model_training',
+        'name': 'initial-model-training',
         'time-seconds': time_diff,
         'cpu-percentage': cpu_diff,
         'ram-megabytes': mem_diff,

@@ -48,7 +48,7 @@ training status format:
                         - balanced-accuracy: int 
                         - accuracy: int
 '''
-# Refactor
+# Refactored and works
 def initilize_storage_templates():
     # Types: 0 = int, [] = list, 0.0 = float and {} = dict 
     model_parameters = {
@@ -281,7 +281,7 @@ def initilize_storage_templates():
         if not os.path.exists(path):
             with open(path, 'w') as f:
                 json.dump(path_template , f, indent=4) 
-# Created
+# Created and works
 def get_current_experiment_number():
     parameter_files = os.listdir('parameters')
     highest_experiment_number = 0
@@ -368,7 +368,7 @@ def store_training_context(
         source_df = pd.DataFrame(df_data, columns = df_columns)
         source_df.to_csv(file_path)
     return True
-# Refactored
+# Refactored and works
 def store_metrics( 
    type: str,
    subject: str,
