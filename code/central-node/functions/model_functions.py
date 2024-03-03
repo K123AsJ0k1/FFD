@@ -75,15 +75,15 @@ def train(
     model_type = type(model)
     
     this_process = psutil.Process(os.getpid())
-    
     mem_start = psutil.virtual_memory().used 
     disk_start = psutil.disk_usage('.').used
     cpu_start = this_process.cpu_percent(interval=0.2)
     time_start = time.time()
-    
+    total_size = 0
     for epoch in range(model_parameters['epochs']):
         losses = []
         for batch in train_loader:
+            total_size += len(batch[1])
             loss = model_type.train_step(model, batch)
             loss.backward()
             losses.append(loss)
@@ -98,40 +98,50 @@ def train(
     mem_end = psutil.virtual_memory().used 
     disk_end = psutil.disk_usage('.').used
 
-    time_diff = (time_end - time_start) # seconds
-    cpu_diff = cpu_end - cpu_start # percentage
-    mem_diff = (mem_end - mem_start) / (1024 ** 2) # megabytes
-    disk_diff = (disk_end - disk_start) / (1024 ** 2) # megabytes
+    time_diff = (time_end - time_start) 
+    cpu_diff = cpu_end - cpu_start 
+    mem_diff = (mem_end - mem_start) / (1024 ** 2) 
+    disk_diff = (disk_end - disk_start) / (1024 ** 2) 
 
-    average_time = time_diff / model_parameters['epochs']
-    average_cpu = cpu_diff / model_parameters['epochs']
-    average_mem = mem_diff / model_parameters['epochs']
-    average_diffs = disk_diff / model_parameters['epochs']
+    #average_time = time_diff / model_parameters['epochs']
+    #average_cpu = cpu_diff / model_parameters['epochs']
+    #average_mem = mem_diff / model_parameters['epochs']
+    #average_diffs = disk_diff / model_parameters['epochs']
 
     resource_metrics = {
-        'model': 'logistic-regression',
+        'name': 'logistic-regression-training',
         'epochs': model_parameters['epochs'],
-        'average-epoch-time-seconds': round(average_time,5),
-        'average-epoch-cpu-percentage': round(average_cpu,5),
-        'average-epoch-ram-megabytes': round(average_mem,5),
-        'average-epoch-disk-megabytes': round(average_diffs,5)
+        'batches': len(train_loader),
+        'average-batch-size': total_size / len(train_loader),
+        'time-seconds': round(time_diff,5),
+        'cpu-percentage': round(cpu_diff,5),
+        'ram-megabytes': round(mem_diff,5),
+        'disk-megabytes': round(disk_diff,5)
     }
 
-    status = store_metrics(
+    status = store_metrics_and_resources(
         type = 'resources',
-        subject = 'training',
+        subject = 'central',
+        area = 'training',
         metrics = resource_metrics
     )
     
 # Refactored and works
 def test(
     model: any, 
-    test_loader: any
+    test_loader: any,
+    name: any
 ) -> any:
     with torch.no_grad():
-        total_size = 0
         total_confusion_matrix = [0,0,0,0]
         
+        this_process = psutil.Process(os.getpid())
+        mem_start = psutil.virtual_memory().used 
+        disk_start = psutil.disk_usage('.').used
+        cpu_start = this_process.cpu_percent(interval=0.2)
+        time_start = time.time()
+        
+        total_size = 0
         for batch in test_loader:
             total_size += len(batch[1])
             _, correct = batch
@@ -150,7 +160,39 @@ def test(
             total_confusion_matrix[1] += int(fp) # False positive
             total_confusion_matrix[2] += int(tn) # True negative
             total_confusion_matrix[3] += int(fn) # False negative
- 
+            
+        time_end = time.time()
+        cpu_end = this_process.cpu_percent(interval=0.2)
+        mem_end = psutil.virtual_memory().used 
+        disk_end = psutil.disk_usage('.').used
+
+        time_diff = (time_end - time_start) 
+        cpu_diff = cpu_end - cpu_start 
+        mem_diff = (mem_end - mem_start) / (1024 ** 2) 
+        disk_diff = (disk_end - disk_start) / (1024 ** 2)
+
+        #average_time = time_diff / len(test_loader)
+        #average_cpu = cpu_diff / len(test_loader)
+        #average_mem = mem_diff / len(test_loader)
+        #average_diffs = disk_diff / len(test_loader)
+
+        resource_metrics = {
+            'name': 'logistic-regression-' + name,
+            'batches': len(test_loader),
+            'average-batch-size': total_size / len(test_loader),
+            'time-seconds': round(time_diff,5),
+            'cpu-percentage': round(cpu_diff,5),
+            'ram-megabytes': round(mem_diff,5),
+            'disk-megabytes': round(disk_diff,5)
+        }
+
+        status = store_metrics_and_resources(
+            type = 'resources',
+            subject = 'central',
+            area = 'training',
+            metrics = resource_metrics
+        )
+    
         TP, FP, TN, FN = total_confusion_matrix
         # Zero divsion can happen
         TPR = 0
@@ -186,10 +228,43 @@ def test(
         }
         
         return metrics
+# Created
+def evaluate(
+    train_amount: int,
+    current_model: any
+):  
+    current_experiment_number = get_current_experiment_number()
+    eval_tensor_path = 'tensors/experiment_' + str(current_experiment_number) + '/eval_0.pt'
+
+    eval_tensor = torch.load(eval_tensor_path)
+    eval_loader = DataLoader(eval_tensor, 64)
+
+    test_metrics = test(
+        name = 'evalution',
+        model = current_model, 
+        test_loader = eval_loader
+    )
+    
+    test_metrics['train-amount'] = train_amount
+    test_metrics['test-amount'] = 0
+    test_metrics['eval-amount'] = len(eval_tensor)
+    status = store_metrics_and_resources(
+        type = 'metrics',
+        subject = 'global',
+        area = '',
+        metrics = test_metrics
+    )
+
 # Refactored and works
 def initial_model_training(
     logger: any
 ) -> bool:
+    this_process = psutil.Process(os.getpid())
+    mem_start = psutil.virtual_memory().used 
+    disk_start = psutil.disk_usage('.').used
+    cpu_start = this_process.cpu_percent(interval=0.2)
+    time_start = time.time()
+    
     current_experiment_number = get_current_experiment_number()
     central_status_path = 'status/experiment_' + str(current_experiment_number) + '/central.txt'
     if not os.path.exists(central_status_path):
@@ -207,13 +282,6 @@ def initial_model_training(
 
     if central_status['trained']:
         return False
-    
-    this_process = psutil.Process(os.getpid())
-    
-    mem_start = psutil.virtual_memory().used 
-    disk_start = psutil.disk_usage('.').used
-    cpu_start = this_process.cpu_percent(interval=0.2)
-    time_start = time.time()
     
     model_parameters_path = 'parameters/experiment_' + str(current_experiment_number) + '/model.txt'
     model_parameters = None
@@ -243,16 +311,24 @@ def initial_model_training(
     )
     
     test_metrics = test(
+        name = 'testing',
         model = lr_model, 
         test_loader = given_test_loader
     )
     
     test_metrics['train-amount'] = len(train_tensor)
     test_metrics['test-amount'] = len(test_tensor)
-    status = store_metrics(
-        type = 'global',
-        subject = '',
+    test_metrics['eval-amount'] = 0
+    status = store_metrics_and_resources(
+        type = 'metrics',
+        subject = 'global',
+        area = '',
         metrics = test_metrics
+    )
+
+    evaluate(
+        train_amount = len(train_tensor),
+        current_model = lr_model
     )
     
     #The used format for models is global_(cycle)_(updates)_(samples).pth
@@ -271,10 +347,10 @@ def initial_model_training(
     mem_end = psutil.virtual_memory().used 
     disk_end = psutil.disk_usage('.').used
 
-    time_diff = (time_end - time_start) # seconds
-    cpu_diff = cpu_end - cpu_start # percentage
-    mem_diff = (mem_end - mem_start) / (1024 ** 2) # megabytes
-    disk_diff = (disk_end - disk_start) / (1024 ** 2) # megabytes
+    time_diff = (time_end - time_start) 
+    cpu_diff = cpu_end - cpu_start 
+    mem_diff = (mem_end - mem_start) / (1024 ** 2) 
+    disk_diff = (disk_end - disk_start) / (1024 ** 2) 
 
     resource_metrics = {
         'name': 'initial-model-training',
@@ -284,9 +360,10 @@ def initial_model_training(
         'disk-megabytes': disk_diff
     }
 
-    status = store_metrics(
+    status = store_metrics_and_resources(
         type = 'resources',
-        subject = 'function',
+        subject = 'central',
+        area = 'function',
         metrics = resource_metrics
     )
 

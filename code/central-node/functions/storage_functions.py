@@ -9,45 +9,6 @@ import psutil
 
 from collections import OrderedDict
 
-'''
-training status format:
-- entry: dict
-   - parameters: dict
-      - pooling: bool
-      - preprocess: bool
-      - training: bool
-      - splitting: bool
-      - update: bool
-      - evaluated: bool
-      - complete
-      - worker-updates: int
-      - cycle: int
-      - columns: list
-      - global metrics: list
-         - metrics: dict
-            - confusion list
-            - recall: int
-            - selectivity: int
-            - precision: int
-            - miss-rate: int
-            - fall-out: int
-            - balanced-accuracy: int 
-            - accuracy: int
-   - workers: dict
-        - id: dict
-            - address: str
-            - status: str
-                - local metrics: list
-                    - metrics: dict
-                        - confusion list
-                        - recall: int
-                        - selectivity: int
-                        - precision: int
-                        - miss-rate: int
-                        - fall-out: int
-                        - balanced-accuracy: int 
-                        - accuracy: int
-'''
 # Refactored and works
 def initilize_storage_templates():
     # Types: 0 = int, [] = list, 0.0 = float and {} = dict 
@@ -70,8 +31,8 @@ def initilize_storage_templates():
             'sample-pool': 0,
             '1-0-ratio': 0.0
         },
-        'train-eval-ratio': 0.0,
-        'train-test-ratio': 0.0,
+        'eval-ratio': 0.0,
+        'train-ratio': 0.0,
         'min-update-amount': 0,
         'max-cycles': 0,
         'min-metric-success': 0,
@@ -110,15 +71,16 @@ def initilize_storage_templates():
             'sample-pool': 0,
             '1-0-ratio': 0.0
         },
-        'train-test-ratio': 0.0
+        'eval-ratio': 0.0,
+        'train-ratio': 0.0
     }
 
     central_status = {
         'start': False,
         'data-split': False,
         'preprocessed': False,
-        'trained': False,
         'worker-split': False,
+        'trained': False,
         'sent': False,
         'updated': False,
         'evaluated': False,
@@ -133,7 +95,8 @@ def initilize_storage_templates():
     worker_status = {
         '1': {
             'id': 1,
-            'address': '',
+            'central-address': '',
+            'worker-address': '',
             'status': '',
             'stored': False,
             'preprocessed': False,
@@ -169,6 +132,7 @@ def initilize_storage_templates():
             '1': {
                 'train-amount': 0,
                 'test-amount': 0,
+                'eval-amount': 0,
                 'true-positives': 0,
                 'false-positives': 0,
                 'true-negatives': 0,
@@ -184,7 +148,7 @@ def initilize_storage_templates():
         }
     }
     # key format: subject, cycle and id
-    resource_metrics = {
+    central_resources = {
         'general': {
             'physical-cpu-amount': 0,
             'total-cpu-amount': 0,
@@ -220,25 +184,125 @@ def initilize_storage_templates():
         'training': {
             '1': {
                 '1': {
-                    'model': '',
+                    'name': 'model-training',
                     'epochs': 0,
-                    'average-epoch-time-seconds': 0.0,
-                    'average-epoch-cpu-percentage': 0.0,
-                    'average-epoch-ram-megabytes': 0.0,
-                    'average-epoch-disk-megabytes': 0.0
+                    'batches': 0,
+                    'average-batch-size': 0,
+                    'time-seconds': 0.0,
+                    'cpu-percentage': 0.0,
+                    'ram-megabytes': 0.0,
+                    'disk-megabytes': 0.0
+                },
+                '2': {
+                    'name': 'model-testing',
+                    'batches': 0,
+                    'average-batch-size': 0,
+                    'time-seconds': 0.0,
+                    'cpu-percentage': 0.0,
+                    'ram-megabytes': 0.0,
+                    'disk-megabytes': 0.0
+                },
+                '3': {
+                    'name': 'model-evaluation',
+                    'batches': 0,
+                    'average-batch-size': 0,
+                    'time-seconds': 0.0,
+                    'cpu-percentage': 0.0,
+                    'ram-megabytes': 0.0,
+                    'disk-megabytes': 0.0
                 }
             }
         },
         'inference': {
             '1': {
                 '1': {
-                    'model': '',
-                    'request-amount': 0,
-                    'prediction-amount': 0,
-                    'average-sample-time-seconds': 0.0,
-                    'average-sample-cpu-percentage': 0.0,
-                    'average-sample-ram-megabytes': 0.0,
-                    'average-sample-disk-megabytes': 0.0
+                    'name': 'model-prediction',
+                    'sample-amount': 0,
+                    'time-seconds': 0.0,
+                    'cpu-percentage': 0.0,
+                    'ram-megabytes': 0.0,
+                    'disk-megabytes': 0.0
+                }
+            }
+        }
+    }
+    # Key format worker id
+    worker_resources = {
+        '1': {
+            'general': {
+                'physical-cpu-amount': 0,
+                'total-cpu-amount': 0,
+                'min-cpu-frequency-mhz': 0.0,
+                'max-cpu-frequency-mhz': 0.0,
+                'total-ram-amount-megabytes': 0.0,
+                'available-ram-amount-megabytes': 0.0,
+                'total-disk-amount-megabytes': 0.0,
+                'available-disk-amount-megabytes': 0.0
+            },
+            'function': {
+                '1': {
+                    '1': { 
+                        'name': 'model-training',           
+                        'time-seconds': 0.0,
+                        'cpu-percentage': 0.0,
+                        'ram-megabytes': 0.0,
+                        'disk-megabytes': 0.0
+                    }
+                }
+            },
+            'network': {
+                '1': {
+                    '1': {
+                        'name': 'sending-update',
+                        'time-seconds': 0.0,
+                        'cpu-percentage': 0.0,
+                        'ram-megabytes': 0.0,
+                        'disk-megabytes': 0.0
+                    }
+                }
+            },
+            'training': {
+                '1': {
+                    '1': {
+                        'name': 'model-training',
+                        'epochs': 0,
+                        'batches': 0,
+                        'batch-size': 0,
+                        'time-seconds': 0.0,
+                        'cpu-percentage': 0.0,
+                        'ram-megabytes': 0.0,
+                        'disk-megabytes': 0.0
+                    },
+                    '2': {
+                        'name': 'model-testing',
+                        'batches': 0,
+                        'batch-size': 0,
+                        'time-seconds': 0.0,
+                        'cpu-percentage': 0.0,
+                        'ram-megabytes': 0.0,
+                        'disk-megabytes': 0.0
+                    },
+                    '3': {
+                        'name': 'model-evaluation',
+                        'batches': 0,
+                        'batch-size':0, 
+                        'time-seconds': 0.0,
+                        'cpu-percentage': 0.0,
+                        'ram-megabytes': 0.0,
+                        'disk-megabytes': 0.0
+                    }
+                }
+            },
+            'inference': {
+                '1': {
+                    '1': {
+                        'name': 'model-prediction',
+                        'sample-amount': 0,
+                        'time-seconds': 0.0,
+                        'cpu-percentage': 0.0,
+                        'ram-megabytes': 0.0,
+                        'disk-megabytes': 0.0
+                    }
                 }
             }
         }
@@ -252,7 +316,8 @@ def initilize_storage_templates():
         'status/workers.txt',
         'metrics/global.txt',
         'metrics/local.txt',
-        'metrics/resources.txt'
+        'resources/central.txt',
+        'resources/workers.txt'
     ]
 
     templates = {
@@ -267,8 +332,11 @@ def initilize_storage_templates():
         },
         'metrics': {
             'global': global_metrics,
-            'local': local_metrics,
-            'resources': resource_metrics
+            'local': local_metrics
+        },
+        'resources': {
+            'central': central_resources,
+            'workers': worker_resources
         }
     }
 
@@ -317,7 +385,8 @@ def store_training_context(
         'status/workers.txt',
         'metrics/global.txt',
         'metrics/local.txt',
-        'metrics/resources.txt'
+        'resources/central.txt',
+        'resources/workers.txt'
     ]
 
     for path in template_paths:
@@ -335,7 +404,7 @@ def store_training_context(
             for key in stored_template.keys():
                 modified_template[key] = given_parameters[key]
             stored_template = copy.deepcopy(modified_template)
-        if second_split[0] == 'metrics' and second_split[1] == 'resources':
+        if second_split[0] == 'resources' and second_split[1] == 'central':
             stored_template = {
                 'general': {
                     'physical-cpu-amount': psutil.cpu_count(logical=False),
@@ -352,7 +421,9 @@ def store_training_context(
                 'training': {},
                 'inference': {}
             }
-        if (second_split[0] == 'metrics' and (second_split[1] == 'global' or second_split[1] == 'local') or (second_split[0] == 'status' and second_split[1] == 'workers')):
+        if (second_split[0] == 'metrics' and (second_split[1] == 'global' or second_split[1] == 'local') 
+            or (second_split[0] == 'status' and second_split[1] == 'workers')
+            or (second_split[0] == 'resources' and second_split[1] == 'workers')):
             stored_template = {}
         
         if not os.path.exists(file_path):
@@ -368,18 +439,65 @@ def store_training_context(
         source_df = pd.DataFrame(df_data, columns = df_columns)
         source_df.to_csv(file_path)
     return True
-# Refactored and works
-def store_metrics( 
+# Refactored
+def store_metrics_and_resources( 
    type: str,
    subject: str,
+   area: str,
    metrics: any
 ) -> bool:
     current_experiment_number = get_current_experiment_number()
-    metrics_storage_path = 'metrics/experiment_' + str(current_experiment_number) + '/' + type + '.txt'
-    if not os.path.exists(metrics_storage_path):
-        return False
+    stored_data = None
+    storage_path = None
+    if type == 'metrics':
+        if subject == 'global':
+            storage_path = 'metrics/experiment_' + str(current_experiment_number) + '/global.txt'
+            if not os.path.exists(storage_path):
+                return False
+        
+            stored_data = None
+            with open(storage_path, 'r') as f:
+                stored_data = json.load(f)
+
+            new_key = len(stored_data) + 1
+            stored_data[str(new_key)] = metrics
+    if type == 'resources':
+        central_status_path = 'status/experiment_' + str(current_experiment_number) + '/central.txt'
+        if not os.path.exists(central_status_path):
+            return False
+        
+        central_status = None
+        with open(central_status_path, 'r') as f:
+            central_status = json.load(f)
+
+        if subject == 'central':
+            storage_path = 'resources/experiment_' + str(current_experiment_number) + '/central.txt'
+            if not os.path.exists(storage_path):
+                return False
+            
+            stored_data = None
+            with open(storage_path, 'r') as f:
+                stored_data = json.load(f)
+
+            if not str(central_status['cycle']) in stored_data[area]:
+                stored_data[area][str(central_status['cycle'])] = {}
+            new_key = len(stored_data[area][str(central_status['cycle'])]) + 1
+            stored_data[area][str(central_status['cycle'])][str(new_key)] = metrics
+    #print(stored_data)
+    with open(storage_path, 'w') as f:
+        json.dump(stored_data, f, indent=4) 
     
-    central_status_path = 'status/experiment_' + str(current_experiment_number) + '/central.txt'
+    return True
+# refactored
+def store_worker(
+    address: str,
+    status: any,
+    metrics: any
+) -> any:
+    current_experiment_number = get_current_experiment_number()
+    status_folder_path = 'status/experiment_' + str(current_experiment_number)
+    
+    central_status_path = status_folder_path + '/central.txt'
     if not os.path.exists(central_status_path):
         return False
     
@@ -387,45 +505,30 @@ def store_metrics(
     with open(central_status_path, 'r') as f:
         central_status = json.load(f)
 
-    metrics_storage = None
-    with open(metrics_storage_path, 'r') as f:
-        metrics_storage = json.load(f)
-
-    if type == 'resources':
-        if not str(central_status['cycle']) in metrics_storage[subject]:
-            metrics_storage[subject][str(central_status['cycle'])] = {}
-        new_key = len(metrics_storage[subject][str(central_status['cycle'])]) + 1
-        metrics_storage[subject][str(central_status['cycle'])][str(new_key)] = metrics
-
-    if type == 'global':
-        new_key = len(metrics_storage) + 1
-        metrics_storage[str(new_key)] = metrics
-    
-    with open(metrics_storage_path, 'w') as f:
-        json.dump(metrics_storage, f, indent=4) 
-    
-    return True
-# refactor
-def store_worker_status(
-    worker_address: str,
-    worker_status: any
-) -> any:
-    training_status_path = 'logs/training_status.txt'
-    
-    if not os.path.exists(training_status_path):
+    worker_status_path = status_folder_path + '/workers.txt'
+    if not os.path.exists(worker_status_path):
         return False
     
-    training_status = None
-    with open(training_status_path, 'r') as f:
-        training_status = json.load(f)
+    worker_status = None
+    with open(worker_status_path, 'r') as f:
+        worker_status = json.load(f)
 
-    if worker_status['id'] == None:
+    local_metrics_path = 'metrics/experiment_' + str(current_experiment_number) + '/local.txt'
+    if not os.path.exists(local_metrics_path):
+        return False
+    
+    local_metrics = None
+    with open(local_metrics_path, 'r') as f:
+        local_metrics = json.load(f)
+
+    if worker_status['id'] == 0:
+        # When worker isn't registered either due to being new or failure restart
         duplicate_id = -1
         used_keys = []
         
-        for worker_key in training_status['workers'].keys():
-            worker_metadata = training_status['workers'][worker_key]
-            if worker_metadata['address'] == worker_status['address']:
+        for worker_key in worker_status.keys():
+            worker_metadata = worker_status[worker_key]
+            if worker_metadata['address'] == status['address']:
                 duplicate_id = int(worker_key)
             used_keys.append(int(worker_key))
             
@@ -433,69 +536,59 @@ def store_worker_status(
         smallest_missing_id = 0
         while smallest_missing_id in set_of_used_keys:
             smallest_missing_id += 1
-        
-        local_metrics = {}
-        local_stored = False
-        local_preprocessed = False
-        local_trained = False
-        local_updated = False
-        if -1 < duplicate_id:
-            local_stored = training_status['workers'][str(duplicate_id)]['stored']
-            local_preprocessed = training_status['workers'][str(duplicate_id)]['preprocessed']
-            local_trained = training_status['workers'][str(duplicate_id)]['trained']
-            local_updated = training_status['workers'][str(duplicate_id)]['updated']
-            local_metrics = training_status['workers'][str(duplicate_id)]['local-metrics']
-            del training_status['workers'][str(duplicate_id)]
 
-        old_worker_data_path = 'worker_' + str(duplicate_id) + '_' + str(training_status['parameters']['cycle']) + '.csv'
+        old_local_metrics = None
+        
+        if -1 < duplicate_id:
+            old_local_metrics = local_metrics[str(duplicate_id)]
+            del worker_status[str(duplicate_id)]
+            del local_metrics[str(duplicate_id)]
+
+        old_worker_data_path = 'data/experiment_' + str(current_experiment_number) + '/worker_' + str(duplicate_id) + '_' + str(central_status['cycle']) + '.csv'
         if os.path.exists(old_worker_data_path):
-            new_worker_data_path = 'worker_' + str(smallest_missing_id) + '_' + str(training_status['parameters']['cycle']) + '.csv'
+            new_worker_data_path = 'worker_' + str(smallest_missing_id) + '_' + str(central_status['cycle']) + '.csv'
             os.rename(old_worker_data_path,new_worker_data_path)
 
-        training_status['workers'][str(smallest_missing_id)] = {
-            'address': worker_address,
-            'status': worker_status['status'],
-            'stored': local_stored,
-            'preprocessed': local_preprocessed,
-            'trained': local_trained,
-            'updated': local_updated,
-            'cycle': training_status['parameters']['cycle'],
-            'local-metrics': local_metrics
-        }
-        with open(training_status_path, 'w') as f:
-            json.dump(training_status, f, indent=4)
-        
-        return smallest_missing_id, worker_address, 'registered'
-    else:
-        worker_metadata = training_status['workers'][str(worker_status['id'])]
-        if worker_metadata['address'] == worker_address:
-            # When worker is already registered and address has stayed the same
-            worker_metadata['status'] = worker_status['status']
-            worker_metadata['stored'] = worker_status['stored']
-            worker_metadata['preprocessed'] = worker_status['preprocessed']
-            worker_metadata['trained'] = worker_status['trained']
-            worker_metadata['updated'] = worker_status['updated']
-            worker_metadata['cycle'] = worker_status['cycle']
-            worker_metadata['local-metrics'] = worker_status['local-metrics']
-            training_status['workers'][str(worker_status['id'])] = worker_metadata
+        modified_status = copy.deepcopy(status)
+        modified_status['id'] = str(smallest_missing_id)
+        modified_status['address'] = address
+        modified_status['cycle'] = central_status['cycle']
 
-            with open(training_status_path, 'w') as f:
-                json.dump(training_status, f, indent=4)
-            return worker_status['id'], worker_address, 'checked'
+        worker_status[str(smallest_missing_id)] = modified_status
+        local_metrics[str(smallest_missing_id)] = old_local_metrics
+
+        with open(worker_status_path, 'w') as f:
+            json.dump(worker_status, f, indent=4)
+
+        with open(local_metrics_path, 'w') as f:
+            json.dump(local_metrics, f, indent=4)
+        
+        return 'registered', worker_status, local_metrics
+    else:
+        worker_metadata = worker_status[str(worker_status['id'])]
+        action = ''
+        if worker_metadata['address'] == address:
+            # When worker is already registered and address has stayed the same
+            modified_metadata = copy.deepcopy(status)
+            worker_status[str(worker_status['id'])] = modified_metadata
+            local_metrics[str(worker_status['id'])] = metrics['local']
+            resource_metrics[str(worker_status['id'])] = metrics['resource']
+            action = 'checked'
         else:
             # When worker id has stayed the same, but address has changed due to load balancing
-            worker_metadata['status'] = worker_status['status']
-            worker_metadata['address'] = worker_address
-            worker_metadata['stored'] = worker_status['stored']
-            worker_metadata['preprocessed'] = worker_status['preprocessed']
-            worker_metadata['trained'] = worker_status['trained']
-            worker_metadata['updated'] = worker_status['updated']
-            worker_metadata['cycle'] = worker_status['cycle']
-            worker_metadata['local-metrics'] = worker_status['local-metrics']
-            training_status['workers'][str(worker_status['id'])] = worker_metadata
-            with open(training_status_path, 'w') as f:
-                json.dump(training_status, f, indent=4)
-            return worker_status['id'], worker_address, 'rerouted'
+            modified_metadata = copy.deepcopy(status)
+            modified_metadata['address'] = address
+            worker_status[str(worker_status['id'])] = modified_metadata
+            local_metrics[str(worker_status['id'])] = metrics
+            action = 'rerouted'
+            
+        with open(worker_status_path, 'w') as f:
+            json.dump(worker_status, f, indent=4)
+            
+        with open(local_metrics_path, 'w') as f:
+            json.dump(local_metrics, f, indent=4)
+
+        return action, worker_status, None
 # Refactor
 def store_update( 
     worker_id: str,

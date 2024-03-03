@@ -13,6 +13,7 @@ def create_app():
     os.makedirs('data', exist_ok=True)
     os.makedirs('models', exist_ok=True)
     os.makedirs('metrics', exist_ok=True)
+    os.makedirs('resources', exist_ok=True)
     os.makedirs('tensors', exist_ok=True)
     
     central_log_path = 'logs/central.log'
@@ -33,26 +34,24 @@ def create_app():
     
     scheduler = BackgroundScheduler(daemon = True)
     #from functions.fed_functions import send_context_to_workers
-    from functions.fed_functions import central_federated_pipeline
+    from functions.fed_functions import data_pipeline
+    from functions.fed_functions import model_pipeline
     given_args = [
         app.logger
     ] 
-    
-    #scheduler.add_job(
-    #    func = send_context_to_workers,
-    #    trigger = "interval",
-    #    seconds = 30,
-    #    args = given_args 
-    #)
-    #given_args = [
-    #    app.logger
-    #]
     scheduler.add_job(
-        func = central_federated_pipeline,
+        func = data_pipeline,
         trigger = "interval",
-        seconds = 60,
+        seconds = 10,
         args = given_args 
     )
+    scheduler.add_job(
+        func = model_pipeline,
+        trigger = "interval",
+        seconds = 20,
+        args = given_args 
+    )
+    
     scheduler.start()
     app.logger.info('Scheduler ready')
 

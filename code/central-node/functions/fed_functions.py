@@ -10,7 +10,7 @@ from collections import OrderedDict
 
 from functions.storage_functions import *
 from functions.model_functions import *
-# Refactored
+# Refactored and works
 def start_training():
     current_experiment_number = get_current_experiment_number()
     central_status_path = 'status/experiment_' + str(current_experiment_number) + '/central.txt'
@@ -25,40 +25,11 @@ def start_training():
     with open(central_status_path, 'w') as f:
         json.dump(central_status, f, indent=4) 
     return True
-# Refactor
-def send_context_to_workers(
-    logger: any
-) -> bool:
-    training_status_path = 'logs/training_status.txt'
-    if not os.path.exists(training_status_path):
-        return False
-   
-    training_status = None
-    with open(training_status_path, 'r') as f:
-        training_status = json.load(f)
-
-    if not training_status['parameters']['start']:
-        return False
-
-    if not training_status['parameters']['trained']:
-        return False
-    
-    if not training_status['parameters']['worker-split']:
-        return False
-
-    if training_status['parameters']['sent']:
-        return False
-    
-    os.environ['STATUS'] = 'sending'
-    
-    models_folder_path = 'models'
-    if not os.path.exists(models_folder_path):
-        return False
-    
-    files = os.listdir(models_folder_path)
-    if len(files) == 0:
-        return False   
-    
+# Created
+def get_current_global_model() -> any: 
+    current_experiment_number = get_current_experiment_number()
+    model_folder_path = 'models/experiment_' + str(current_experiment_number)
+    files = os.listdir(model_folder_path)
     current_global_model = ''
     highest_key = 0
     for file in files:
@@ -69,51 +40,119 @@ def send_context_to_workers(
             cycle = int(second_split[1])
             if highest_key <= cycle:
                 highest_key = cycle
-                current_global_model = 'models/' + file   
+                current_global_model = model_folder_path + '/' + file 
+    return torch.load(current_global_model)
+# Refactor
+def send_context_to_workers(
+    logger: any
+) -> bool:
+    current_experiment_number = get_current_experiment_number()
+    status_folder_path = 'status/experiment_' + str(current_experiment_number)
+    central_status_path = status_folder_path + '/central.txt'
+    if not os.path.exists(central_status_path):
+        return False
     
-    global_model = torch.load(current_global_model)
+    central_status = None
+    with open(central_status_path, 'r') as f:
+        central_status = json.load(f)
+
+    if not central_status['start']:
+        return False
+
+    if not central_status['worker-split']:
+        return False
+    
+    if not central_status['trained']:
+        return False
+    
+    if central_status['sent']:
+        return False
+    
+    os.environ['STATUS'] = 'sending'
+
+    workers_status_path = status_folder_path + '/workers.txt'
+    if not os.path.exists(workers_status_path):
+        return False
+    
+    workers_status = None
+    with open(workers_status_path, 'r') as f:
+        workers_status = json.load(f)
+    
+    parameters_folder_path = 'parameters/experiment_' + str(current_experiment_number)
+
+    central_parameters_path = parameters_folder_path + '/central.txt'
+    if not os.path.exists(central_parameters_path):
+        return False
+    
+    central_parameters = None
+    with open(central_parameters_path, 'r') as f:
+        central_parameters = json.load(f)
+
+    model_parameters_path = parameters_folder_path + '/model.txt'
+    if not os.path.exists(model_parameters_path):
+        return False
+    
+    model_parameters = None
+    with open(model_parameters_path, 'r') as f:
+        model_parameters = json.load(f)
+
+    worker_parameters_path = parameters_folder_path + '/worker.txt'
+    if not os.path.exists(worker_parameters_path):
+        return False
+    
+    worker_parameters = None
+    with open(worker_parameters_path, 'r') as f:
+        worker_parameters = json.load(f)
+
+    global_model = get_current_global_model()
     formatted_global_model = {
         'weights': global_model['linear.weight'].numpy().tolist(),
         'bias': global_model['linear.bias'].numpy().tolist()
     }
 
     payload_status = {}
-    for worker_key in training_status['workers'].keys():
-        worker_metadata = training_status['workers'][worker_key]
+    for worker_key in workers_status.keys():
+        worker_metadata = workers_status[worker_key]
         
         if not worker_metadata['status'] == 'waiting':
             continue
 
         worker_url = 'http://' + worker_metadata['address'] + ':7500/context'
         payload = None
-        if not training_status['parameters']['complete']:
-            data_path = 'data/worker_' + worker_key + '_' + str(training_status['parameters']['cycle']) + '.csv'
+        if not central_status['complete']:
+            data_path = 'data/worker_' + worker_key + '_' + str(central_status['cycle']) + '.csv'
             worker_df = pd.read_csv(data_path)
-            worker_data = worker_df.values.tolist()
+            worker_data_list = worker_df.values.tolist()
+            worker_data_columns = worker_df.columns.tolist()
+
+            parameters = {
+                'id': worker_key,
+                'address': worker_metadata['address'],
+                'cycle': central_status['cycle'],
+                'model': model_parameters,
+                'worker': worker_parameters
+            }
+            
             payload = {
-                'global-parameters': global_parameters,
-                'worker-parameters': {
-                    'id': worker_key,
-                    'address': worker_metadata['address'],
-                    'columns': training_status['parameters']['columns'],
-                    'cycle': training_status['parameters']['cycle'],
-                    'train-test-ratio': worker_parameter['train-test-ratio']
-                },
+                'parameters': parameters,
                 'global-model': formatted_global_model,
-                'worker-data': worker_data
+                'worker-data-list': worker_data_list,
+                'worker-data-columns': worker_data_columns
             }
         else:
+            parameters = {
+                'id': worker_key,
+                'address': worker_metadata['address'],
+                'cycle': central_status['cycle'],
+                'model': None,
+                'worker': None
+            }
+
             payload = {
-                'global-parameters': None,
-                'worker-parameters': {
-                    'id': worker_key,
-                    'address': worker_metadata['address'],
-                    'columns': None,
-                    'cycle': training_status['parameters']['cycle'],
-                    'train-test-ratio': None
-                },
+                'parameters': parameters,
                 'global-model': formatted_global_model,
-                'worker-data': None
+                'worker-data-list': None,
+                'worker-data-columns': None
             }
     
         json_payload = json.dumps(payload) 
@@ -128,8 +167,9 @@ def send_context_to_workers(
             )
             
             payload_status[worker_key] = {
+                'response': response.status_code,
                 'address': worker_metadata['address'],
-                'response': response.status_code
+                'status': worker_metadata['status']
             }
         except Exception as e:
             logger.error('Context sending error' + str(e))
@@ -138,24 +178,23 @@ def send_context_to_workers(
     for worker_key in payload_status.keys():
         worker_data = payload_status[worker_key]
         if not worker_data['response'] == 200: 
-            store_worker_status(
-                worker_id = int(worker_key),
-                worker_ip = worker_data['address'],
-                worker_status = 'failure'
+            store_worker(
+                address = worker_data['address'],
+                status = worker_data['status']
             )
             continue
         successes = successes + 1 
     
-    if not training_status['parameters']['complete']:
+    if not central_status['complete']:
         if not central_parameters['min-update-amount'] <= successes:
             return False
         os.environ['STATUS'] = 'waiting updates'
     else:
         os.environ['STATUS'] = 'training complete'
     
-    training_status['parameters']['sent'] = True
-    with open(training_status_path, 'w') as f:
-        json.dump(training_status, f, indent=4)
+    central_status['sent'] = True
+    with open(central_status_path, 'w') as f:
+        json.dump(central_status, f, indent=4)
 
     return True
 # Refactored and works
@@ -337,37 +376,53 @@ def evalute_global_model(
          json.dump(training_status, f, indent=4) 
 
     return True
-# Refactor
-def central_federated_pipeline(
+# Created
+def data_pipeline(
     task_logger: any
-):  
-    # Ok
+):
+    # Works
     status = central_worker_data_split(
         logger = task_logger
     )
-    task_logger.info('Global data split:' + str(status))
-    # Ok
+    task_logger.info('Central-worker data split:' + str(status))
+    # Works
     status = preprocess_into_train_test_and_evaluate_tensors(
         logger = task_logger
     )
-    task_logger.info('Global preprocessing:' + str(status))
-    # Ok
+    task_logger.info('Central pool preprocessing:' + str(status))
+    # Check
+    status = split_data_between_workers(
+        logger = task_logger
+    )
+    task_logger.info('Worker data split:' + str(status))
+# Created
+def model_pipeline(
+    task_logger: any
+):  
+    # Works
     status = initial_model_training(
         logger = task_logger
     )
-    task_logger.info('Global training:' + str(status))
-    ## Ok
-    #status = split_data_between_workers(
-    #    logger = task_logger
-    #)
-    #task_logger.info('Global splitting:' + str(status))
+    task_logger.info('Initial model training:' + str(status))
+# Created
+def update_pipeline(
+    task_logger: any
+):
+    status = send_context_to_workers(
+        logger = task_logger
+    )
+    task_logger.info('Worker context sending:' + str(status))
+# Created
+def aggregation_pipeline(
+    task_logger: any
+):
+    status = update_global_model(
+        logger = task_logger
+    )
+    task_logger.info('Updating global model:' + str(status))
     
-    #status = update_global_model(
-    #    logger = task_logger
-    #)
-    #task_logger.info('Global update:' + str(status))
-    
-    #status = evalute_global_model(
-    #    logger = task_logger
-    #)
-    #task_logger.info('Global evaluation:' + str(status))
+    status = evalute_global_model(
+        logger = task_logger
+    )
+    task_logger.info('Global model evaluation:' + str(status))
+

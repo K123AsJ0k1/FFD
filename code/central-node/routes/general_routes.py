@@ -44,14 +44,17 @@ def training_status():
 @general.route('/status', methods=["POST"])
 def worker_status():
     received_worker_ip = request.remote_addr
-    sent_worker_status = json.loads(request.json)
+    sent_payload = json.loads(request.json)
+    sent_status = sent_payload['status']
+    sent_metrics = sent_payload['metrics']
 
-    set_worker_id, set_worker_ip, set_message = store_worker_status(
-        worker_address = received_worker_ip,
-        worker_status = sent_worker_status
+    message, status, metrics = store_worker(
+        address = received_worker_ip,
+        status = sent_status,
+        metrics = sent_metrics
     )
 
-    return jsonify({'id': set_worker_id, 'address': set_worker_ip, 'message': set_message})  
+    return jsonify({'message': message, 'status': status, 'metrics': metrics})  
 # Refactored and works
 @general.route('/models', methods=["GET"])
 def stored_models():

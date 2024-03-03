@@ -19,6 +19,12 @@ from functions.storage_functions import *
 def central_worker_data_split(
     logger: any
 ) -> bool:
+    this_process = psutil.Process(os.getpid())
+    mem_start = psutil.virtual_memory().used 
+    disk_start = psutil.disk_usage('.').used
+    cpu_start = this_process.cpu_percent(interval=0.2)
+    time_start = time.time()
+
     current_experiment_number = get_current_experiment_number()
     central_status_path = 'status/experiment_' + str(current_experiment_number) + '/central.txt'
     if not os.path.exists(central_status_path):
@@ -36,13 +42,6 @@ def central_worker_data_split(
 
     if central_status['data-split']:
         return False
-    
-    this_process = psutil.Process(os.getpid())
-    
-    mem_start = psutil.virtual_memory().used 
-    disk_start = psutil.disk_usage('.').used
-    cpu_start = this_process.cpu_percent(interval=0.2)
-    time_start = time.time()
     
     central_parameters_path = 'parameters/experiment_' + str(current_experiment_number) + '/central.txt'
     central_parameters = None
@@ -94,9 +93,10 @@ def central_worker_data_split(
         'disk-megabytes': round(disk_diff,5)
     }
 
-    status = store_metrics(
+    status = store_metrics_and_resources(
         type = 'resources',
-        subject = 'function',
+        subject = 'central',
+        area = 'function',
         metrics = resource_metrics
     )
 
@@ -123,6 +123,12 @@ def data_augmented_sample(
 def preprocess_into_train_test_and_evaluate_tensors(
     logger: any
 ) -> bool:
+    this_process = psutil.Process(os.getpid())
+    mem_start = psutil.virtual_memory().used 
+    disk_start = psutil.disk_usage('.').used
+    cpu_start = this_process.cpu_percent(interval=0.2)
+    time_start = time.time()
+
     current_experiment_number = get_current_experiment_number()
     central_status_path = 'status/experiment_' + str(current_experiment_number) + '/central.txt'
     if not os.path.exists(central_status_path):
@@ -146,13 +152,6 @@ def preprocess_into_train_test_and_evaluate_tensors(
     
     os.environ['STATUS'] = 'preprocessing'
 
-    this_process = psutil.Process(os.getpid())
-    
-    mem_start = psutil.virtual_memory().used 
-    disk_start = psutil.disk_usage('.').used
-    cpu_start = this_process.cpu_percent(interval=0.2)
-    time_start = time.time()
-    
     central_parameters_path = 'parameters/experiment_' + str(current_experiment_number) + '/central.txt'
     central_parameters = None
     with open(central_parameters_path, 'r') as f:
@@ -195,14 +194,14 @@ def preprocess_into_train_test_and_evaluate_tensors(
     X_train_test, X_eval, y_train_test, y_eval = train_test_split(
         X, 
         y, 
-        train_size = central_parameters['train-eval-ratio'], 
+        train_size = central_parameters['eval-ratio'], 
         random_state = model_parameters['seed']
     )
 
     X_train, X_test, y_train, y_test = train_test_split(
         X_train_test, 
         y_train_test, 
-        train_size = central_parameters['train-test-ratio'], 
+        train_size = central_parameters['train-ratio'], 
         random_state = model_parameters['seed']
     )
 
@@ -256,18 +255,25 @@ def preprocess_into_train_test_and_evaluate_tensors(
         'disk-megabytes': round(disk_diff,5)
     }
 
-    status = store_metrics(
+    status = store_metrics_and_resources(
         type = 'resources',
-        subject = 'function',
+        subject = 'central',
+        area = 'function',
         metrics = resource_metrics
     )
     
     return True
-# Refactored
+# Refactor
 def split_data_between_workers(
     logger: any
 ) -> bool:
-    current_experiment_number = current_experiment_number()
+    this_process = psutil.Process(os.getpid())
+    mem_start = psutil.virtual_memory().used 
+    disk_start = psutil.disk_usage('.').used
+    cpu_start = this_process.cpu_percent(interval=0.2)
+    time_start = time.time()
+
+    current_experiment_number = get_current_experiment_number()
     central_status_path = 'status/experiment_' + str(current_experiment_number) + '/central.txt'
     if not os.path.exists(central_status_path):
         return False
@@ -285,13 +291,10 @@ def split_data_between_workers(
     if not central_status['preprocessed']:
         return False
     
-    if not central_status['trained']:
-        return False
-
     if central_status['worker-split']:
         return False
-    
-    worker_status_path = 'status/experiment_' + str(current_experiment_number) + '/worker.txt'
+
+    worker_status_path = 'status/experiment_' + str(current_experiment_number) + '/workers.txt'
     if not os.path.exists(central_status_path):
         return False
 
@@ -346,5 +349,29 @@ def split_data_between_workers(
     central_status['worker-split'] = True
     with open(central_status_path, 'w') as f:
         json.dump(central_status, f, indent=4) 
+
+    time_end = time.time()
+    cpu_end = this_process.cpu_percent(interval=0.2)
+    mem_end = psutil.virtual_memory().used 
+    disk_end = psutil.disk_usage('.').used
+
+    time_diff = (time_end - time_start) 
+    cpu_diff = cpu_end - cpu_start 
+    mem_diff = (mem_end - mem_start) / (1024 ** 2) 
+    disk_diff = (disk_end - disk_start) / (1024 ** 2)
+
+    resource_metrics = {
+        'name': 'split-data-between-workers',
+        'time-seconds': round(time_diff,5),
+        'cpu-percentage': cpu_diff,
+        'ram-megabytes': round(mem_diff,5),
+        'disk-megabytes': round(disk_diff,5)
+    }
+
+    status = store_metrics_and_resources(
+        type = 'resources',
+        subject = 'function',
+        metrics = resource_metrics
+    )
 
     return True    
