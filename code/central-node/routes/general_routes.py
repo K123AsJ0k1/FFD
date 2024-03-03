@@ -48,13 +48,13 @@ def worker_status():
     sent_status = sent_payload['status']
     sent_metrics = sent_payload['metrics']
 
-    message, status, metrics = store_worker(
+    payload = store_worker(
         address = received_worker_ip,
         status = sent_status,
         metrics = sent_metrics
     )
 
-    return jsonify({'message': message, 'status': status, 'metrics': metrics})  
+    return jsonify(payload)  
 # Refactored and works
 @general.route('/models', methods=["GET"])
 def stored_models():

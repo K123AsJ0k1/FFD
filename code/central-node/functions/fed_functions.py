@@ -395,7 +395,7 @@ def data_pipeline(
         logger = task_logger
     )
     task_logger.info('Worker data split:' + str(status))
-# Created
+# Created and works
 def model_pipeline(
     task_logger: any
 ):  

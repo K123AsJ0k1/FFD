@@ -263,7 +263,7 @@ def preprocess_into_train_test_and_evaluate_tensors(
     )
     
     return True
-# Refactor
+# Refactored and works
 def split_data_between_workers(
     logger: any
 ) -> bool:
@@ -274,7 +274,8 @@ def split_data_between_workers(
     time_start = time.time()
 
     current_experiment_number = get_current_experiment_number()
-    central_status_path = 'status/experiment_' + str(current_experiment_number) + '/central.txt'
+    status_folder_path = 'status/experiment_' + str(current_experiment_number)
+    central_status_path = status_folder_path + '/central.txt'
     if not os.path.exists(central_status_path):
         return False
     
@@ -293,17 +294,26 @@ def split_data_between_workers(
     
     if central_status['worker-split']:
         return False
-
-    worker_status_path = 'status/experiment_' + str(current_experiment_number) + '/workers.txt'
-    if not os.path.exists(central_status_path):
+    
+    worker_status_path = status_folder_path + '/workers.txt'
+    if not os.path.exists(worker_status_path):
         return False
 
     worker_status = None
     with open(worker_status_path, 'r') as f:
         worker_status = json.load(f)
 
-    worker_parameters_path = 'parameters/experiment_' + str(current_experiment_number) + '/worker.txt'
-    if not os.path.exists(central_status_path):
+    parameters_folder_path = 'parameters/experiment_' + str(current_experiment_number)
+    central_parameters_path = parameters_folder_path + '/central.txt'
+    if not os.path.exists(central_parameters_path):
+        return False
+    
+    central_parameters = None
+    with open(central_parameters_path, 'r') as f:
+        central_parameters = json.load(f)
+
+    worker_parameters_path = parameters_folder_path + '/worker.txt'
+    if not os.path.exists(worker_parameters_path):
         return False
     
     worker_parameters = None
@@ -323,7 +333,7 @@ def split_data_between_workers(
         if worker_metadata['status'] == 'waiting':
             available_workers.append(worker_key)
 
-    if len(available_workers) == 0:
+    if not central_parameters['min-update-amount'] <= len(available_workers):
         return False
     # Format for worker data is worker_(id)_(cycle)_(size).csv
     if worker_parameters['data-augmentation']['active']:
@@ -370,7 +380,8 @@ def split_data_between_workers(
 
     status = store_metrics_and_resources(
         type = 'resources',
-        subject = 'function',
+        subject = 'central',
+        area = 'function',
         metrics = resource_metrics
     )
 

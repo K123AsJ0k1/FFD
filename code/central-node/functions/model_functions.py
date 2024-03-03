@@ -103,11 +103,6 @@ def train(
     mem_diff = (mem_end - mem_start) / (1024 ** 2) 
     disk_diff = (disk_end - disk_start) / (1024 ** 2) 
 
-    #average_time = time_diff / model_parameters['epochs']
-    #average_cpu = cpu_diff / model_parameters['epochs']
-    #average_mem = mem_diff / model_parameters['epochs']
-    #average_diffs = disk_diff / model_parameters['epochs']
-
     resource_metrics = {
         'name': 'logistic-regression-training',
         'epochs': model_parameters['epochs'],
@@ -171,11 +166,6 @@ def test(
         mem_diff = (mem_end - mem_start) / (1024 ** 2) 
         disk_diff = (disk_end - disk_start) / (1024 ** 2)
 
-        #average_time = time_diff / len(test_loader)
-        #average_cpu = cpu_diff / len(test_loader)
-        #average_mem = mem_diff / len(test_loader)
-        #average_diffs = disk_diff / len(test_loader)
-
         resource_metrics = {
             'name': 'logistic-regression-' + name,
             'batches': len(test_loader),
@@ -228,7 +218,7 @@ def test(
         }
         
         return metrics
-# Created
+# Created and works
 def evaluate(
     train_amount: int,
     current_model: any

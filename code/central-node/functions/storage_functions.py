@@ -104,6 +104,7 @@ def initilize_storage_templates():
             'updated': False,
             'train-amount': 0,
             'test-amount':0,
+            'eval-amount': 0,
             'cycle': 1
         }
     }
@@ -483,12 +484,12 @@ def store_metrics_and_resources(
                 stored_data[area][str(central_status['cycle'])] = {}
             new_key = len(stored_data[area][str(central_status['cycle'])]) + 1
             stored_data[area][str(central_status['cycle'])][str(new_key)] = metrics
-    #print(stored_data)
+    
     with open(storage_path, 'w') as f:
         json.dump(stored_data, f, indent=4) 
     
     return True
-# refactored
+# refactored and works
 def store_worker(
     address: str,
     status: any,
@@ -521,65 +522,93 @@ def store_worker(
     with open(local_metrics_path, 'r') as f:
         local_metrics = json.load(f)
 
-    if worker_status['id'] == 0:
+    workers_resources_path = 'resources/experiment_' + str(current_experiment_number) + '/workers.txt'
+    if not os.path.exists(workers_resources_path):
+        return False
+    
+    workers_resources = None
+    with open(workers_resources_path, 'r') as f:
+        workers_resources = json.load(f)
+
+    if status['id'] == 0:
         # When worker isn't registered either due to being new or failure restart
         duplicate_id = -1
         used_keys = []
         
         for worker_key in worker_status.keys():
             worker_metadata = worker_status[worker_key]
-            if worker_metadata['address'] == status['address']:
+            if worker_metadata['worker-address'] == status['worker-address']:
                 duplicate_id = int(worker_key)
             used_keys.append(int(worker_key))
             
         set_of_used_keys = set(used_keys)
-        smallest_missing_id = 0
+        smallest_missing_id = 1
         while smallest_missing_id in set_of_used_keys:
             smallest_missing_id += 1
 
-        old_local_metrics = None
+        old_local_metrics = {}
+        old_resources = {}
         
         if -1 < duplicate_id:
             old_local_metrics = local_metrics[str(duplicate_id)]
+            old_resources = workers_resources[str(duplicate_id)]
             del worker_status[str(duplicate_id)]
             del local_metrics[str(duplicate_id)]
+            del workers_resources[str(duplicate_id)]
 
         old_worker_data_path = 'data/experiment_' + str(current_experiment_number) + '/worker_' + str(duplicate_id) + '_' + str(central_status['cycle']) + '.csv'
         if os.path.exists(old_worker_data_path):
             new_worker_data_path = 'worker_' + str(smallest_missing_id) + '_' + str(central_status['cycle']) + '.csv'
             os.rename(old_worker_data_path,new_worker_data_path)
 
-        modified_status = copy.deepcopy(status)
-        modified_status['id'] = str(smallest_missing_id)
-        modified_status['address'] = address
-        modified_status['cycle'] = central_status['cycle']
+        #modified_status = copy.deepcopy(status)
+        status['id'] = str(smallest_missing_id)
+        status['worker-address'] = 'http://' + address + ':7500'
+        status['cycle'] = central_status['cycle']
 
-        worker_status[str(smallest_missing_id)] = modified_status
+        worker_status[str(smallest_missing_id)] = status
         local_metrics[str(smallest_missing_id)] = old_local_metrics
+        workers_resources[str(smallest_missing_id)] = old_resources
 
         with open(worker_status_path, 'w') as f:
             json.dump(worker_status, f, indent=4)
 
         with open(local_metrics_path, 'w') as f:
             json.dump(local_metrics, f, indent=4)
+
+        with open(workers_resources_path, 'w') as f:
+            json.dump(workers_resources, f, indent=4)
+
+        existing_metrics = {
+            'local': old_local_metrics,
+            'resources': old_resources
+        }
+
+        payload = {
+            'message': 'registered', 
+            'experiment_id': current_experiment_number,
+            'status': worker_status[str(smallest_missing_id)], 
+            'metrics': existing_metrics
+        }
         
-        return 'registered', worker_status, local_metrics
+        return payload 
     else:
-        worker_metadata = worker_status[str(worker_status['id'])]
+        worker_metadata = worker_status[str(status['id'])]
         action = ''
-        if worker_metadata['address'] == address:
+        if worker_metadata['worker-address'] == 'http://' + address + ':7500':
             # When worker is already registered and address has stayed the same
-            modified_metadata = copy.deepcopy(status)
-            worker_status[str(worker_status['id'])] = modified_metadata
-            local_metrics[str(worker_status['id'])] = metrics['local']
-            resource_metrics[str(worker_status['id'])] = metrics['resource']
+            #modified_metadata = copy.deepcopy(status)
+            worker_status[str(status['id'])] = status
+            local_metrics[str(status['id'])] = metrics['local']
+            workers_resources[str(status['id'])] = metrics['resources']
             action = 'checked'
         else:
             # When worker id has stayed the same, but address has changed due to load balancing
-            modified_metadata = copy.deepcopy(status)
-            modified_metadata['address'] = address
-            worker_status[str(worker_status['id'])] = modified_metadata
-            local_metrics[str(worker_status['id'])] = metrics
+            #modified_metadata = copy.deepcopy(status)
+            status['worker-address'] = 'http://' + address + ':7500'
+            worker_status[str(status['id'])] = status
+            local_metrics[str(status['id'])] = metrics['local']
+            workers_resources[str(status['id'])] = metrics['resources']
             action = 'rerouted'
             
         with open(worker_status_path, 'w') as f:
@@ -588,7 +617,17 @@ def store_worker(
         with open(local_metrics_path, 'w') as f:
             json.dump(local_metrics, f, indent=4)
 
-        return action, worker_status, None
+        with open(workers_resources_path, 'w') as f:
+            json.dump(workers_resources, f, indent=4)
+
+        payload = {
+            'message': action, 
+            'experiment_id': current_experiment_number,
+            'status': worker_status, 
+            'metrics': None
+        }
+
+        return payload
 # Refactor
 def store_update( 
     worker_id: str,
