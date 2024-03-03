@@ -9,12 +9,30 @@ from functions.data_functions import *
 from functions.model_functions import *
 from functions.storage_functions import *
  
-# Refactored and works 
-def send_status_to_central(
-    logger: any, 
-    central_address: str
+# Refactored and works
+def send_info_to_central(
+    logger: any
 ) -> bool:
-    worker_status_path = 'logs/worker_status.txt'
+    # In this simulated infrastructure we will assume that workers can failure restart in such a way that files are lost
+    current_experiment_number = get_current_experiment_number()
+
+    worker_status_path = None
+    local_metrics_path = None
+    worker_resources_path = None
+    if current_experiment_number == 0:
+        worker_status_path = 'status/worker.txt'
+    else:
+        worker_folder_path = 'status/experiment_' + str(current_experiment_number) 
+        metrics_folder_path = 'metrics/experiment_' + str(current_experiment_number)
+        resource_folder_path = 'resources/experiment_' + str(current_experiment_number)
+
+        os.makedirs(worker_folder_path, exist_ok=True)
+        os.makedirs(metrics_folder_path, exist_ok=True)
+        os.makedirs(resource_folder_path, exist_ok=True)
+        worker_status_path = worker_folder_path + '/worker.txt'
+        local_metrics_path = metrics_folder_path + '/local.txt'
+        worker_resources_path = resource_folder_path + '/worker.txt'
+
     if not os.path.exists(worker_status_path):
         return False
 
@@ -22,31 +40,83 @@ def send_status_to_central(
     with open(worker_status_path, 'r') as f:
         worker_status = json.load(f)
 
+    if worker_status['central-address'] == '':
+        return False
+
+    local_metrics = None
+    if local_metrics_path:
+        with open(local_metrics_path, 'r') as f:
+            local_metrics = json.load(f)
+    
+    worker_resources = None
+    if worker_resources_path:
+        with open(worker_resources_path, 'r') as f:
+            worker_resources = json.load(f)
+    
     worker_status['status'] = os.environ.get('STATUS')
-    json_payload = json.dumps(worker_status) 
-    address = central_address + '/status'
+
+    info = {
+        'status': worker_status,
+        'metrics': {
+            'local': local_metrics,
+            'resources': worker_resources
+        }
+    }
+
+    payload = json.dumps(info) 
+    address = worker_status['central-address'] + '/status'
     try:
         response = requests.post(
             url = address,
-            json = json_payload,
+            json = payload,
             headers = {
                'Content-type':'application/json', 
                'Accept':'application/json'
             }
         )
-        given_data = json.loads(response.text)
-        with open(worker_status_path, 'r') as f:
-            worker_status = json.load(f)
-        worker_status['id'] = given_data['id']
-        worker_status['address'] = given_data['address']
-        logger.info('Central message: ' + given_data['message'])
-        with open(worker_status_path, 'w') as f:
-            json.dump(worker_status, f, indent=4) 
-        return True
-    except Exception as e:
-        logger.error('Status sending error:' +  str(e)) 
+
+        if response.status_code == 200:
+            sent_payload = json.loads(response.text)
+            message = sent_payload['message']
+            logger.info('Central message: ' + message)
+            # Worker is either new or it has failure restated
+            if message == 'registered':
+                worker_status = sent_payload['status']
+                current_experiment_number = sent_payload['experiment_id']
+                local_metrics = sent_payload['metrics']['local']
+                worker_resources = sent_payload['metrics']['resources']
+
+                worker_folder_path = 'status/experiment_' + str(current_experiment_number) 
+                metrics_folder_path = 'metrics/experiment_' + str(current_experiment_number)
+                resource_folder_path = 'resources/experiment_' + str(current_experiment_number)
+
+                os.makedirs(worker_folder_path, exist_ok=True)
+                os.makedirs(metrics_folder_path, exist_ok=True)
+                os.makedirs(resource_folder_path, exist_ok=True)
+
+                worker_status_path = worker_folder_path + '/worker.txt'
+                local_metrics_path = metrics_folder_path + '/local.txt'
+                worker_resources_path = resource_folder_path + '/worker.txt'
+
+                with open(local_metrics_path, 'w') as f:
+                    json.dump(local_metrics, f, indent=4)
+
+                with open(worker_resources_path, 'w') as f:
+                    json.dump(worker_resources, f, indent=4)
+
+            # Worker address has changed
+            if message == 'rerouted':
+                worker_status['id'] = sent_payload['status']['id']
+
+            with open(worker_status_path, 'w') as f:
+                json.dump(worker_status, f, indent=4)
+            
+            return True
         return False
-# Refactored and works
+    except Exception as e:
+        logger.error('Sending info to central error:' +  str(e)) 
+        return False
+# Refactor
 def send_update(
     logger: any, 
     central_address: str
@@ -107,21 +177,32 @@ def send_update(
     except Exception as e:
         logger.error('Status sending error:' + str(e))
         return False
-# Refactored and works
-def worker_federated_pipeline(
+# Created
+def data_pipeline(
     task_logger: any,
-    task_central_address: str
 ):
     status = preprocess_into_train_and_test_tensors(
         logger = task_logger
     )
-    task_logger.info('Local preprocessing:' + str(status))
+    task_logger.info('Data preprocessing:' + str(status))
+# Created
+def model_pipeline(
+    task_logger: any
+): 
     status = local_model_training(
         logger = task_logger
     )
-    task_logger.info('Local training:' + str(status))
-    status = send_update(
-        logger = task_logger,
-        central_address = task_central_address
+    task_logger.info('Model training:' + str(status))
+# Created
+def update_pipeline(
+    task_logger: any
+):
+    # Check
+    status = send_info_to_central(
+        logger = task_logger
     )
-    task_logger.info('Local updating:' + str(status))
+    task_logger.info('Status sending:' + str(status))
+    #status = send_update(
+    #    logger = task_logger
+    #)
+    #task_logger.info('Update sending:' + str(status))

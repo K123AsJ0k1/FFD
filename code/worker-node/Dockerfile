@@ -10,6 +10,16 @@ COPY run.py .
 
 COPY app.py .
 
+COPY templates /worker/templates
+
+COPY data /worker/data
+
+COPY logs /worker/logs
+
+COPY models /worker/models
+
+COPY tensors /worker/tensors
+
 COPY routes /worker/routes
 
 COPY functions /worker/functions
