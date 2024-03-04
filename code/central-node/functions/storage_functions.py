@@ -9,357 +9,8 @@ import psutil
 
 from collections import OrderedDict
 
-# Refactored and works
-def initilize_storage_templates():
-    # Types: 0 = int, [] = list, 0.0 = float and {} = dict 
-    model_parameters = {
-        'seed': 0,
-        'used-columns': [],
-        'input-size': 0,
-        'target-column': '',
-        'scaled-columns': [],
-        'learning-rate': 0.0,
-        'sample-rate': 0.0,
-        'optimizer': '',
-        'epochs': 0
-    }
+from functions.general_functions import get_current_experiment_number
 
-    central_parameters = {
-        'sample-pool': 0,
-        'data-augmentation': {
-            'active': False,
-            'sample-pool': 0,
-            '1-0-ratio': 0.0
-        },
-        'eval-ratio': 0.0,
-        'train-ratio': 0.0,
-        'min-update-amount': 0,
-        'max-cycles': 0,
-        'min-metric-success': 0,
-        'metric-thresholds': {
-            'true-positives': 0,
-            'false-positives': 0,
-            'true-negatives': 0, 
-            'false-negatives': 0,
-            'recall': 0.0,
-            'selectivity': 0.0,
-            'precision': 0.0,
-            'miss-rate': 0.0,
-            'fall-out': 0.0,
-            'balanced-accuracy': 0.0,
-            'accuracy': 0.0
-        },
-        'metric-conditions': {
-            'true-positives': '>=',
-            'false-positives': '<=',
-            'true-negatives': '>=', 
-            'false-negatives': '<=',
-            'recall': '>=',
-            'selectivity': '>=',
-            'precision': '>=',
-            'miss-rate': '<=',
-            'fall-out': '<=',
-            'balanced-accuracy': '>=',
-            'accuracy': '>='
-        }
-    }
-
-    worker_parameters = {
-        'sample-pool': 0,
-        'data-augmentation': {
-            'active': False,
-            'sample-pool': 0,
-            '1-0-ratio': 0.0
-        },
-        'eval-ratio': 0.0,
-        'train-ratio': 0.0
-    }
-
-    central_status = {
-        'start': False,
-        'data-split': False,
-        'preprocessed': False,
-        'worker-split': False,
-        'trained': False,
-        'sent': False,
-        'updated': False,
-        'evaluated': False,
-        'complete': False,
-        'train-amount': 0,
-        'test-amount': 0,
-        'eval-amount': 0,
-        'worker-updates': 0,
-        'cycle': 1,
-    }
-    # key format: worker id
-    worker_status = {
-        '1': {
-            'id': 1,
-            'central-address': '',
-            'worker-address': '',
-            'status': '',
-            'stored': False,
-            'preprocessed': False,
-            'trained': False,
-            'updated': False,
-            'train-amount': 0,
-            'test-amount':0,
-            'eval-amount': 0,
-            'cycle': 1
-        }
-    }
-    # key format: cycle
-    global_metrics = {
-        '1': {
-            'train-amount': 0,
-            'test-amount': 0,
-            'eval-amount': 0,
-            'true-positives': 0,
-            'false-positives': 0,
-            'true-negatives': 0,
-            'false-negatives': 0,
-            'recall': 0.0,
-            'selectivity': 0.0,
-            'precision': 0.0,
-            'miss-rate': 0.0,
-            'fall-out': 0.0,
-            'balanced-accuracy': 0.0,
-            'accuracy': 0.0
-        }
-    }
-    # key format: worker id and cycle
-    local_metrics = {
-        '1':{
-            '1': {
-                'train-amount': 0,
-                'test-amount': 0,
-                'eval-amount': 0,
-                'true-positives': 0,
-                'false-positives': 0,
-                'true-negatives': 0,
-                'false-negatives': 0,
-                'recall': 0.0,
-                'selectivity': 0.0,
-                'precision': 0.0,
-                'miss-rate': 0.0,
-                'fall-out': 0.0,
-                'balanced-accuracy': 0.0,
-                'accuracy': 0.0
-            }
-        }
-    }
-    # key format: subject, cycle and id
-    central_resources = {
-        'general': {
-            'physical-cpu-amount': 0,
-            'total-cpu-amount': 0,
-            'min-cpu-frequency-mhz': 0.0,
-            'max-cpu-frequency-mhz': 0.0,
-            'total-ram-amount-megabytes': 0.0,
-            'available-ram-amount-megabytes': 0.0,
-            'total-disk-amount-megabytes': 0.0,
-            'available-disk-amount-megabytes': 0.0
-        },
-        'function': {
-            '1': {
-                '1': { 
-                    'name': 'initial-model-training',           
-                    'time-seconds': 0.0,
-                    'cpu-percentage': 0.0,
-                    'ram-megabytes': 0.0,
-                    'disk-megabytes': 0.0
-                }
-            }
-        },
-        'network': {
-            '1': {
-                '1': {
-                    'name': 'sending-context',
-                    'time-seconds': 0.0,
-                    'cpu-percentage': 0.0,
-                    'ram-megabytes': 0.0,
-                    'disk-megabytes': 0.0
-                }
-            }
-        },
-        'training': {
-            '1': {
-                '1': {
-                    'name': 'model-training',
-                    'epochs': 0,
-                    'batches': 0,
-                    'average-batch-size': 0,
-                    'time-seconds': 0.0,
-                    'cpu-percentage': 0.0,
-                    'ram-megabytes': 0.0,
-                    'disk-megabytes': 0.0
-                },
-                '2': {
-                    'name': 'model-testing',
-                    'batches': 0,
-                    'average-batch-size': 0,
-                    'time-seconds': 0.0,
-                    'cpu-percentage': 0.0,
-                    'ram-megabytes': 0.0,
-                    'disk-megabytes': 0.0
-                },
-                '3': {
-                    'name': 'model-evaluation',
-                    'batches': 0,
-                    'average-batch-size': 0,
-                    'time-seconds': 0.0,
-                    'cpu-percentage': 0.0,
-                    'ram-megabytes': 0.0,
-                    'disk-megabytes': 0.0
-                }
-            }
-        },
-        'inference': {
-            '1': {
-                '1': {
-                    'name': 'model-prediction',
-                    'sample-amount': 0,
-                    'time-seconds': 0.0,
-                    'cpu-percentage': 0.0,
-                    'ram-megabytes': 0.0,
-                    'disk-megabytes': 0.0
-                }
-            }
-        }
-    }
-    # Key format worker id
-    worker_resources = {
-        '1': {
-            'general': {
-                'physical-cpu-amount': 0,
-                'total-cpu-amount': 0,
-                'min-cpu-frequency-mhz': 0.0,
-                'max-cpu-frequency-mhz': 0.0,
-                'total-ram-amount-megabytes': 0.0,
-                'available-ram-amount-megabytes': 0.0,
-                'total-disk-amount-megabytes': 0.0,
-                'available-disk-amount-megabytes': 0.0
-            },
-            'function': {
-                '1': {
-                    '1': { 
-                        'name': 'model-training',           
-                        'time-seconds': 0.0,
-                        'cpu-percentage': 0.0,
-                        'ram-megabytes': 0.0,
-                        'disk-megabytes': 0.0
-                    }
-                }
-            },
-            'network': {
-                '1': {
-                    '1': {
-                        'name': 'sending-update',
-                        'time-seconds': 0.0,
-                        'cpu-percentage': 0.0,
-                        'ram-megabytes': 0.0,
-                        'disk-megabytes': 0.0
-                    }
-                }
-            },
-            'training': {
-                '1': {
-                    '1': {
-                        'name': 'model-training',
-                        'epochs': 0,
-                        'batches': 0,
-                        'batch-size': 0,
-                        'time-seconds': 0.0,
-                        'cpu-percentage': 0.0,
-                        'ram-megabytes': 0.0,
-                        'disk-megabytes': 0.0
-                    },
-                    '2': {
-                        'name': 'model-testing',
-                        'batches': 0,
-                        'batch-size': 0,
-                        'time-seconds': 0.0,
-                        'cpu-percentage': 0.0,
-                        'ram-megabytes': 0.0,
-                        'disk-megabytes': 0.0
-                    },
-                    '3': {
-                        'name': 'model-evaluation',
-                        'batches': 0,
-                        'batch-size':0, 
-                        'time-seconds': 0.0,
-                        'cpu-percentage': 0.0,
-                        'ram-megabytes': 0.0,
-                        'disk-megabytes': 0.0
-                    }
-                }
-            },
-            'inference': {
-                '1': {
-                    '1': {
-                        'name': 'model-prediction',
-                        'sample-amount': 0,
-                        'time-seconds': 0.0,
-                        'cpu-percentage': 0.0,
-                        'ram-megabytes': 0.0,
-                        'disk-megabytes': 0.0
-                    }
-                }
-            }
-        }
-    }
-
-    paths = [
-        'parameters/model.txt',
-        'parameters/central.txt',
-        'parameters/worker.txt',
-        'status/central.txt',
-        'status/workers.txt',
-        'metrics/global.txt',
-        'metrics/local.txt',
-        'resources/central.txt',
-        'resources/workers.txt'
-    ]
-
-    templates = {
-        'parameters': {
-            'model': model_parameters,
-            'central': central_parameters,
-            'worker': worker_parameters
-        },
-        'status': {
-            'central': central_status,
-            'workers': worker_status
-        },
-        'metrics': {
-            'global': global_metrics,
-            'local': local_metrics
-        },
-        'resources': {
-            'central': central_resources,
-            'workers': worker_resources
-        }
-    }
-
-    os.environ['STATUS'] = 'initilizing'
-    
-    for path in paths:
-        first_split = path.split('.')
-        second_split = first_split[0].split('/')
-        path_template = templates[second_split[0]][second_split[1]]
-        if not os.path.exists(path):
-            with open(path, 'w') as f:
-                json.dump(path_template , f, indent=4) 
-# Created and works
-def get_current_experiment_number():
-    parameter_files = os.listdir('parameters')
-    highest_experiment_number = 0
-    for file in parameter_files:
-        if not '.txt' in file:
-            experiment_number = int(file.split('_')[1])    
-            if highest_experiment_number < experiment_number:
-                highest_experiment_number = experiment_number
-    return highest_experiment_number
 # Refactored and works
 def store_training_context(
     parameters: any,
@@ -367,11 +18,12 @@ def store_training_context(
     df_columns: list
 ) -> bool:
     # Separate training artifacts will have the following folder format of experiment_(int)
+    storage_folder_path = 'storage'
     current_experiment_number = get_current_experiment_number()
-    existing_central_status_path = 'status/experiment_' + str(current_experiment_number) + '/central.txt'
-    if os.path.exists(existing_central_status_path):
+    central_status_path = storage_folder_path + '/status/experiment_' + str(current_experiment_number) + '/central.txt'
+    if os.path.exists(central_status_path):
         central_status = None
-        with open(existing_central_status_path, 'r') as f:
+        with open(central_status_path, 'r') as f:
             central_status = json.load(f)
         if not central_status['complete']:
             return False
@@ -379,15 +31,15 @@ def store_training_context(
     new_folder_id = current_experiment_number + 1
 
     template_paths = [
-        'parameters/model.txt',
-        'parameters/central.txt',
-        'parameters/worker.txt',
-        'status/central.txt',
-        'status/workers.txt',
-        'metrics/global.txt',
-        'metrics/local.txt',
-        'resources/central.txt',
-        'resources/workers.txt'
+        'storage/parameters/templates/model.txt',
+        'storage/parameters/templates/central.txt',
+        'storage/parameters/templates/worker.txt',
+        'storage/status/templates/central.txt',
+        'storage/status/templates/workers.txt',
+        'storage/metrics/templates/global.txt',
+        'storage/metrics/templates/local.txt',
+        'storage/resources/templates/central.txt',
+        'storage/resources/templates/workers.txt'
     ]
 
     for path in template_paths:
@@ -398,14 +50,14 @@ def store_training_context(
         with open(path, 'r') as f:
             stored_template = json.load(f)
         
-        file_path = second_split[0] + '/experiment_' + str(new_folder_id) + '/' + second_split[1] + '.txt'
-        if second_split[0] == 'parameters':
-            given_parameters = parameters[second_split[1]]
+        file_path = storage_folder_path + '/' + second_split[1] + '/experiment_' + str(new_folder_id) + '/' + second_split[3] + '.txt'
+        if second_split[1] == 'parameters':
+            given_parameters = parameters[second_split[3]]
             modified_template = copy.deepcopy(stored_template)
             for key in stored_template.keys():
                 modified_template[key] = given_parameters[key]
             stored_template = copy.deepcopy(modified_template)
-        if second_split[0] == 'resources' and second_split[1] == 'central':
+        if second_split[1] == 'resources' and second_split[3] == 'central':
             stored_template = {
                 'general': {
                     'physical-cpu-amount': psutil.cpu_count(logical=False),
@@ -422,20 +74,20 @@ def store_training_context(
                 'training': {},
                 'inference': {}
             }
-        if (second_split[0] == 'metrics' and (second_split[1] == 'global' or second_split[1] == 'local') 
-            or (second_split[0] == 'status' and second_split[1] == 'workers')
-            or (second_split[0] == 'resources' and second_split[1] == 'workers')):
+        if (second_split[1] == 'metrics' and (second_split[3] == 'global' or second_split[3] == 'local') 
+            or (second_split[1] == 'status' and second_split[3] == 'workers')
+            or (second_split[1] == 'resources' and second_split[3] == 'workers')):
             stored_template = {}
         
         if not os.path.exists(file_path):
-            directory_path = second_split[0] + '/experiment_' + str(new_folder_id)
+            directory_path = storage_folder_path + '/' + second_split[1] + '/experiment_' + str(new_folder_id)
             os.makedirs(directory_path, exist_ok=True)
             with open(file_path, 'w') as f:
                 json.dump(stored_template, f, indent=4)
 
-    file_path = 'data/experiment_' + str(new_folder_id) + '/source.csv'
+    file_path = storage_folder_path + '/data/experiment_' + str(new_folder_id) + '/source.csv'
     if not os.path.exists(file_path):
-        directory_path = 'data/experiment_' + str(new_folder_id)
+        directory_path = storage_folder_path + '/data/experiment_' + str(new_folder_id)
         os.makedirs(directory_path, exist_ok=True)
         source_df = pd.DataFrame(df_data, columns = df_columns)
         source_df.to_csv(file_path)
@@ -447,23 +99,24 @@ def store_metrics_and_resources(
    area: str,
    metrics: any
 ) -> bool:
+    storage_folder_path = 'storage'
     current_experiment_number = get_current_experiment_number()
     stored_data = None
-    storage_path = None
+    data_path = None
     if type == 'metrics':
         if subject == 'global':
-            storage_path = 'metrics/experiment_' + str(current_experiment_number) + '/global.txt'
-            if not os.path.exists(storage_path):
+            data_path = storage_folder_path + '/metrics/experiment_' + str(current_experiment_number) + '/global.txt'
+            if not os.path.exists(data_path):
                 return False
         
             stored_data = None
-            with open(storage_path, 'r') as f:
+            with open(data_path, 'r') as f:
                 stored_data = json.load(f)
 
             new_key = len(stored_data) + 1
             stored_data[str(new_key)] = metrics
     if type == 'resources':
-        central_status_path = 'status/experiment_' + str(current_experiment_number) + '/central.txt'
+        central_status_path = storage_folder_path + '/status/experiment_' + str(current_experiment_number) + '/central.txt'
         if not os.path.exists(central_status_path):
             return False
         
@@ -472,12 +125,12 @@ def store_metrics_and_resources(
             central_status = json.load(f)
 
         if subject == 'central':
-            storage_path = 'resources/experiment_' + str(current_experiment_number) + '/central.txt'
-            if not os.path.exists(storage_path):
+            data_path = storage_folder_path + '/resources/experiment_' + str(current_experiment_number) + '/central.txt'
+            if not os.path.exists(data_path):
                 return False
             
             stored_data = None
-            with open(storage_path, 'r') as f:
+            with open(data_path, 'r') as f:
                 stored_data = json.load(f)
 
             if not str(central_status['cycle']) in stored_data[area]:
@@ -485,7 +138,7 @@ def store_metrics_and_resources(
             new_key = len(stored_data[area][str(central_status['cycle'])]) + 1
             stored_data[area][str(central_status['cycle'])][str(new_key)] = metrics
     
-    with open(storage_path, 'w') as f:
+    with open(data_path, 'w') as f:
         json.dump(stored_data, f, indent=4) 
     
     return True
@@ -561,7 +214,6 @@ def store_worker(
             new_worker_data_path = 'worker_' + str(smallest_missing_id) + '_' + str(central_status['cycle']) + '.csv'
             os.rename(old_worker_data_path,new_worker_data_path)
 
-        #modified_status = copy.deepcopy(status)
         status['id'] = str(smallest_missing_id)
         status['worker-address'] = 'http://' + address + ':7500'
         status['cycle'] = central_status['cycle']
@@ -597,20 +249,18 @@ def store_worker(
         action = ''
         if worker_metadata['worker-address'] == 'http://' + address + ':7500':
             # When worker is already registered and address has stayed the same
-            #modified_metadata = copy.deepcopy(status)
             worker_status[str(status['id'])] = status
             local_metrics[str(status['id'])] = metrics['local']
             workers_resources[str(status['id'])] = metrics['resources']
             action = 'checked'
         else:
             # When worker id has stayed the same, but address has changed due to load balancing
-            #modified_metadata = copy.deepcopy(status)
             status['worker-address'] = 'http://' + address + ':7500'
             worker_status[str(status['id'])] = status
             local_metrics[str(status['id'])] = metrics['local']
             workers_resources[str(status['id'])] = metrics['resources']
             action = 'rerouted'
-            
+        # status key order doesn't stay the same
         with open(worker_status_path, 'w') as f:
             json.dump(worker_status, f, indent=4)
             

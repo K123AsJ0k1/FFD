@@ -6,8 +6,10 @@ import psutil
 from sklearn.metrics import confusion_matrix
 from torch.utils.data import DataLoader
 
-from functions.data_functions import * 
+from functions.general_functions import *
+from functions.data_functions import *
 from functions.storage_functions import *
+
 # Refactored and works
 class FederatedLogisticRegression(nn.Module):
     def __init__(self, dim, bias=True):
@@ -120,7 +122,6 @@ def train(
         area = 'training',
         metrics = resource_metrics
     )
-    
 # Refactored and works
 def test(
     model: any, 
@@ -244,7 +245,6 @@ def evaluate(
         area = '',
         metrics = test_metrics
     )
-
 # Refactored and works
 def initial_model_training(
     logger: any
