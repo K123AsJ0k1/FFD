@@ -49,8 +49,16 @@ def create_app():
         seconds = 120,
         args = given_args 
     )
+    # Works
     scheduler.add_job(
         func = model_pipeline,
+        trigger = "interval",
+        seconds = 240,
+        args = given_args 
+    )
+
+    scheduler.add_job(
+        func = update_pipeline,
         trigger = "interval",
         seconds = 20,
         args = given_args 

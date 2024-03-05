@@ -108,7 +108,7 @@ def preprocess_into_train_test_and_evaluate_tensors(
     X = preprocessed_df.drop(model_parameters['target-column'], axis = 1).values
     y = preprocessed_df[model_parameters['target-column']].values
         
-    X_train_test, X_eval, y_train_test, y_eval = train_test_split(
+    X_eval, X_train_test, y_eval, y_train_test = train_test_split(
         X, 
         y, 
         train_size = central_parameters['eval-ratio'], 

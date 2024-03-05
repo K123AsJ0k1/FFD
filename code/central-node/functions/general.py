@@ -13,10 +13,11 @@ def get_current_experiment_number():
             if highest_experiment_number < experiment_number:
                 highest_experiment_number = experiment_number
     return highest_experiment_number
-# Refactor
+# Refactored
 def get_current_global_model() -> any: 
+    storage_folder_path = 'storage'
     current_experiment_number = get_current_experiment_number()
-    model_folder_path = 'models/experiment_' + str(current_experiment_number)
+    model_folder_path = storage_folder_path + '/models/experiment_' + str(current_experiment_number)
     files = os.listdir(model_folder_path)
     current_global_model = ''
     highest_key = 0
