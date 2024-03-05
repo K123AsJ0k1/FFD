@@ -1,12 +1,8 @@
 from flask import current_app
 
-import pandas as pd
-import torch  
 import os
 import json
 
-from collections import OrderedDict
- 
 # Created
 def initilize_storage_templates():
     # Types: 0 = int, [] = list, 0.0 = float and {} = dict 
@@ -150,11 +146,11 @@ def initilize_storage_templates():
     }
 
     paths = [
-        'parameters/model.txt',
-        'parameters/worker.txt',
-        'status/worker.txt',
-        'metrics/local.txt',
-        'resources/worker.txt'
+        'storage/parameters/templates/model.txt',
+        'storage/parameters/templates/worker.txt',
+        'storage/status/templates/worker.txt',
+        'storage/metrics/templates/local.txt',
+        'storage/resources/templates/worker.txt'
     ]
 
     templates = {
@@ -177,99 +173,9 @@ def initilize_storage_templates():
     for path in paths:
         first_split = path.split('.')
         second_split = first_split[0].split('/')
-        path_template = templates[second_split[0]][second_split[1]]
+        path_template = templates[second_split[1]][second_split[3]]
         if not os.path.exists(path):
+            folder_path = 'storage/' + second_split[1] + '/templates'
+            os.makedirs(folder_path, exist_ok=True)
             with open(path, 'w') as f:
                 json.dump(path_template , f, indent=4) 
-# Created and works
-def get_current_experiment_number():
-    parameter_files = os.listdir('status')
-    highest_experiment_number = 0
-    for file in parameter_files:
-        if not '.txt' in file:
-            experiment_number = int(file.split('_')[1])    
-            if highest_experiment_number < experiment_number:
-                highest_experiment_number = experiment_number
-    return highest_experiment_number
-# Refactor
-def store_training_context(
-    parameters: any,
-    global_model: any,
-    df_data: list,
-    df_columns: list
-) -> any:
-    # Separate training artifacts will have the following folder format of experiment_(int)
-    current_experiment_number = get_current_experiment_number()
-    existing_worker_status_path = 'status/experiment_' + str(current_experiment_number) + '/worker.txt'
-    if os.path.exists(existing_worker_status_path):
-        worker_status = None
-        with open(existing_worker_status_path, 'r') as f:
-            worker_status = json.load(f)
-        if not worker_status['complete']:
-            return False
-    
-    if not worker_status['id'] == int(worker_parameters['id']):
-        return 'wrong id'
-    
-    if worker_status['stored'] and not worker_status['updated']:
-        return 'ongoing jobs'
-    
-    if global_parameters == None:
-        worker_status['address'] = worker_parameters['address']
-        worker_status['completed'] = True
-        worker_status['cycle'] = worker_parameters['cycle']
-    else:
-        worker_status['address'] = worker_parameters['address']
-        worker_status['trained'] = False
-        worker_status['updated'] = False
-        worker_status['completed'] = False
-        worker_status['columns'] = worker_parameters['columns']
-        worker_status['train-test-ratio'] = worker_parameters['train-test-ratio']
-        worker_status['cycle'] = worker_parameters['cycle']
-    
-        global_parameters_path = 'logs/global_parameters.txt'
-        with open(global_parameters_path, 'w') as f:
-            json.dump(global_parameters, f, indent=4)
-    
-    os.environ['STATUS'] = 'storing'
-    
-    global_model_path = 'models/global_' + str(worker_parameters['cycle']) + '.pth'
-    
-    weights = global_model['weights']
-    bias = global_model['bias']
-    
-    formated_parameters = OrderedDict([
-        ('linear.weight', torch.tensor(weights,dtype=torch.float32)),
-        ('linear.bias', torch.tensor(bias,dtype=torch.float32))
-    ])
-    
-    torch.save(formated_parameters, global_model_path)
-    if not worker_data == None:
-        worker_data_path = 'data/sample_' + str(worker_parameters['cycle']) + '.csv'
-        worker_df = pd.DataFrame(worker_data)
-        worker_df.to_csv(worker_data_path, index = False)
-        worker_status['preprocessed'] = False
-
-    worker_status['stored'] = True
-    with open(worker_status_path, 'w') as f:
-        json.dump(worker_status, f, indent=4)
-
-    os.environ['STATUS'] = 'stored'
-
-    return 'stored'
-# Refactor
-def store_local_metrics(
-   metrics: any
-) -> bool:
-    #worker_status_path = 'logs/worker_status.txt'
-    #if not os.path.exists(worker_status_path):
-    #    return False
-    #worker_status = None
-    #with open(worker_status_path, 'r') as f:
-    #    worker_status = json.load(f)
-
-    new_key = len(worker_status['local-metrics'])
-    worker_status['local-metrics'][str(new_key)] = metrics
-    with open(worker_status_path, 'w') as f:
-        json.dump(worker_status, f, indent=4) 
-    return True

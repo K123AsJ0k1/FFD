@@ -9,7 +9,7 @@ import json
 from sklearn.model_selection import train_test_split
 from torch.utils.data import TensorDataset
 
-# Refactored and works
+# Refactor
 def preprocess_into_train_and_test_tensors(
     logger: any
 ) -> bool:

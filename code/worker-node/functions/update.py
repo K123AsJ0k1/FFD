@@ -1,14 +1,4 @@
-from flask import current_app
-import requests
 
-import torch  
-import os
-import json
-
-from functions.data_functions import *
-from functions.model_functions import *
-from functions.storage_functions import *
- 
 # Refactored and works
 def send_info_to_central(
     logger: any
@@ -62,7 +52,7 @@ def send_info_to_central(
             'resources': worker_resources
         }
     }
-
+    # key order changes
     payload = json.dumps(info) 
     address = worker_status['central-address'] + '/status'
     try:
@@ -177,32 +167,3 @@ def send_update(
     except Exception as e:
         logger.error('Status sending error:' + str(e))
         return False
-# Created
-def data_pipeline(
-    task_logger: any,
-):
-    status = preprocess_into_train_and_test_tensors(
-        logger = task_logger
-    )
-    task_logger.info('Data preprocessing:' + str(status))
-# Created
-def model_pipeline(
-    task_logger: any
-): 
-    status = local_model_training(
-        logger = task_logger
-    )
-    task_logger.info('Model training:' + str(status))
-# Created
-def update_pipeline(
-    task_logger: any
-):
-    # Check
-    status = send_info_to_central(
-        logger = task_logger
-    )
-    task_logger.info('Status sending:' + str(status))
-    #status = send_update(
-    #    logger = task_logger
-    #)
-    #task_logger.info('Update sending:' + str(status))

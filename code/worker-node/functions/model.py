@@ -7,8 +7,8 @@ from sklearn.metrics import confusion_matrix
 
 from torch.utils.data import DataLoader
 
-from functions.data_functions import *
-from functions.storage_functions import *
+from functions.data import *
+from functions.storage import *
 # Refactored and works
 class FederatedLogisticRegression(nn.Module):
     def __init__(self, dim, bias=True):

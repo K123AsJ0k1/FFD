@@ -7,16 +7,17 @@ import os
 def create_app():
     app = Flask(__name__)
 
-    os.makedirs('logs', exist_ok=True)
-    os.makedirs('parameters', exist_ok=True)
-    os.makedirs('status', exist_ok=True)
-    os.makedirs('data', exist_ok=True)
-    os.makedirs('models', exist_ok=True)
-    os.makedirs('metrics', exist_ok=True)
-    os.makedirs('resources', exist_ok=True)
-    os.makedirs('tensors', exist_ok=True)
+    os.makedirs('storage', exist_ok=True)
+    os.makedirs('storage/logs', exist_ok=True)
+    os.makedirs('storage/parameters', exist_ok=True)
+    os.makedirs('storage/status', exist_ok=True)
+    os.makedirs('storage/data', exist_ok=True)
+    os.makedirs('storage/models', exist_ok=True)
+    os.makedirs('storage/metrics', exist_ok=True)
+    os.makedirs('storage/resources', exist_ok=True)
+    os.makedirs('storage/tensors', exist_ok=True)
 
-    worker_log_path = 'logs/worker.log'
+    worker_log_path = 'storage/logs/worker.log'
     if os.path.exists(worker_log_path):
         os.remove(worker_log_path)
 
@@ -29,23 +30,23 @@ def create_app():
     logger.addHandler(file_handler)
     app.logger = logger
     
-    from functions.storage_functions import initilize_storage_templates
+    from functions.initilization import initilize_storage_templates
     initilize_storage_templates()
     
     #status = initilize_worker_status()
     #app.logger.info('Worker status created: ' + str(status))
     
-    scheduler = BackgroundScheduler(daemon = True)
-    from functions.fed_functions import update_pipeline
+    #scheduler = BackgroundScheduler(daemon = True)
+    #from functions.pipeline import update_pipeline
     #from functions.fed_functions import send_status_to_central
     #from functions.fed_functions import worker_federated_pipeline
-    given_args = [app.logger]
-    scheduler.add_job(
-        func = update_pipeline,
-        trigger = "interval",
-        seconds = 5,
-        args = given_args
-    )
+    #given_args = [app.logger]
+    #scheduler.add_job(
+    #    func = update_pipeline,
+    #    trigger = "interval",
+    #    seconds = 5,
+    #    args = given_args
+    #)
 
     #given_args = [app.logger,app.config['CENTRAL_ADDRESS']]
     #scheduler.add_job(
@@ -61,13 +62,19 @@ def create_app():
     #    seconds = 50,
     #    args = given_args 
     #)
-    scheduler.start()
+    #scheduler.start()
     app.logger.info('Scheduler ready')
 
-    from routes.general_routes import general
+    from routes.general import general
+    from routes.model import model
+    from routes.orchestration import orchestration
+    from routes.pipeline import pipeline
     app.logger.info('Routes imported')
 
     app.register_blueprint(general)
+    app.register_blueprint(model)
+    app.register_blueprint(orchestration)
+    app.register_blueprint(pipeline)
     app.logger.info('Routes registered')
     
     app.logger.info('Worker ready')
