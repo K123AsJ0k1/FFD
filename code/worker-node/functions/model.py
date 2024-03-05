@@ -299,7 +299,7 @@ def local_model_training(
     test_metrics = test( 
         model = lr_model, 
         test_loader = given_test_loader,
-        name = 'training'
+        name = 'testing'
     )
     test_metrics['train-amount'] = len(train_tensor)
     test_metrics['test-amount'] = len(test_tensor)
