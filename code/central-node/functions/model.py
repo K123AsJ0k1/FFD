@@ -227,8 +227,9 @@ def evaluate(
     train_amount: int,
     current_model: any
 ):  
+    storage_folder_path = 'storage'
     current_experiment_number = get_current_experiment_number()
-    eval_tensor_path = 'tensors/experiment_' + str(current_experiment_number) + '/eval_0.pt'
+    eval_tensor_path = storage_folder_path + '/tensors/experiment_' + str(current_experiment_number) + '/eval_0.pt'
 
     eval_tensor = torch.load(eval_tensor_path)
     eval_loader = DataLoader(eval_tensor, 64)
@@ -257,9 +258,10 @@ def initial_model_training(
     disk_start = psutil.disk_usage('.').used
     cpu_start = this_process.cpu_percent(interval=0.2)
     time_start = time.time()
-    
+
+    storage_folder_path = 'storage'
     current_experiment_number = get_current_experiment_number()
-    central_status_path = 'status/experiment_' + str(current_experiment_number) + '/central.txt'
+    central_status_path = storage_folder_path + '/status/experiment_' + str(current_experiment_number) + '/central.txt'
     if not os.path.exists(central_status_path):
         return False
     
@@ -276,12 +278,12 @@ def initial_model_training(
     if central_status['trained']:
         return False
     
-    model_parameters_path = 'parameters/experiment_' + str(current_experiment_number) + '/model.txt'
+    model_parameters_path = storage_folder_path + '/parameters/experiment_' + str(current_experiment_number) + '/model.txt'
     model_parameters = None
     with open(model_parameters_path, 'r') as f:
         model_parameters = json.load(f)
 
-    tensor_folder_path = 'tensors/experiment_' + str(current_experiment_number)
+    tensor_folder_path = storage_folder_path + '/tensors/experiment_' + str(current_experiment_number)
     train_tensor_path = tensor_folder_path +  '/train_0.pt'
     test_tensor_path = tensor_folder_path +  '/test_0.pt'
 
@@ -325,7 +327,7 @@ def initial_model_training(
     )
     
     #The used format for models is global_(cycle)_(updates)_(samples).pth
-    model_experiment_folder = 'models/experiment_' + str(current_experiment_number)
+    model_experiment_folder = storage_folder_path + '/models/experiment_' + str(current_experiment_number)
     os.makedirs(model_experiment_folder, exist_ok = True)
     model_path = model_experiment_folder + '/global_0_0_' + str(central_status['train-amount']) + '.pth'
     parameters = lr_model.get_parameters(lr_model)

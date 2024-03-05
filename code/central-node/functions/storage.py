@@ -92,7 +92,7 @@ def store_training_context(
         source_df = pd.DataFrame(df_data, columns = df_columns)
         source_df.to_csv(file_path)
     return True
-# Refactored
+# Refactored and works
 def store_metrics_and_resources( 
    type: str,
    subject: str,

@@ -25,7 +25,7 @@ def start_pipeline():
     with open(central_status_path, 'w') as f:
         json.dump(central_status, f, indent=4) 
     return True
-# Refactored
+# Refactored and works
 def data_pipeline(
     task_logger: any
 ):
@@ -39,7 +39,7 @@ def data_pipeline(
         logger = task_logger
     )
     task_logger.info('Central pool preprocessing:' + str(status))
-    # Check
+    # Works
     status = split_data_between_workers(
         logger = task_logger
     )
