@@ -1,8 +1,8 @@
 from flask import Blueprint, request, jsonify
 import json
 
-from functions.storage_functions import store_training_context, store_update
-from functions.pipeline_functions import start_pipeline
+from functions.storage import store_training_context, store_update
+from functions.pipeline import start_pipeline
 
 pipeline = Blueprint('pipeline', __name__)
 

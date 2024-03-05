@@ -13,8 +13,8 @@ import psutil
 from sklearn.model_selection import train_test_split
 from torch.utils.data import TensorDataset
 
-from functions.general_functions import get_current_experiment_number
-from functions.storage_functions import store_metrics_and_resources
+from functions.general import get_current_experiment_number
+from functions.storage import store_metrics_and_resources
 # Created and works
 def data_augmented_sample(
     pool_df: any,

@@ -6,9 +6,9 @@ import os
 import json
 import requests
 
-from functions.general_functions import *
-from functions.storage_functions import *
-from functions.model_functions import *
+from functions.general import *
+from functions.storage import *
+from functions.model import *
 
 # Refactor
 def send_context_to_workers(

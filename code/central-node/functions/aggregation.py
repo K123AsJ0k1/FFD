@@ -7,8 +7,8 @@ import os
 import json
 from collections import OrderedDict
 
-from functions.storage_functions import *
-from functions.model_functions import *
+from functions.storage import *
+from functions.model import *
 
 # Refactored and works 
 def model_fed_avg(

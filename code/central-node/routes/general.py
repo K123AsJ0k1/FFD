@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, render_template
 import json
 
-from functions.general_functions import *
+from functions.general import *
 
 general = Blueprint('general', __name__)
 

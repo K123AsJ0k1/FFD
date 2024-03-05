@@ -3,12 +3,12 @@ from flask import current_app
 import os 
 import json
 
-from functions.general_functions import get_current_experiment_number
-from functions.split_functions import central_worker_data_split, split_data_between_workers
-from functions.data_functions import preprocess_into_train_test_and_evaluate_tensors
-from functions.model_functions import initial_model_training
-from functions.update_functions import send_context_to_workers
-from functions.aggregation_functions import update_global_model, evalute_global_model
+from functions.general import get_current_experiment_number
+from functions.split import central_worker_data_split, split_data_between_workers
+from functions.data import preprocess_into_train_test_and_evaluate_tensors
+from functions.model import initial_model_training
+from functions.update import send_context_to_workers
+from functions.aggregation import update_global_model, evalute_global_model
 
 # Refactored and works
 def start_pipeline():

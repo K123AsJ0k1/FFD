@@ -9,7 +9,7 @@ import psutil
 
 from collections import OrderedDict
 
-from functions.general_functions import get_current_experiment_number
+from functions.general import get_current_experiment_number
 
 # Refactored and works
 def store_training_context(

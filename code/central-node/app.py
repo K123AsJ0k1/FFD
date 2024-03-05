@@ -29,15 +29,15 @@ def create_app():
     logger.addHandler(file_handler)
     app.logger = logger
 
-    from functions.initilization_functions import initilize_storage_templates
+    from functions.initilization import initilize_storage_templates
     initilize_storage_templates()
     #app.logger.info('Training status created: ' + str(status))
     
     scheduler = BackgroundScheduler(daemon = True)
     #from functions.fed_functions import send_context_to_workers
-    from functions.pipeline_functions import data_pipeline
-    from functions.pipeline_functions import model_pipeline
-    from functions.pipeline_functions import update_pipeline
+    from functions.pipeline import data_pipeline
+    from functions.pipeline import model_pipeline
+    from functions.pipeline import update_pipeline
     #from functions.fed_functions import aggregation_pipeline
     given_args = [
         app.logger
@@ -64,10 +64,10 @@ def create_app():
     scheduler.start()
     app.logger.info('Scheduler ready')
 
-    from routes.general_routes import general
-    from routes.model_routes import model
-    from routes.orchestration_routes import orchestration
-    from routes.pipeline_routes import pipeline
+    from routes.general import general
+    from routes.model import model
+    from routes.orchestration import orchestration
+    from routes.pipeline import pipeline
     app.logger.info('Routes imported')
 
     app.register_blueprint(general)

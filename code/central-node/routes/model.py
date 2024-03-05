@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 import json
 
-from functions.model_functions import model_inference
+from functions.model import model_inference
 
 model = Blueprint('model', __name__)
 # Refactor

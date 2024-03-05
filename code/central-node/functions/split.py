@@ -9,9 +9,9 @@ import pandas as pd
 import time
 import psutil
 
-from functions.general_functions import get_current_experiment_number
-from functions.storage_functions import store_metrics_and_resources
-from functions.data_functions import data_augmented_sample
+from functions.general import get_current_experiment_number
+from functions.storage import store_metrics_and_resources
+from functions.data import data_augmented_sample
 
 # Refactored and works
 def central_worker_data_split(
