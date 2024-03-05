@@ -1,14 +1,13 @@
 from flask import current_app
 
 import numpy as np
-import pandas as pd
 import torch 
 import os 
 import json
 from collections import OrderedDict
+from torch.utils.data import DataLoader
 
-from functions.storage import *
-from functions.model import *
+from functions.model import FederatedLogisticRegression, evaluate
 
 # Refactored and works 
 def model_fed_avg(
@@ -146,7 +145,7 @@ def evalute_global_model(
     eval_tensor = torch.load(eval_tensor_path)
     eval_loader = DataLoader(eval_tensor, 64)
 
-    test_metrics = test(
+    test_metrics = evaluate(
         model = lr_model, 
         test_loader = eval_loader
     )

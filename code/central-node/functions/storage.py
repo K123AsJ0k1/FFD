@@ -148,8 +148,9 @@ def store_worker(
     status: any,
     metrics: any
 ) -> any:
+    storage_folder_path = 'storage'
     current_experiment_number = get_current_experiment_number()
-    status_folder_path = 'status/experiment_' + str(current_experiment_number)
+    status_folder_path = storage_folder_path + '/status/experiment_' + str(current_experiment_number)
     
     central_status_path = status_folder_path + '/central.txt'
     if not os.path.exists(central_status_path):
@@ -167,7 +168,7 @@ def store_worker(
     with open(worker_status_path, 'r') as f:
         worker_status = json.load(f)
 
-    local_metrics_path = 'metrics/experiment_' + str(current_experiment_number) + '/local.txt'
+    local_metrics_path = storage_folder_path + '/metrics/experiment_' + str(current_experiment_number) + '/local.txt'
     if not os.path.exists(local_metrics_path):
         return False
     
@@ -175,7 +176,7 @@ def store_worker(
     with open(local_metrics_path, 'r') as f:
         local_metrics = json.load(f)
 
-    workers_resources_path = 'resources/experiment_' + str(current_experiment_number) + '/workers.txt'
+    workers_resources_path = storage_folder_path + '/resources/experiment_' + str(current_experiment_number) + '/workers.txt'
     if not os.path.exists(workers_resources_path):
         return False
     

@@ -6,10 +6,8 @@ import os
 import json
 import requests
 
-from functions.general import *
-from functions.storage import *
-from functions.model import *
-
+from functions.general import get_current_experiment_number,get_current_global_model
+from functions.storage import store_worker
 # Refactor
 def send_context_to_workers(
     logger: any

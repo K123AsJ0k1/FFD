@@ -2,13 +2,16 @@ from flask import current_app
 import torch
 import torch.nn as nn 
 import psutil
+import time
+import os
+import json
+import numpy as np
 
 from sklearn.metrics import confusion_matrix
 from torch.utils.data import DataLoader
 
-from functions.general import *
-from functions.data import *
-from functions.storage import *
+from functions.general import get_current_experiment_number
+from functions.storage import store_metrics_and_resources
 
 # Refactored and works
 class FederatedLogisticRegression(nn.Module):

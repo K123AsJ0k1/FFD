@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
  
 import time
-import psutil
+import psutil 
 
 from functions.general import get_current_experiment_number
 from functions.storage import store_metrics_and_resources

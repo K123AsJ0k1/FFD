@@ -3,7 +3,6 @@ from flask import current_app
 import torch 
 import os 
 import json
-
 # Refactored
 def get_current_experiment_number():
     parameter_files = os.listdir('storage/parameters')

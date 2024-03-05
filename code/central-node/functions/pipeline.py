@@ -9,11 +9,11 @@ from functions.data import preprocess_into_train_test_and_evaluate_tensors
 from functions.model import initial_model_training
 from functions.update import send_context_to_workers
 from functions.aggregation import update_global_model, evalute_global_model
-
 # Refactored and works
 def start_pipeline():
+    storage_folder_path = 'storage'
     current_experiment_number = get_current_experiment_number()
-    central_status_path = 'status/experiment_' + str(current_experiment_number) + '/central.txt'
+    central_status_path = storage_folder_path + '/status/experiment_' + str(current_experiment_number) + '/central.txt'
     if not os.path.exists(central_status_path):
         return False
     
@@ -44,7 +44,7 @@ def data_pipeline(
         logger = task_logger
     )
     task_logger.info('Worker data split:' + str(status))
-# Created and works
+# Refactored
 def model_pipeline(
     task_logger: any
 ):  
@@ -53,7 +53,7 @@ def model_pipeline(
         logger = task_logger
     )
     task_logger.info('Initial model training:' + str(status))
-# Created
+# Refactor
 def update_pipeline(
     task_logger: any
 ):
@@ -61,7 +61,7 @@ def update_pipeline(
         logger = task_logger
     )
     task_logger.info('Worker context sending:' + str(status))
-# Created
+# Refactor
 def aggregation_pipeline(
     task_logger: any
 ):
