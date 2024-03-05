@@ -8,8 +8,7 @@ orchestration = Blueprint('orchestration', __name__)
 @orchestration.route('/point', methods=["POST"]) 
 def set_point_to_central():
     sent_payload = json.loads(request.json)
-    print(sent_payload)
-     
+    
     sent_central_address = sent_payload['central-address']
 
     status = store_central_address(

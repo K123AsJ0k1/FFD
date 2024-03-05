@@ -1,6 +1,6 @@
 from flask import current_app
 
-from functions.data import preprocess_into_train_and_test_tensors
+from functions.data import preprocess_into_train_test_and_eval_tensors
 from functions.model import local_model_training
 from functions.update import send_info_to_central
  
@@ -8,7 +8,8 @@ from functions.update import send_info_to_central
 def data_pipeline(
     task_logger: any,
 ):
-    status = preprocess_into_train_and_test_tensors(
+    # Check
+    status = preprocess_into_train_test_and_eval_tensors(
         logger = task_logger
     )
     task_logger.info('Data preprocessing:' + str(status))
@@ -16,6 +17,7 @@ def data_pipeline(
 def model_pipeline(
     task_logger: any
 ): 
+    # Check
     status = local_model_training(
         logger = task_logger
     )

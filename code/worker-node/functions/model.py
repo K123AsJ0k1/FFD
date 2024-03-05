@@ -1,14 +1,18 @@
 from flask import current_app
+import torch
+import torch.nn as nn 
+import psutil
+import time
 import os
 import json
-import torch
-import torch.nn as nn
-from sklearn.metrics import confusion_matrix
+import numpy as np
 
+from sklearn.metrics import confusion_matrix
 from torch.utils.data import DataLoader
 
-from functions.data import *
-from functions.storage import *
+from functions.general import get_current_experiment_number
+from functions.storage import store_metrics_and_resources
+
 # Refactored and works
 class FederatedLogisticRegression(nn.Module):
     def __init__(self, dim, bias=True):
@@ -49,59 +53,96 @@ class FederatedLogisticRegression(nn.Module):
     def apply_parameters(model, parameters):
         model.load_state_dict(parameters)
 # Refactored and works
-def get_train_test_loaders_loaders() -> any:
-    global_parameters_path = 'logs/global_parameters.txt'
-    GLOBAL_PARAMETERS = None
-    with open(global_parameters_path, 'r') as f:
-        GLOBAL_PARAMETERS = json.load(f)
-    
-    train_tensor = torch.load('tensors/train.pt')
-    test_tensor = torch.load('tensors/test.pt')
-
+def get_train_test_and_eval_loaders(
+    train_tensor: any,
+    test_tensor: any,
+    eval_tensor: any,
+    model_parameters: any 
+) -> any:
     train_loader = DataLoader(
         train_tensor,
-        batch_size = int(len(train_tensor) * GLOBAL_PARAMETERS['sample-rate']),
-        generator = torch.Generator().manual_seed(GLOBAL_PARAMETERS['seed'])
+        batch_size = int(len(train_tensor) * model_parameters['sample-rate']),
+        generator = torch.Generator().manual_seed(model_parameters['seed'])
     )
     test_loader = DataLoader(test_tensor, 64)
-    return train_loader,test_loader
+    eval_loader = DataLoader(eval_tensor, 64)
+    return train_loader,test_loader,eval_loader
 # Refactored and works
 def train(
     logger: any,
     model: any,
-    train_loader: any
+    train_loader: any,
+    model_parameters: any
 ):
-    global_parameters_path = 'logs/global_parameters.txt'
-    GLOBAL_PARAMETERS = None
-    with open(global_parameters_path, 'r') as f:
-        GLOBAL_PARAMETERS = json.load(f)
-    
     opt_func = None
-    if GLOBAL_PARAMETERS['optimizer'] == 'SGD':
+    if model_parameters['optimizer'] == 'SGD':
         opt_func = torch.optim.SGD
 
-    optimizer = opt_func(model.parameters(), GLOBAL_PARAMETERS['learning-rate'])
+    optimizer = opt_func(model.parameters(), model_parameters['learning-rate'])
     model_type = type(model)
     
-    for epoch in range(GLOBAL_PARAMETERS['epochs']):
+    this_process = psutil.Process(os.getpid())
+    mem_start = psutil.virtual_memory().used 
+    disk_start = psutil.disk_usage('.').used
+    cpu_start = this_process.cpu_percent(interval=0.2)
+    time_start = time.time()
+    total_size = 0
+    for epoch in range(model_parameters['epochs']):
         losses = []
         for batch in train_loader:
+            total_size += len(batch[1])
             loss = model_type.train_step(model, batch)
             loss.backward()
             losses.append(loss)
             optimizer.step()
             optimizer.zero_grad()
-        logger.info('Epoch ' + str(epoch + 1) + ', loss = ' + str(torch.sum(loss) / len(train_loader)))
+        loss = torch.sum(loss) / len(train_loader)
+        loss_value = loss.item()
+        logger.info('Epoch ' + str(epoch + 1) + ', loss = ' + str(loss_value))
+
+    time_end = time.time()
+    cpu_end = this_process.cpu_percent(interval=0.2)
+    mem_end = psutil.virtual_memory().used 
+    disk_end = psutil.disk_usage('.').used
+
+    time_diff = (time_end - time_start) 
+    cpu_diff = cpu_end - cpu_start 
+    mem_diff = (mem_end - mem_start) / (1024 ** 2) 
+    disk_diff = (disk_end - disk_start) / (1024 ** 2) 
+
+    resource_metrics = {
+        'name': 'logistic-regression-training',
+        'epochs': model_parameters['epochs'],
+        'batches': len(train_loader),
+        'average-batch-size': total_size / len(train_loader),
+        'time-seconds': round(time_diff,5),
+        'cpu-percentage': round(cpu_diff,5),
+        'ram-megabytes': round(mem_diff,5),
+        'disk-megabytes': round(disk_diff,5)
+    }
+
+    status = store_metrics_and_resources(
+        type = 'resources',
+        subject = 'worker',
+        area = 'training',
+        metrics = resource_metrics
+    )
 # Refactored and works
 def test(
-    logger: any,
     model: any, 
-    test_loader: any
+    test_loader: any,
+    name: any
 ) -> any:
     with torch.no_grad():
-        total_size = 0
         total_confusion_matrix = [0,0,0,0]
         
+        this_process = psutil.Process(os.getpid())
+        mem_start = psutil.virtual_memory().used 
+        disk_start = psutil.disk_usage('.').used
+        cpu_start = this_process.cpu_percent(interval=0.2)
+        time_start = time.time()
+        
+        total_size = 0
         for batch in test_loader:
             total_size += len(batch[1])
             _, correct = batch
@@ -120,9 +161,36 @@ def test(
             total_confusion_matrix[1] += int(fp) # False positive
             total_confusion_matrix[2] += int(tn) # True negative
             total_confusion_matrix[3] += int(fn) # False negative
+            
+        time_end = time.time()
+        cpu_end = this_process.cpu_percent(interval=0.2)
+        mem_end = psutil.virtual_memory().used 
+        disk_end = psutil.disk_usage('.').used
 
+        time_diff = (time_end - time_start) 
+        cpu_diff = cpu_end - cpu_start 
+        mem_diff = (mem_end - mem_start) / (1024 ** 2) 
+        disk_diff = (disk_end - disk_start) / (1024 ** 2)
+
+        resource_metrics = {
+            'name': 'logistic-regression-' + name,
+            'batches': len(test_loader),
+            'average-batch-size': total_size / len(test_loader),
+            'time-seconds': round(time_diff,5),
+            'cpu-percentage': round(cpu_diff,5),
+            'ram-megabytes': round(mem_diff,5),
+            'disk-megabytes': round(disk_diff,5)
+        }
+
+        status = store_metrics_and_resources(
+            type = 'resources',
+            subject = 'worker',
+            area = 'training',
+            metrics = resource_metrics
+        )
+    
         TP, FP, TN, FN = total_confusion_matrix
-        # Zero division can happen
+        # Zero divsion can happen
         TPR = 0
         TNR = 0
         PPV = 0
@@ -139,8 +207,8 @@ def test(
             BA = (TPR+TNR)/2
             ACC = (TP + TN)/(TP + TN + FP + FN)
         except Exception as e:
-            logger.error(e)
-
+            current_app.logger.warning(e)
+        
         metrics = {
             'true-positives': TP,
             'false-positives': FP,
@@ -160,9 +228,18 @@ def test(
 def local_model_training(
     logger: any
 ) -> any:
-    worker_status_path = 'logs/worker_status.txt'
+    this_process = psutil.Process(os.getpid())
+    mem_start = psutil.virtual_memory().used 
+    disk_start = psutil.disk_usage('.').used
+    cpu_start = this_process.cpu_percent(interval=0.2)
+    time_start = time.time()
+
+    storage_folder_path = 'storage'
+    current_experiment_number = get_current_experiment_number()
+    worker_status_path = storage_folder_path + '/status/experiment_' + str(current_experiment_number) + '/worker.txt'
     if not os.path.exists(worker_status_path):
         return False
+    
     worker_status = None
     with open(worker_status_path, 'r') as f:
         worker_status = json.load(f)
@@ -175,57 +252,114 @@ def local_model_training(
 
     if worker_status['trained']:
         return False
-
-    global_parameters_path = 'logs/global_parameters.txt'
     
-    if not os.path.exists(global_parameters_path):
+    model_parameters_path = storage_folder_path + '/parameters/experiment_' + str(current_experiment_number) + '/model.txt'
+    if not os.path.exists(model_parameters_path):
         return False
 
-    GLOBAL_PARAMETERS = None
-    with open(global_parameters_path, 'r') as f:
-        GLOBAL_PARAMETERS = json.load(f)
-    
-    global_model_path = 'models/global_' + str(worker_status['cycle']) + '.pth'
-    local_model_path = 'models/local_' + str(worker_status['cycle']) + '.pth'
+    model_parameters = None
+    with open(model_parameters_path, 'r') as f:
+        model_parameters = json.load(f)
+
+    models_folder_path = storage_folder_path + '/models/experiment_' + str(current_experiment_number)
+    global_model_path = models_folder_path + '/global_' + str(worker_status['cycle']-1) + '.pth'
+    local_model_path = models_folder_path + '/local_' + str(worker_status['cycle']) + '.pth'
 
     os.environ['STATUS'] = 'training'
 
     given_parameters = torch.load(global_model_path)
+    torch.manual_seed(model_parameters['seed'])
 
-    torch.manual_seed(GLOBAL_PARAMETERS['seed'])
+    tensor_folder_path = storage_folder_path + '/tensors/experiment_' + str(current_experiment_number)
+    train_tensor_path = tensor_folder_path + '/train_' + str(worker_status['cycle']) + '.pt'
+    test_tensor_path = tensor_folder_path + '/test_' + str(worker_status['cycle']) + '.pt'
+    eval_tensor_path = tensor_folder_path + '/eval_' + str(worker_status['cycle']) + '.pt'
+
+    train_tensor = torch.load(train_tensor_path)
+    test_tensor = torch.load(test_tensor_path)
+    eval_tensor = torch.load(eval_tensor_path)
     
-    given_train_loader, given_test_loader = get_train_test_loaders_loaders()
+    given_train_loader, given_test_loader, given_eval_loader = get_train_test_and_eval_loaders(
+        train_tensor = train_tensor,
+        test_tensor = test_tensor,
+        eval_tensor = eval_tensor,
+        model_parameters = model_parameters
+    )
 
-    lr_model = FederatedLogisticRegression(dim = GLOBAL_PARAMETERS['input-size'])
+    lr_model = FederatedLogisticRegression(dim = model_parameters['input-size'])
     lr_model.apply_parameters(lr_model, given_parameters)
 
     train(
         logger = logger,
         model = lr_model, 
-        train_loader = given_train_loader,  
+        train_loader = given_train_loader,
+        model_parameters = model_parameters
     )
     
     test_metrics = test( 
-        logger = logger,
         model = lr_model, 
-        test_loader = given_test_loader
+        test_loader = given_test_loader,
+        name = 'training'
     )
-    test_metrics['train-amount'] = worker_status['train-amount']
-    test_metrics['test-amount'] = worker_status['test-amount']
-    status = store_local_metrics(
+    test_metrics['train-amount'] = len(train_tensor)
+    test_metrics['test-amount'] = len(test_tensor)
+    test_metrics['eval-amount'] = 0
+    status = store_metrics_and_resources(
+        type = 'metrics',
+        subject = 'local',
+        area = '',
+        metrics = test_metrics
+    )
+
+    test_metrics = test(
+        model = lr_model, 
+        test_loader = given_eval_loader,
+        name = 'evalution'
+    )
+    
+    test_metrics['train-amount'] = len(train_tensor)
+    test_metrics['test-amount'] = 0
+    test_metrics['eval-amount'] = len(eval_tensor)
+    status = store_metrics_and_resources(
+        type = 'metrics',
+        subject = 'local',
+        area = '',
         metrics = test_metrics
     )
     
     parameters = lr_model.get_parameters(lr_model)
     torch.save(parameters, local_model_path)
 
-    with open(worker_status_path, 'r') as f:
-        worker_status = json.load(f)
     worker_status['trained'] = True
     with open(worker_status_path, 'w') as f:
         json.dump(worker_status, f, indent=4)
 
     os.environ['STATUS'] = 'trained'
+
+    time_end = time.time()
+    cpu_end = this_process.cpu_percent(interval=0.2)
+    mem_end = psutil.virtual_memory().used 
+    disk_end = psutil.disk_usage('.').used
+
+    time_diff = (time_end - time_start) 
+    cpu_diff = cpu_end - cpu_start 
+    mem_diff = (mem_end - mem_start) / (1024 ** 2) 
+    disk_diff = (disk_end - disk_start) / (1024 ** 2) 
+
+    resource_metrics = {
+        'name': 'local-model-training',
+        'time-seconds': time_diff,
+        'cpu-percentage': cpu_diff,
+        'ram-megabytes': mem_diff,
+        'disk-megabytes': disk_diff
+    }
+
+    status = store_metrics_and_resources(
+        type = 'resources',
+        subject = 'worker',
+        area = 'function',
+        metrics = resource_metrics
+    )
 
     return True
 # Refactored and works

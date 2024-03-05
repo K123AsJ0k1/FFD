@@ -5,11 +5,9 @@ import os
 import json
 import requests
 
-from collections import OrderedDict
-
 from functions.general import get_current_experiment_number
 
-# Refactored
+# Refactored and works
 def send_info_to_central(
     logger: any
 ) -> bool:
@@ -30,7 +28,7 @@ def send_info_to_central(
         os.makedirs(worker_folder_path, exist_ok=True)
         os.makedirs(metrics_folder_path, exist_ok=True)
         os.makedirs(resource_folder_path, exist_ok=True)
-        
+
         worker_status_path = worker_folder_path + '/worker.txt'
         local_metrics_path = metrics_folder_path + '/local.txt'
         worker_resources_path = resource_folder_path + '/worker.txt'

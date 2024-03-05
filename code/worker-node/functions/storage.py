@@ -4,11 +4,12 @@ import pandas as pd
 import torch  
 import os
 import json
+import psutil
 
 from collections import OrderedDict
 
 from functions.general import get_current_experiment_number
-# Created
+# Created and works
 def store_central_address(
     central_address: str
 ) -> bool:
@@ -27,7 +28,7 @@ def store_central_address(
         json.dump(worker_status, f, indent=4)
 
     return True
-# Refactored
+# Refactor
 def store_training_context(
     parameters: any,
     global_model: any,
@@ -39,20 +40,20 @@ def store_training_context(
     current_experiment_number = get_current_experiment_number()
     worker_status_path = storage_folder_path + '/status/experiment_' + str(current_experiment_number) + '/worker.txt'
     if not os.path.exists(worker_status_path):
-        return 'no status'
+        return {'message': 'no status'}
     
     worker_status = None
     with open(worker_status_path, 'r') as f:
         worker_status = json.load(f)
     
     if worker_status['complete']:
-        return 'complete'
+        return {'message': 'complete'}
     
     if not parameters['id'] == worker_status['id']:
-        return 'wrong id'
+        return {'message': 'wrong id'}
     
     if worker_status['stored'] and not worker_status['updated']:
-        return 'ongoing jobs'
+        return {'message': 'ongoing jobs'}
     
     if parameters['model'] == None:
         worker_status['completed'] = True
@@ -80,6 +81,7 @@ def store_training_context(
     os.environ['STATUS'] = 'storing'
     
     model_folder_path = storage_folder_path + '/models/experiment_' + str(current_experiment_number)
+    os.makedirs(model_folder_path, exist_ok=True)
     global_model_path = model_folder_path + '/global_' + str(worker_status['cycle']-1) + '.pth'
     
     weights = global_model['weights']
@@ -92,10 +94,30 @@ def store_training_context(
     
     torch.save(formated_parameters, global_model_path)
     if not df_data == None:
-        worker_data_path = storage_folder_path + '/data/sample_' + str(worker_status['cycle']) + '.csv'
+        worker_data_path = storage_folder_path + '/data/experiment_' + str(current_experiment_number) + '/sample_' + str(worker_status['cycle']) + '.csv'
         worker_df = pd.DataFrame(df_data, columns = df_columns)
         worker_df.to_csv(worker_data_path, index = False)
         worker_status['preprocessed'] = False
+    worker_resource_path = storage_folder_path + '/resources/experiment_' + str(current_experiment_number) + '/worker.txt'
+    if not os.path.exists(worker_resource_path):
+        stored_template = {
+            'general': {
+                'physical-cpu-amount': psutil.cpu_count(logical=False),
+                'total-cpu-amount': psutil.cpu_count(logical=True),
+                'min-cpu-frequency-mhz': psutil.cpu_freq().min,
+                'max-cpu-frequency-mhz': psutil.cpu_freq().max,
+                'total-ram-amount-megabytes': psutil.virtual_memory().total / (1024 ** 2),
+                'available-ram-amount-megabytes': psutil.virtual_memory().free / (1024 ** 2),
+                'total-disk-amount-megabytes': psutil.disk_usage('.').total / (1024 ** 2),
+                'available-disk-amount-megabytes': psutil.disk_usage('.').free / (1024 ** 2)
+            },
+            'function': {},
+            'network': {},
+            'training': {},
+            'inference': {}
+        }
+        with open(worker_resource_path, 'w') as f:
+            json.dump(stored_template, f, indent=4)
 
     worker_status['stored'] = True
     with open(worker_status_path, 'w') as f:
@@ -103,7 +125,7 @@ def store_training_context(
 
     os.environ['STATUS'] = 'stored'
 
-    return 'stored'
+    return {'message': 'stored'}
 # Refactor
 def store_metrics_and_resources( 
    type: str,
@@ -117,7 +139,7 @@ def store_metrics_and_resources(
     data_path = None
     if type == 'metrics':
         if subject == 'local':
-            data_path = storage_folder_path + '/metrics/experiment_' + str(current_experiment_number) + '/global.txt'
+            data_path = storage_folder_path + '/metrics/experiment_' + str(current_experiment_number) + '/local.txt'
             if not os.path.exists(data_path):
                 return False
         
@@ -128,13 +150,14 @@ def store_metrics_and_resources(
             new_key = len(stored_data) + 1
             stored_data[str(new_key)] = metrics
     if type == 'resources':
-        central_status_path = storage_folder_path + '/status/experiment_' + str(current_experiment_number) + '/worker.txt'
-        if not os.path.exists(central_status_path):
+        current_experiment_number = get_current_experiment_number()
+        worker_status_path = storage_folder_path + '/status/experiment_' + str(current_experiment_number) + '/worker.txt'
+        if not os.path.exists(worker_status_path):
             return False
         
-        central_status = None
-        with open(central_status_path, 'r') as f:
-            central_status = json.load(f)
+        worker_status = None
+        with open(worker_status_path, 'r') as f:
+            worker_status = json.load(f)
 
         if subject == 'worker':
             data_path = storage_folder_path + '/resources/experiment_' + str(current_experiment_number) + '/worker.txt'
@@ -145,10 +168,10 @@ def store_metrics_and_resources(
             with open(data_path, 'r') as f:
                 stored_data = json.load(f)
 
-            if not str(central_status['cycle']) in stored_data[area]:
-                stored_data[area][str(central_status['cycle'])] = {}
-            new_key = len(stored_data[area][str(central_status['cycle'])]) + 1
-            stored_data[area][str(central_status['cycle'])][str(new_key)] = metrics
+            if not str(worker_status['cycle']) in stored_data[area]:
+                stored_data[area][str(worker_status['cycle'])] = {}
+            new_key = len(stored_data[area][str(worker_status['cycle'])]) + 1
+            stored_data[area][str(worker_status['cycle'])][str(new_key)] = metrics
     
     with open(data_path, 'w') as f:
         json.dump(stored_data, f, indent=4) 

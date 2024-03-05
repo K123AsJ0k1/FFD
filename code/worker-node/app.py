@@ -35,6 +35,9 @@ def create_app():
     
     scheduler = BackgroundScheduler(daemon = True)
     from functions.pipeline import update_pipeline
+    from functions.pipeline import data_pipeline
+    from functions.pipeline import model_pipeline
+
     given_args = [app.logger]
     scheduler.add_job(
         func = update_pipeline,
@@ -42,6 +45,13 @@ def create_app():
         seconds = 5,
         args = given_args
     )
+    scheduler.add_job(
+        func = data_pipeline,
+        trigger = "interval",
+        seconds = 30,
+        args = given_args
+    )
+    
 
     #given_args = [app.logger,app.config['CENTRAL_ADDRESS']]
     #scheduler.add_job(
