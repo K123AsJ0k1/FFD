@@ -33,20 +33,15 @@ def create_app():
     from functions.initilization import initilize_storage_templates
     initilize_storage_templates()
     
-    #status = initilize_worker_status()
-    #app.logger.info('Worker status created: ' + str(status))
-    
-    #scheduler = BackgroundScheduler(daemon = True)
-    #from functions.pipeline import update_pipeline
-    #from functions.fed_functions import send_status_to_central
-    #from functions.fed_functions import worker_federated_pipeline
-    #given_args = [app.logger]
-    #scheduler.add_job(
-    #    func = update_pipeline,
-    #    trigger = "interval",
-    #    seconds = 5,
-    #    args = given_args
-    #)
+    scheduler = BackgroundScheduler(daemon = True)
+    from functions.pipeline import update_pipeline
+    given_args = [app.logger]
+    scheduler.add_job(
+        func = update_pipeline,
+        trigger = "interval",
+        seconds = 5,
+        args = given_args
+    )
 
     #given_args = [app.logger,app.config['CENTRAL_ADDRESS']]
     #scheduler.add_job(
@@ -62,7 +57,7 @@ def create_app():
     #    seconds = 50,
     #    args = given_args 
     #)
-    #scheduler.start()
+    scheduler.start()
     app.logger.info('Scheduler ready')
 
     from routes.general import general

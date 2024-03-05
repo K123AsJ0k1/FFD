@@ -1,11 +1,10 @@
 from flask import Blueprint, current_app, request, jsonify, render_template
 import json
 
-from functions.data import *
-from functions.model import *
+from functions.storage import store_central_address
 
 orchestration = Blueprint('orchestration', __name__)
-
+# Created
 @orchestration.route('/point', methods=["POST"]) 
 def set_point_to_central():
     sent_payload = json.loads(request.json)
@@ -13,13 +12,8 @@ def set_point_to_central():
      
     sent_central_address = sent_payload['central-address']
 
-    worker_status_path = 'status/worker.txt'
-    worker_status = None
-    with open(worker_status_path, 'r') as f:
-        worker_status = json.load(f)
-    
-    worker_status['central-address'] = sent_central_address
-    with open(worker_status_path, 'w') as f:
-        json.dump(worker_status, f, indent=4)
+    status = store_central_address(
+        central_address = sent_central_address
+    )
 
     return 'Ok', 200

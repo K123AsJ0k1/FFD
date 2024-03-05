@@ -1,13 +1,8 @@
 from flask import current_app
-import requests
 
-import torch  
-import os
-import json
-
-#from functions.data import *
-#from functions.model import *
-#from functions.storage import *
+from functions.data import preprocess_into_train_and_test_tensors
+from functions.model import local_model_training
+from functions.update import send_info_to_central
  
 # Created
 def data_pipeline(

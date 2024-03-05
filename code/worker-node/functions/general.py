@@ -1,12 +1,12 @@
 from flask import current_app
 import os
 
-# Created and works
+# Refactored
 def get_current_experiment_number():
-    parameter_files = os.listdir('status')
+    parameter_files = os.listdir('storage/status')
     highest_experiment_number = 0
     for file in parameter_files:
-        if not '.txt' in file:
+        if not 'template' in file:
             experiment_number = int(file.split('_')[1])    
             if highest_experiment_number < experiment_number:
                 highest_experiment_number = experiment_number

@@ -1,8 +1,19 @@
+from flask import current_app
 
-# Refactored and works
+import torch  
+import os
+import json
+import requests
+
+from collections import OrderedDict
+
+from functions.general import get_current_experiment_number
+
+# Refactored
 def send_info_to_central(
     logger: any
 ) -> bool:
+    storage_folder_path = 'storage'
     # In this simulated infrastructure we will assume that workers can failure restart in such a way that files are lost
     current_experiment_number = get_current_experiment_number()
 
@@ -10,15 +21,16 @@ def send_info_to_central(
     local_metrics_path = None
     worker_resources_path = None
     if current_experiment_number == 0:
-        worker_status_path = 'status/worker.txt'
+        worker_status_path = storage_folder_path + '/status/templates/worker.txt'
     else:
-        worker_folder_path = 'status/experiment_' + str(current_experiment_number) 
-        metrics_folder_path = 'metrics/experiment_' + str(current_experiment_number)
-        resource_folder_path = 'resources/experiment_' + str(current_experiment_number)
+        worker_folder_path = storage_folder_path + '/status/experiment_' + str(current_experiment_number) 
+        metrics_folder_path = storage_folder_path + '/metrics/experiment_' + str(current_experiment_number)
+        resource_folder_path = storage_folder_path + '/resources/experiment_' + str(current_experiment_number)
 
         os.makedirs(worker_folder_path, exist_ok=True)
         os.makedirs(metrics_folder_path, exist_ok=True)
         os.makedirs(resource_folder_path, exist_ok=True)
+        
         worker_status_path = worker_folder_path + '/worker.txt'
         local_metrics_path = metrics_folder_path + '/local.txt'
         worker_resources_path = resource_folder_path + '/worker.txt'
@@ -76,9 +88,9 @@ def send_info_to_central(
                 local_metrics = sent_payload['metrics']['local']
                 worker_resources = sent_payload['metrics']['resources']
 
-                worker_folder_path = 'status/experiment_' + str(current_experiment_number) 
-                metrics_folder_path = 'metrics/experiment_' + str(current_experiment_number)
-                resource_folder_path = 'resources/experiment_' + str(current_experiment_number)
+                worker_folder_path = storage_folder_path + '/status/experiment_' + str(current_experiment_number) 
+                metrics_folder_path = storage_folder_path + '/metrics/experiment_' + str(current_experiment_number)
+                resource_folder_path = storage_folder_path + '/resources/experiment_' + str(current_experiment_number)
 
                 os.makedirs(worker_folder_path, exist_ok=True)
                 os.makedirs(metrics_folder_path, exist_ok=True)
