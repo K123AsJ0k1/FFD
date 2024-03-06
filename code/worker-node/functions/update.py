@@ -4,6 +4,7 @@ import torch
 import os
 import json
 import requests
+import psutil
 
 from functions.general import get_current_experiment_number
 
@@ -43,13 +44,19 @@ def send_info_to_central(
     if worker_status['central-address'] == '':
         return False
 
+    #if not os.path.exists(local_metrics_path):
+    #    return False
+    
     local_metrics = None
-    if local_metrics_path:
+    if os.path.exists(worker_resources_path):
         with open(local_metrics_path, 'r') as f:
             local_metrics = json.load(f)
+
+    #if not os.path.exists(worker_resources_path):
+    #    return False
     
     worker_resources = None
-    if worker_resources_path:
+    if os.path.exists(worker_resources_path):
         with open(worker_resources_path, 'r') as f:
             worker_resources = json.load(f)
     
@@ -77,15 +84,14 @@ def send_info_to_central(
 
         if response.status_code == 200:
             sent_payload = json.loads(response.text)
+            
             message = sent_payload['message']
             logger.info('Central message: ' + message)
             # Worker is either new or it has failure restated
-            if message == 'registered':
+            if message == 'registered' or message == 'experiment':
                 worker_status = sent_payload['status']
                 current_experiment_number = sent_payload['experiment_id']
-                local_metrics = sent_payload['metrics']['local']
-                worker_resources = sent_payload['metrics']['resources']
-
+                
                 worker_folder_path = storage_folder_path + '/status/experiment_' + str(current_experiment_number) 
                 metrics_folder_path = storage_folder_path + '/metrics/experiment_' + str(current_experiment_number)
                 resource_folder_path = storage_folder_path + '/resources/experiment_' + str(current_experiment_number)
@@ -97,13 +103,24 @@ def send_info_to_central(
                 worker_status_path = worker_folder_path + '/worker.txt'
                 local_metrics_path = metrics_folder_path + '/local.txt'
                 worker_resources_path = resource_folder_path + '/worker.txt'
+                
+                if message == 'registered':
+                    local_metrics = sent_payload['metrics']['local']
+                    worker_resources = sent_payload['metrics']['resources']
+                    if not len(local_metrics) == 0: 
+                        with open(local_metrics_path, 'w') as f:
+                            json.dump(local_metrics, f, indent=4)
+                    if not len(worker_resources) == 0:
+                        with open(worker_resources_path, 'w') as f:
+                            json.dump(worker_resources, f, indent=4)
+                if message == 'experiment':
+                    with open(local_metrics_path, 'w') as f:
+                        json.dump({}, f, indent=4)
 
-                with open(local_metrics_path, 'w') as f:
-                    json.dump(local_metrics, f, indent=4)
-
-                with open(worker_resources_path, 'w') as f:
-                    json.dump(worker_resources, f, indent=4)
-
+                    worker_status_template_path = storage_folder_path + '/status/templates/worker.txt'
+                    with open(worker_status_template_path, 'r') as f:
+                        worker_status = json.load(f)
+                    
             # Worker address has changed
             if message == 'rerouted':
                 worker_status['id'] = sent_payload['status']['id']
@@ -134,7 +151,7 @@ def send_update(
     if not worker_status['stored'] or not worker_status['preprocessed'] or not worker_status['trained']:
         return False
 
-    if worker_status['completed']:
+    if worker_status['complete']:
         return False
 
     if worker_status['updated']:

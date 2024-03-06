@@ -48,7 +48,7 @@ def create_app():
     scheduler.add_job(
         func = data_pipeline,
         trigger = "interval",
-        seconds = 60,
+        seconds = 10,
         args = given_args
     )
     scheduler.add_job(
@@ -57,22 +57,6 @@ def create_app():
         seconds = 20,
         args = given_args
     )
-    
-
-    #given_args = [app.logger,app.config['CENTRAL_ADDRESS']]
-    #scheduler.add_job(
-    #    func = send_status_to_central,
-    #    trigger = "interval",
-    #    seconds = 5,
-    #    args = given_args
-    #)
-    #given_args = [app.logger,app.config['CENTRAL_ADDRESS']]
-    #scheduler.add_job(
-    #    func = worker_federated_pipeline,
-    #    trigger = "interval",
-    #    seconds = 50,
-    #    args = given_args 
-    #)
     scheduler.start()
     app.logger.info('Scheduler ready')
 

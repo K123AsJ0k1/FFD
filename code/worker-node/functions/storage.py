@@ -56,7 +56,7 @@ def store_training_context(
         return {'message': 'ongoing jobs'}
     
     if parameters['model'] == None:
-        worker_status['completed'] = True
+        worker_status['complete'] = True
         worker_status['cycle'] = parameters['cycle']
     else:
         parameters_folder_path = storage_folder_path + '/parameters/experiment_' + str(current_experiment_number)
@@ -75,7 +75,7 @@ def store_training_context(
         worker_status['preprocessed'] = False
         worker_status['trained'] = False
         worker_status['updated'] = False
-        worker_status['completed'] = False
+        worker_status['complete'] = False
         worker_status['cycle'] = parameters['cycle']
 
     os.environ['STATUS'] = 'storing'
@@ -94,10 +94,13 @@ def store_training_context(
     
     torch.save(formated_parameters, global_model_path)
     if not df_data == None:
-        worker_data_path = storage_folder_path + '/data/experiment_' + str(current_experiment_number) + '/sample_' + str(worker_status['cycle']) + '.csv'
+        data_folder_path = storage_folder_path + '/data/experiment_' + str(current_experiment_number)
+        os.makedirs(data_folder_path, exist_ok=True)
+        worker_data_path = data_folder_path + '/sample_' + str(worker_status['cycle']) + '.csv'
         worker_df = pd.DataFrame(df_data, columns = df_columns)
         worker_df.to_csv(worker_data_path, index = False)
         worker_status['preprocessed'] = False
+    
     worker_resource_path = storage_folder_path + '/resources/experiment_' + str(current_experiment_number) + '/worker.txt'
     if not os.path.exists(worker_resource_path):
         stored_template = {
