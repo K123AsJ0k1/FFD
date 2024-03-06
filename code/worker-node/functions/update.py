@@ -116,7 +116,7 @@ def send_info_to_central(
     except Exception as e:
         logger.error('Sending info to central error:' +  str(e)) 
         return False
-# Refactor
+# Refactored and works
 def send_update(
     logger: any
 ) -> bool:  
