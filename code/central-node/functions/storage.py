@@ -281,43 +281,60 @@ def store_worker(
         return payload
 # Refactor
 def store_update( 
-    worker_id: str,
-    local_model: any,
-    cycle: int,
-    train_size: int
+    id: str,
+    model: any,
+    cycle: int
 ) -> bool:
-    training_status_path = 'logs/training_status.txt'
-   
-    training_status = None
-    if not os.path.exists(training_status_path):
-        return False
- 
-    with open(training_status_path, 'r') as f:
-        training_status = json.load(f)
+    storage_folder_path = 'storage'
+    current_experiment_number = get_current_experiment_number()
+    status_folder_path = storage_folder_path + '/status/experiment_' + str(current_experiment_number)
 
-    if not training_status['parameters']['start']:
-        return False
-
-    if training_status['parameters']['complete']:
-        return False
-
-    if not training_status['parameters']['sent']:
+    central_status_path = status_folder_path + '/central.txt'
+    if not os.path.exists(central_status_path):
         return False
     
-    model_path = 'models/worker_' + str(worker_id) + '_' + str(cycle) + '_' + str(train_size) + '.pth'
+    central_status = None
+    with open(central_status_path, 'r') as f:
+        central_status = json.load(f)
+
+    if not central_status['cycle'] == cycle:
+        return False 
+
+    if not central_status['start']:
+        return False
+
+    if central_status['complete']:
+        return False
+
+    if not central_status['sent']:
+        return False
+    
+    workers_status_path = status_folder_path + '/workers.txt'
+    if not os.path.exists(workers_status_path):
+        return False
+
+    workers_status = None
+    with open(workers_status_path, 'r') as f:
+        workers_status = json.load(f)
+
+    # Model format is local_(worker id)_(cycle)_(train_amount).pth
+    local_model_folder_path = storage_folder_path + '/models/experiment_' + str(current_experiment_number)
+    train_amount = workers_status[id]['train-amount']
+    local_model_path = local_model_folder_path + '/local_'  + str(id) + '_' + str(central_status['cycle']) + '_' + str(train_amount) + '.pth'
     
     formatted_model = OrderedDict([
-        ('linear.weight', torch.tensor(local_model['weights'],dtype=torch.float32)),
-        ('linear.bias', torch.tensor(local_model['bias'],dtype=torch.float32))
+        ('linear.weight', torch.tensor(model['weights'],dtype=torch.float32)),
+        ('linear.bias', torch.tensor(model['bias'],dtype=torch.float32))
     ])
     
-    torch.save(formatted_model, model_path)
-    for worker_key in training_status['workers'].keys():
-        if worker_key == str(worker_id):
-            training_status['workers'][worker_key]['status'] = 'complete'
+    torch.save(formatted_model, local_model_path)
+    
+    workers_status[id]['status'] = 'complete'
+    with open(workers_status_path, 'w') as f:
+        json.dump(workers_status, f, indent=4) 
 
-    training_status['parameters']['worker-updates'] = training_status['parameters']['worker-updates'] + 1
-    with open(training_status_path, 'w') as f:
-        json.dump(training_status, f, indent=4) 
+    central_status['worker-updates'] = central_status['worker-updates'] + 1
+    with open(central_status_path, 'w') as f:
+        json.dump(central_status, f, indent=4) 
 
     return True

@@ -34,13 +34,11 @@ def set_worker_update():
     sent_worker_id = sent_payload['worker-id']
     sent_local_model = sent_payload['local-model']
     sent_cycle = sent_payload['cycle']
-    sent_train_size = sent_payload['train-size']
 
     store_update(
-        worker_id = sent_worker_id,
-        local_model = sent_local_model,
-        cycle = sent_cycle,
-        train_size = sent_train_size 
+        id = sent_worker_id,
+        model = sent_local_model,
+        cycle = sent_cycle 
     ) 
     
     return 'Ok', 200

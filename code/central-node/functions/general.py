@@ -3,7 +3,7 @@ from flask import current_app
 import torch 
 import os 
 import json
-# Refactored
+# Refactored and works
 def get_current_experiment_number():
     parameter_files = os.listdir('storage/parameters')
     highest_experiment_number = 0
@@ -13,7 +13,7 @@ def get_current_experiment_number():
             if highest_experiment_number < experiment_number:
                 highest_experiment_number = experiment_number
     return highest_experiment_number
-# Refactored
+# Refactored and works
 def get_current_global_model() -> any: 
     storage_folder_path = 'storage'
     current_experiment_number = get_current_experiment_number()

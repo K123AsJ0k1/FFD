@@ -53,10 +53,11 @@ def model_pipeline(
         logger = task_logger
     )
     task_logger.info('Initial model training:' + str(status))
-# Refactor
+# Refactored
 def update_pipeline(
     task_logger: any
 ):
+    # Works
     status = send_context_to_workers(
         logger = task_logger
     )

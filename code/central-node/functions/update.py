@@ -1,14 +1,12 @@
 from flask import current_app
 
-import numpy as np
 import pandas as pd
 import os 
 import json
 import requests
 
 from functions.general import get_current_experiment_number,get_current_global_model
-from functions.storage import store_worker
-# Refactor
+# Refactored and works
 def send_context_to_workers(
     logger: any
 ) -> bool:
