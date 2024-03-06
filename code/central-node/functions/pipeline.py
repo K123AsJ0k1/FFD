@@ -66,11 +66,12 @@ def update_pipeline(
 def aggregation_pipeline(
     task_logger: any
 ):
+    # Works
     status = update_global_model(
         logger = task_logger
     )
     task_logger.info('Updating global model:' + str(status))
-    
+    # Works
     status = evalute_global_model(
         logger = task_logger
     )

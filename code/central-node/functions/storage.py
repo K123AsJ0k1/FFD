@@ -246,21 +246,31 @@ def store_worker(
         
         return payload 
     else:
-        worker_metadata = worker_status[str(status['id'])]
+        # New experiment has been started
         action = ''
-        if worker_metadata['worker-address'] == 'http://' + address + ':7500':
-            # When worker is already registered and address has stayed the same
-            worker_status[str(status['id'])] = status
-            local_metrics[str(status['id'])] = metrics['local']
-            workers_resources[str(status['id'])] = metrics['resources']
-            action = 'checked'
+        if not len(worker_status) == 0:
+            worker_metadata = worker_status[str(status['id'])]
+            if worker_metadata['worker-address'] == 'http://' + address + ':7500':
+                # When worker is already registered and address has stayed the same
+                if not status is None:
+                    worker_status[str(status['id'])] = status
+                if not metrics['local'] is None:
+                    local_metrics[str(status['id'])] = metrics['local']
+                if not metrics['resources'] is None:
+                    workers_resources[str(status['id'])] = metrics['resources']
+                action = 'checked'
+            else:
+                # When worker id has stayed the same, but address has changed due to load balancing
+                if not status is None:
+                    status['worker-address'] = 'http://' + address + ':7500'
+                    worker_status[str(status['id'])] = status
+                if not metrics['local'] is None:
+                    local_metrics[str(status['id'])] = metrics['local']
+                if not metrics['resources'] is None:
+                    workers_resources[str(status['id'])] = metrics['resources']
+                action = 'rerouted'
         else:
-            # When worker id has stayed the same, but address has changed due to load balancing
-            status['worker-address'] = 'http://' + address + ':7500'
-            worker_status[str(status['id'])] = status
-            local_metrics[str(status['id'])] = metrics['local']
-            workers_resources[str(status['id'])] = metrics['resources']
-            action = 'rerouted'
+            action = 'experiment'
         # status key order doesn't stay the same
         with open(worker_status_path, 'w') as f:
             json.dump(worker_status, f, indent=4)

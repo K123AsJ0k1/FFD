@@ -97,6 +97,7 @@ def initilize_storage_templates():
             'preprocessed': False,
             'trained': False,
             'updated': False,
+            'complete': False,
             'train-amount': 0,
             'test-amount':0,
             'eval-amount': 0,

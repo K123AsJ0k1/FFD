@@ -105,6 +105,7 @@ def central_worker_data_split(
 def split_data_between_workers(
     logger: any
 ) -> bool:
+    # For some reason this gets falses
     this_process = psutil.Process(os.getpid())
     mem_start = psutil.virtual_memory().used 
     disk_start = psutil.disk_usage('.').used
@@ -172,7 +173,8 @@ def split_data_between_workers(
         worker_metadata = worker_status[worker_key]
         if worker_metadata['status'] == 'waiting':
             available_workers.append(worker_key)
-
+    #print('Hello')
+    #print(len(available_workers))
     if not central_parameters['min-update-amount'] <= len(available_workers):
         return False
     # Format for worker data is worker_(id)_(cycle)_(size).csv
