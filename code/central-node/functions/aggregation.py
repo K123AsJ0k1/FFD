@@ -6,10 +6,14 @@ import os
 import json
 from collections import OrderedDict
 from torch.utils.data import DataLoader
+import time
+import psutil
 
 from functions.model import FederatedLogisticRegression, evaluate
+from functions.general import get_current_experiment_number, get_newest_model_updates, get_current_global_model
+from functions.storage import store_metrics_and_resources
 
-# Refactored and works 
+# Refactor
 def model_fed_avg(
     updates: any,
     total_sample_size: int    
@@ -37,127 +41,165 @@ def model_fed_avg(
         ('linear.bias', torch.tensor(FedAvg_bias,dtype=torch.float32))
     ])
     return updated_global_model
-# Refactor
+# Refactored
 def update_global_model(
     logger: any
 ) -> bool:
-    training_status_path = 'logs/training_status.txt'
-    if not os.path.exists(training_status_path):
-        return False
-   
-    training_status = None
-    with open(training_status_path, 'r') as f:
-        training_status = json.load(f)
+    this_process = psutil.Process(os.getpid())
+    mem_start = psutil.virtual_memory().used 
+    disk_start = psutil.disk_usage('.').used
+    cpu_start = this_process.cpu_percent(interval=0.2)
+    time_start = time.time()
 
-    if not training_status['parameters']['start']:
-        return False
+    storage_folder_path = 'storage'
 
-    if training_status['parameters']['complete']:
-        return False
-
-    if not training_status['parameters']['sent']:
-        return False
-
-    if training_status['parameters']['updated']:
-        return False
-
-    if training_status['parameters']['worker-updates'] < central_parameters['min-update-amount']:
+    current_experiment_number = get_current_experiment_number()
+    central_status_path = storage_folder_path + '/status/experiment_' + str(current_experiment_number) + '/central.txt'
+    if not os.path.exists(central_status_path):
         return False
     
-    files = os.listdir('models')
-    available_updates = []
-    collective_sample_size = 0
-    for file in files:
-        if 'worker' in file:
-            first_split = file.split('.')
-            second_split = first_split[0].split('_')
-            cycle = int(second_split[2])
-            sample_size = int(second_split[3])
+    central_status = None
+    with open(central_status_path, 'r') as f:
+        central_status = json.load(f)
 
-            if cycle == training_status['parameters']['cycle']:
-                local_model_path = 'models/' + file
-                available_updates.append({
-                    'parameters': torch.load(local_model_path),
-                    'samples': sample_size
-                })
-                collective_sample_size = collective_sample_size + sample_size
+    if not central_status['start']:
+        return False
+
+    if central_status['complete']:
+        return False
+
+    if not central_status['sent']:
+        return False
+
+    if central_status['updated']:
+        return False
+    
+    central_parameters_path = storage_folder_path + '/parameters/experiment_' + str(current_experiment_number) + '/central.txt'
+    if not os.path.exists(central_parameters_path):
+        return False
+
+    central_parameters = None
+    with open(central_parameters_path, 'r') as f:
+        central_parameters = json.load(f)
+
+    available_updates, collective_sample_size = get_newest_model_updates(
+        current_cycle = central_status['cycle']
+    )
+
+    if not central_parameters['min-update-amount'] <= len(available_updates):
+        return False
     
     new_global_model = model_fed_avg(
         updates = available_updates,
         total_sample_size = collective_sample_size 
     )
-    update_model_path = 'models/global_' + str(training_status['parameters']['cycle'] + 1) + '_' + str(len(available_updates)) + '_' + str(collective_sample_size) + '.pth'
+    update_model_path = storage_folder_path + '/models/experiment_' + str(current_experiment_number) + '/global_' + str(central_status['cycle']) + '_' + str(len(available_updates)) + '_' + str(collective_sample_size) + '.pth'
     torch.save(new_global_model, update_model_path)
 
-    with open(training_status_path, 'r') as f:
-        training_status = json.load(f)
-    training_status['parameters']['updated'] = True
-    with open(training_status_path, 'w') as f:
-         json.dump(training_status, f, indent=4)
+    central_status['collective-amount'] = collective_sample_size
+    central_status['updated'] = True
+    with open(central_status_path, 'w') as f:
+         json.dump(central_status, f, indent=4)
+
+    time_end = time.time()
+    cpu_end = this_process.cpu_percent(interval=0.2)
+    mem_end = psutil.virtual_memory().used 
+    disk_end = psutil.disk_usage('.').used
+    
+    time_diff = (time_end - time_start) 
+    cpu_diff = cpu_end - cpu_start 
+    mem_diff = (mem_end - mem_start) / (1024 ** 2) 
+    disk_diff = (disk_end - disk_start) / (1024 ** 2)
+
+    resource_metrics = {
+        'name': 'update-global-model',
+        'time-seconds': round(time_diff,5),
+        'cpu-percentage': cpu_diff,
+        'ram-megabytes': round(mem_diff,5),
+        'disk-megabytes': round(disk_diff,5)
+    }
+
+    status = store_metrics_and_resources(
+        type = 'resources',
+        subject = 'central',
+        area = 'function',
+        metrics = resource_metrics
+    )
+
     return True
-# Refactor
+# Refactored
 def evalute_global_model(
     logger: any
 ):
-    training_status_path = 'logs/training_status.txt'
-    if not os.path.exists(training_status_path):
-        return False
-    
-    training_status = None
-    with open(training_status_path, 'r') as f:
-        training_status = json.load(f)
+    this_process = psutil.Process(os.getpid())
+    mem_start = psutil.virtual_memory().used 
+    disk_start = psutil.disk_usage('.').used
+    cpu_start = this_process.cpu_percent(interval=0.2)
+    time_start = time.time()
 
-    if not training_status['parameters']['start']:
+    storage_folder_path = 'storage'
+
+    current_experiment_number = get_current_experiment_number()
+    central_status_path = storage_folder_path + '/status/experiment_' + str(current_experiment_number) + '/central.txt'
+    if not os.path.exists(central_status_path):
+        return False    
+
+    central_status = None
+    with open(central_status_path, 'r') as f:
+        central_status = json.load(f)
+
+    if not central_status['start']:
         return False
 
-    if not training_status['parameters']['updated']:
+    if not central_status['updated']:
         return False
 
-    if training_status['parameters']['evaluated']:
+    if central_status['evaluated']:
         return False
-    
-    models_folder_path = 'models'
-    if not os.path.exists(models_folder_path):
-        return False
-    
-    files = os.listdir(models_folder_path)
-    if len(files) == 0:
-        return False  
-    
-    current_global_model = ''
-    highest_key = 0
-    for file in files:
-        first_split = file.split('.')
-        second_split = first_split[0].split('_')
-        name = str(second_split[0])
-        if name == 'global':
-            cycle = int(second_split[1])
-            if highest_key < cycle:
-                highest_key = cycle
-                current_global_model = 'models/' + file 
-    
-    eval_tensor_path = 'tensors/eval.pt'
-    given_parameters = torch.load(current_global_model)
-    
-    lr_model = FederatedLogisticRegression(dim = global_parameters['input-size'])
-    lr_model.apply_parameters(lr_model, given_parameters)
 
-    eval_tensor = torch.load(eval_tensor_path)
-    eval_loader = DataLoader(eval_tensor, 64)
+    parameters_folder_path = storage_folder_path  + '/parameters/experiment_' + str(current_experiment_number)
+    central_parameters_path = parameters_folder_path + '/central.txt'
+    
+    if not os.path.exists(central_parameters_path):
+        return False    
 
-    test_metrics = evaluate(
-        model = lr_model, 
-        test_loader = eval_loader
+    central_parameters = None
+    with open(central_parameters_path, 'r') as f:
+        central_parameters = json.load(f)
+    
+    model_parameters_path = parameters_folder_path + '/model.txt'
+    if not os.path.exists(model_parameters_path):
+        return False    
+
+    model_parameters = None
+    with open(model_parameters_path, 'r') as f:
+        model_parameters = json.load(f)
+
+    current_global_model_parameters = get_current_global_model()
+    lr_model = FederatedLogisticRegression(dim = model_parameters['input-size'])
+    lr_model.apply_parameters(lr_model, current_global_model_parameters)
+
+    evaluate(
+        train_amount = central_status['collective-amount'],
+        current_model = lr_model
     )
-    
-    status = store_global_metrics(
-        metrics = test_metrics
-    )
-    
+
+    global_metrics_path = storage_folder_path + '/metrics/experiment_' + str(current_experiment_number) + '/global.txt'
+    if not os.path.exists(global_metrics_path):
+        return False    
+
+    global_metrics = None
+    with open(global_metrics_path, 'r') as f:
+        global_metrics = json.load(f)
+
+    evaluation_metrics = global_metrics[str(len(global_metrics))]
+
     succesful_metrics = 0
     thresholds = central_parameters['metric-thresholds']
     conditions = central_parameters['metric-conditions']
-    for key,value in test_metrics.items():
+    for key,value in evaluation_metrics.items():
+        if 'amount' in key:
+            continue
         logger.info('Metric ' + str(key) + ' with threshold ' + str(thresholds[key]) + ' and condition ' + str(conditions[key]))
         if conditions[key] == '>=' and thresholds[key] <= value:
             logger.info('Passed with ' + str(value))
@@ -168,23 +210,46 @@ def evalute_global_model(
             succesful_metrics += 1
             continue
         logger.info('Failed with ' + str(value))
-
-    with open(training_status_path, 'r') as f:
-        training_status = json.load(f)
-    
-    training_status['parameters']['evaluated'] = True
-    if central_parameters['min-metric-success'] <= succesful_metrics or training_status['parameters']['cycle'] == central_parameters['max-cycles']:
-        training_status['parameters']['complete'] = True
-        training_status['parameters']['sent'] = False
-        training_status['parameters']['cycle'] = training_status['parameters']['cycle'] + 1
+ 
+    central_status['evaluated'] = True
+    if central_parameters['min-metric-success'] <= succesful_metrics or central_status['cycle'] == central_parameters['max-cycles']:
+        central_status['complete'] = True
+        central_status['sent'] = False
+        central_status['cycle'] = central_status['cycle'] + 1
     else: 
-        training_status['parameters']['worker-split'] = False
-        training_status['parameters']['sent'] = False
-        training_status['parameters']['updated'] = False
-        training_status['parameters']['evaluated'] = False
-        training_status['parameters']['worker-updates'] = 0
-        training_status['parameters']['cycle'] = training_status['parameters']['cycle'] + 1
-    with open(training_status_path, 'w') as f:
-         json.dump(training_status, f, indent=4) 
+        central_status['worker-split'] = False
+        central_status['sent'] = False
+        central_status['updated'] = False
+        central_status['evaluated'] = False
+        central_status['worker-updates'] = 0
+        central_status['cycle'] = central_status['cycle'] + 1
+    
+    time_end = time.time()
+    cpu_end = this_process.cpu_percent(interval=0.2)
+    mem_end = psutil.virtual_memory().used 
+    disk_end = psutil.disk_usage('.').used
+    
+    time_diff = (time_end - time_start) 
+    cpu_diff = cpu_end - cpu_start 
+    mem_diff = (mem_end - mem_start) / (1024 ** 2) 
+    disk_diff = (disk_end - disk_start) / (1024 ** 2)
+
+    resource_metrics = {
+        'name': 'evaluate-global-model',
+        'time-seconds': round(time_diff,5),
+        'cpu-percentage': cpu_diff,
+        'ram-megabytes': round(mem_diff,5),
+        'disk-megabytes': round(disk_diff,5)
+    }
+
+    status = store_metrics_and_resources(
+        type = 'resources',
+        subject = 'central',
+        area = 'function',
+        metrics = resource_metrics
+    ) 
+
+    with open(central_status_path, 'w') as f:
+        json.dump(central_status, f, indent=4)
 
     return True

@@ -279,7 +279,7 @@ def store_worker(
         }
 
         return payload
-# Refactor
+# Refactored and works
 def store_update( 
     id: str,
     model: any,

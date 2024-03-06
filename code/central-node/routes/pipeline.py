@@ -26,7 +26,7 @@ def set_training_context():
 def start_training():
     status = start_pipeline()
     return 'Ok', 200
-# Refactor
+# Refactored and works
 @pipeline.route('/update', methods=["POST"]) 
 def set_worker_update(): 
     sent_payload = json.loads(request.json)

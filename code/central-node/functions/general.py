@@ -31,6 +31,30 @@ def get_current_global_model() -> any:
                 highest_key = cycle
                 current_global_model = model_folder_path + '/' + file 
     return torch.load(current_global_model)
+# Created
+def get_newest_model_updates(
+    current_cycle: int
+) -> any:
+    storage_folder_path = 'storage'
+    current_experiment_number = get_current_experiment_number()
+    model_folder_path = storage_folder_path + '/models/experiment_' + str(current_experiment_number)
+    files = os.listdir(model_folder_path)
+    updates = []
+    collective_sample_size = 0
+    for file in files:
+        if 'local' in file:
+            first_split = file.split('.')
+            second_split = first_split[0].split('_')
+            cycle = int(second_split[2])
+            sample_size = int(second_split[3])
+            if cycle == current_cycle:
+                local_model_path = model_folder_path + '/' + file
+                updates.append({
+                    'parameters': torch.load(local_model_path),
+                    'samples': sample_size
+                })
+                collective_sample_size = collective_sample_size + sample_size
+    return updates, collective_sample_size
 # Refactor
 def get_models() -> any:
     training_status_path = 'logs/training_status.txt'

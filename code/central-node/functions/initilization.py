@@ -82,6 +82,7 @@ def initilize_storage_templates():
         'train-amount': 0,
         'test-amount': 0,
         'eval-amount': 0,
+        'collective-amount': 0,
         'worker-updates': 0,
         'cycle': 1,
     }

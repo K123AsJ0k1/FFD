@@ -34,11 +34,11 @@ def create_app():
     #app.logger.info('Training status created: ' + str(status))
     
     scheduler = BackgroundScheduler(daemon = True)
-    #from functions.fed_functions import send_context_to_workers
+    
     from functions.pipeline import data_pipeline
     from functions.pipeline import model_pipeline
     from functions.pipeline import update_pipeline
-    #from functions.fed_functions import aggregation_pipeline
+    from functions.pipeline import aggregation_pipeline
     given_args = [
         app.logger
     ] 
@@ -56,20 +56,21 @@ def create_app():
         seconds = 240,
         args = given_args 
     )
-
+    # Works
     scheduler.add_job(
         func = update_pipeline,
         trigger = "interval",
-        seconds = 20,
+        seconds = 60,
         args = given_args 
     )
-    #scheduler.add_job(
-    #    func = update_pipeline,
-    #    trigger = "interval",
-    #    seconds = 20,
-    #    args = given_args 
-    #)
-    
+
+    scheduler.add_job(
+        func = aggregation_pipeline,
+        trigger = "interval",
+        seconds = 30,
+        args = given_args 
+    )
+
     scheduler.start()
     app.logger.info('Scheduler ready')
 
