@@ -3,7 +3,7 @@ from flask import current_app
 import os
 import json
 
-# Created
+# Created and works
 def initilize_storage_templates():
     # Types: 0 = int, [] = list, 0.0 = float and {} = dict 
     model_parameters = {

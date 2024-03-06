@@ -12,7 +12,6 @@ from torch.utils.data import DataLoader
 
 from functions.general import get_current_experiment_number
 from functions.storage import store_metrics_and_resources
-
 # Refactored and works
 class FederatedLogisticRegression(nn.Module):
     def __init__(self, dim, bias=True):
@@ -224,7 +223,7 @@ def test(
         }
         
         return metrics
-# Refactored
+# Refactored and works
 def local_model_training(
     logger: any
 ) -> any:
@@ -362,7 +361,7 @@ def local_model_training(
     )
 
     return True
-# Refactored and works
+# Refactor
 def model_inference(
     input: any,
     cycle: int

@@ -118,12 +118,15 @@ def send_info_to_central(
         return False
 # Refactor
 def send_update(
-    logger: any, 
-    central_address: str
-):  
-    worker_status_path = 'logs/worker_status.txt'
+    logger: any
+) -> bool:  
+    storage_folder_path = 'storage'
+    current_experiment_number = get_current_experiment_number()
+
+    worker_status_path = storage_folder_path + '/status/experiment_' + str(current_experiment_number) + '/worker.txt'
     if not os.path.exists(worker_status_path):
         return False
+    
     worker_status = None
     with open(worker_status_path, 'r') as f:
         worker_status = json.load(f)
@@ -139,7 +142,7 @@ def send_update(
 
     os.environ['STATUS'] = 'updating'
 
-    local_model_path = 'models/local_' + str(worker_status['cycle']) + '.pth'
+    local_model_path = storage_folder_path + '/models/experiment_' + str(current_experiment_number) + '/local_' + str(worker_status['cycle']) + '.pth'
     local_model = torch.load(local_model_path)
 
     formatted_local_model = {
@@ -147,21 +150,18 @@ def send_update(
       'bias': local_model['linear.bias'].numpy().tolist()
     }
 
-    train_tensor = torch.load('tensors/train.pt')
-    
-    payload = {
+    update = {
         'worker-id': str(worker_status['id']),
         'local-model': formatted_local_model,
-        'cycle': worker_status['cycle'],
-        'train-size': len(train_tensor)
+        'cycle': worker_status['cycle']
     }
     
-    json_payload = json.dumps(payload)
-    central_url = central_address + '/update'
+    payload = json.dumps(update)
+    central_url = worker_status['central-address'] + '/update'
     try:
         response = requests.post(
             url = central_url, 
-            json = json_payload,
+            json = payload,
             headers = {
                 'Content-type':'application/json', 
                 'Accept':'application/json'

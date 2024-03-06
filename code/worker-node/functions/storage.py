@@ -28,7 +28,7 @@ def store_central_address(
         json.dump(worker_status, f, indent=4)
 
     return True
-# Refactor
+# Refactored and works
 def store_training_context(
     parameters: any,
     global_model: any,
@@ -126,7 +126,7 @@ def store_training_context(
     os.environ['STATUS'] = 'stored'
 
     return {'message': 'stored'}
-# Refactor
+# Refactored and works
 def store_metrics_and_resources( 
    type: str,
    subject: str,

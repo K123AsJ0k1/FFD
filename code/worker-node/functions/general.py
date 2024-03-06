@@ -1,7 +1,7 @@
 from flask import current_app
 import os
 
-# Refactored
+# Refactored and works
 def get_current_experiment_number():
     parameter_files = os.listdir('storage/status')
     highest_experiment_number = 0

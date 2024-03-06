@@ -2,7 +2,7 @@ from flask import current_app
 
 from functions.data import preprocess_into_train_test_and_eval_tensors
 from functions.model import local_model_training
-from functions.update import send_info_to_central
+from functions.update import send_info_to_central, send_update
  
 # Refactored and works
 def data_pipeline(
@@ -31,7 +31,8 @@ def update_pipeline(
         logger = task_logger
     )
     task_logger.info('Status sending:' + str(status))
-    #status = send_update(
-    #    logger = task_logger
-    #)
-    #task_logger.info('Update sending:' + str(status))
+    
+    status = send_update(
+        logger = task_logger
+    )
+    task_logger.info('Update sending:' + str(status))
