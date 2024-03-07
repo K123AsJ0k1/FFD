@@ -6,7 +6,7 @@ from functions.model import model_inference
 model = Blueprint('model', __name__)
 # Refactored
 @model.route('/predict', methods=["POST"])
-def model_inference():
+def inference():
     sent_payload = json.loads(request.json)
     sent_experiment = sent_payload['experiment-id']
     sent_subject = sent_payload['subject']
@@ -15,7 +15,7 @@ def model_inference():
 
     given_output = model_inference(
         experiment = sent_experiment,
-        sent_subject = sent_subject,
+        subject = sent_subject,
         cycle = sent_cycle,
         input = sent_input
     )
