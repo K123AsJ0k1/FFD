@@ -6,7 +6,7 @@ import json
 # Refactored and works
 def get_central_logs():
     storage_folder_path = 'storage'
-    central_logs_path = storage_folder_path + '/central.log'
+    central_logs_path = storage_folder_path + '/logs/central.log'
     logs = None
     with open(central_logs_path, 'r') as f:
         logs = f.readlines()

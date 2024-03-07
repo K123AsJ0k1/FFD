@@ -251,7 +251,9 @@ def initilize_storage_templates():
                 '1': {
                     '1': {
                         'name': 'sending-update',
-                        'time-seconds': 0.0,
+                        'status-code': 0,
+                        'processing-time-seconds': 0.0,
+                        'elapsed-time-seconds': 0.0,
                         'cpu-percentage': 0.0,
                         'ram-megabytes': 0.0,
                         'disk-megabytes': 0.0

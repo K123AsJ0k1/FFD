@@ -4,8 +4,12 @@ import pandas as pd
 import os 
 import json
 import requests
+import psutil
+import time
 
 from functions.general import get_current_experiment_number,get_current_global_model
+from functions.storage import store_metrics_and_resources
+
 # Refactored and works
 def send_context_to_workers(
     logger: any
@@ -79,6 +83,12 @@ def send_context_to_workers(
         data_folder_path = storage_folder_path + '/data/experiment_' + str(current_experiment_number)
         data_files = os.listdir(data_folder_path)
         for worker_key in workers_status.keys():
+            this_process = psutil.Process(os.getpid())
+            mem_start = psutil.virtual_memory().used 
+            disk_start = psutil.disk_usage('.').used
+            cpu_start = this_process.cpu_percent(interval=0.2)
+            time_start = time.time()
+            
             worker_metadata = workers_status[worker_key]
             if not worker_metadata['status'] == 'waiting':
                 continue
@@ -137,12 +147,40 @@ def send_context_to_workers(
                         'Accept':'application/json'
                     }
                 )
+
                 sent_message = json.loads(response.text)
                 
                 payload_status[worker_key] = {
                     'response': response.status_code,
                     'message': sent_message['message']
                 }
+
+                time_end = time.time()
+                cpu_end = this_process.cpu_percent(interval=0.2)
+                mem_end = psutil.virtual_memory().used 
+                disk_end = psutil.disk_usage('.').used
+
+                time_diff = (time_end - time_start) 
+                cpu_diff = cpu_end - cpu_start 
+                mem_diff = (mem_end - mem_start) / (1024 ** 2) 
+                disk_diff = (disk_end - disk_start) / (1024 ** 2) 
+
+                resource_metrics = {
+                    'name': 'sending-context-to-worker-' + str(worker_key),
+                    'status-code': response.status_code,
+                    'processing-time-seconds': time_diff,
+                    'elapsed-time-seconds': response.elapsed.total_seconds(),
+                    'cpu-percentage': cpu_diff,
+                    'ram-megabytes': mem_diff,
+                    'disk-megabytes': disk_diff
+                }
+
+                status = store_metrics_and_resources(
+                    type = 'resources',
+                    subject = 'central',
+                    area = 'network',
+                    metrics = resource_metrics
+                )
             except Exception as e:
                 logger.error('Context sending error:' + str(e))
         

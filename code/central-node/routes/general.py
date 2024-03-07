@@ -13,7 +13,7 @@ def demo():
 def central_logs():
     current_logs = get_central_logs()
     return render_template('logs.html', logs = current_logs)
-# Created
+# Created and works
 @general.route('/storage', methods=["GET"])
 def intrastructure_metrics_resources_and_status():
     sent_payload = json.loads(request.json)
@@ -28,14 +28,6 @@ def intrastructure_metrics_resources_and_status():
         subject = sent_subject
     )
     return jsonify(data)
-# Refactor
-@general.route('/training', methods=["GET"]) 
-def training_status():
-    training_status_path = 'logs/training_status.txt'
-    training_status = None
-    with open(training_status_path, 'r') as f:
-        training_status = json.load(f)
-    return jsonify({'status':training_status})
 # Refactored and works
 @general.route('/models', methods=["GET"])
 def stored_models():
