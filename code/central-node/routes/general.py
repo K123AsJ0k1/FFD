@@ -39,5 +39,13 @@ def training_status():
 # Refactored and works
 @general.route('/models', methods=["GET"])
 def stored_models():
-    models = get_models()
-    return jsonify({'models': models})
+    sent_payload = json.loads(request.json)
+
+    sent_experiment = sent_payload['experiment']
+    sent_subject = sent_payload['subject']
+
+    data = get_models(
+        experiment = sent_experiment,
+        subject = sent_subject
+    )
+    return jsonify(data)

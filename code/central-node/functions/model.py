@@ -362,7 +362,7 @@ def initial_model_training(
     )
 
     return True
-# Refactor
+# Refactored and works
 def model_inference(
     experiment: int,
     subject: str,
@@ -419,7 +419,7 @@ def model_inference(
     status = store_metrics_and_resources(
         type = 'resources',
         subject = 'central',
-        area = 'function',
+        area = 'inference',
         metrics = resource_metrics
     )
 

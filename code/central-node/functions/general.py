@@ -68,7 +68,7 @@ def get_current_global_model() -> any:
                 highest_key = cycle
                 current_global_model = model_folder_path + '/' + file 
     return torch.load(current_global_model)
-# Created
+# Created and works
 def get_wanted_model(
     experiment: int,
     subject: int,
@@ -92,7 +92,7 @@ def get_wanted_model(
                 if str(cycle) == second_split[2]:
                     wanted_model = model_folder_path + '/' + model
     return torch.load(wanted_model)
-# Created
+# Created and works
 def get_newest_model_updates(
     current_cycle: int
 ) -> any:
@@ -116,54 +116,86 @@ def get_newest_model_updates(
                 })
                 collective_sample_size = collective_sample_size + sample_size
     return updates, collective_sample_size
-# Refactor
-def get_models() -> any:
-    training_status_path = 'logs/training_status.txt'
-    if not os.path.exists(training_status_path):
-        return False
-    
-    training_status = None
-    with open(training_status_path, 'r') as f:
-        training_status = json.load(f)
+# Refactored and works
+def get_models(
+    experiment: int,
+    subject: str
+) -> any:
+    storage_folder_path = 'storage'
+    wanted_folder_path = storage_folder_path + '/models'
+    wanted_data = None
+    if not experiment == 0:
+        wanted_data = {}
+        wanted_experiment_path = wanted_folder_path + '/experiment_' + str(experiment) 
+        models = os.listdir(wanted_experiment_path)
+        for model in models:
+            if 'global' == subject:
+                first_split = model.split('.')
+                second_split = first_split[0].split('_')
+                wanted_model_path = wanted_experiment_path + '/' + model
+                wanted_model = torch.load(wanted_model_path)
+                data = { 
+                    'update-amount': second_split[2],
+                    'collective-samples': second_split[3],
+                    'weights': wanted_model['linear.weight'].numpy().tolist(),
+                    'bias': wanted_model['linear.bias'].numpy().tolist()
+                }
+                wanted_data[str(second_split[1])] = data
+            if 'local' in subject:  
+                worker_key = subject.split('-')
+                first_split = model.split('.')
+                second_split = first_split[0].split('_')
+                if second_split[1] == str(worker_key):
+                    wanted_model_path = wanted_experiment_path + '/' + model
+                    wanted_model = torch.load(wanted_model_path)
+                    data = { 
+                        'train-amount': second_split[3],
+                        'weights': wanted_model['linear.weight'].numpy().tolist(),
+                        'bias': wanted_model['linear.bias'].numpy().tolist()
+                    }
+                    wanted_data[str(second_split[1])] = data
+    else:
+        global_data = {}
+        local_data = {}
+        experiments = os.listdir(wanted_folder_path)
+        for exp in experiments:
+            if 'experiment' in exp:
+                exp_id = exp.split('_')[1]
+                if not local_data.get(str(exp_id)):
+                    local_data[str(exp_id)] = {}
+                if not global_data.get(str(exp_id)):
+                    global_data[str(exp_id)] = {}
+                wanted_experiment_path = wanted_folder_path + '/' + exp 
+                models = os.listdir(wanted_experiment_path)
+                for model in models:
+                    if 'global' in model:
+                        first_split = model.split('.')
+                        second_split = first_split[0].split('_')
+                        wanted_model_path = wanted_experiment_path + '/' + model
+                        wanted_model = torch.load(wanted_model_path)
+                        data = { 
+                            'update-amount': second_split[2],
+                            'collective-samples': second_split[3],
+                            'weights': wanted_model['linear.weight'].numpy().tolist(),
+                            'bias': wanted_model['linear.bias'].numpy().tolist()
+                        }
+                        global_data[str(exp_id)][str(second_split[1])] = data
+                    if 'local' in model:
+                        first_split = model.split('.')
+                        second_split = first_split[0].split('_')
+                        if not local_data[str(exp_id)].get(str(second_split[1])):
+                            local_data[str(exp_id)][str(second_split[1])] = {}
 
-    models_folder_path = 'models'
-    files = os.listdir(models_folder_path)
-    if len(files) == 0:
-        return None
-    stored_models = {
-        'global': {},
-        'workers': {}
-    }
-    for model_key in range(0, training_status['parameters']['cycle']):
-        stored_models['global'] = {str(model_key): {}}
-    for worker_key in training_status['workers'].keys():
-        stored_models['workers'] = {str(worker_key): {}}
-        for metric_key in range(0, training_status['parameters']['cycle']):
-            stored_models['workers'][str(worker_key)] = {str(metric_key): {}}
-
-    for file in files:
-        first_split = file.split('.')[0]
-        second_split = first_split.split('_')
-        model = torch.load(models_folder_path + '/' + file) 
-        formatted_local_model = {
-            'weights': model['linear.weight'].numpy().tolist(),
-            'bias': model['linear.bias'].numpy().tolist()
+                        wanted_model_path = wanted_experiment_path + '/' + model
+                        wanted_model = torch.load(wanted_model_path)
+                        data = { 
+                            'train-amount': second_split[3],
+                            'weights': wanted_model['linear.weight'].numpy().tolist(),
+                            'bias': wanted_model['linear.bias'].numpy().tolist()
+                        }
+                        local_data[str(exp_id)][str(second_split[1])][str(second_split[2])] = data
+        wanted_data = {
+            'global': global_data,
+            'local': local_data
         }
-        if second_split[0] == 'global':
-            cycle = str(second_split[1])
-            updates = str(second_split[2])
-            train_amount = str(second_split[3])
-            stored_models['global'][cycle] = {
-                'parameters': formatted_local_model,
-                'updates': updates,
-                'train-amount': train_amount
-            }
-        if second_split[0] == 'worker':
-            id = str(second_split[1])
-            cycle = str(second_split[2])
-            train_amount = str(second_split[3])
-            stored_models['workers'][id][cycle] = {
-                'parameters': formatted_local_model,
-                'train-amount': train_amount
-            }
-    return stored_models
+    return {'data':wanted_data}
