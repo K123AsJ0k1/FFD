@@ -2,11 +2,19 @@ from flask import current_app
 
 from functions.data import preprocess_into_train_test_and_eval_tensors
 from functions.model import local_model_training
-from functions.update import send_info_to_central, send_update
- 
+from functions.update import send_info_to_central, send_update_to_central
+# Created
+def status_pipeline(
+    task_logger: any
+):
+    # Works
+    status = send_info_to_central(
+        logger = task_logger
+    )
+    task_logger.info('Status sending:' + str(status))
 # Refactored and works
 def data_pipeline(
-    task_logger: any,
+    task_logger: any
 ):
     # Works
     status = preprocess_into_train_test_and_eval_tensors(
@@ -26,13 +34,7 @@ def model_pipeline(
 def update_pipeline(
     task_logger: any
 ):
-    # Works
-    status = send_info_to_central(
-        logger = task_logger
-    )
-    task_logger.info('Status sending:' + str(status))
-    
-    status = send_update(
+    status = send_update_to_central(
         logger = task_logger
     )
     task_logger.info('Update sending:' + str(status))

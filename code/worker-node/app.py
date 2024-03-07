@@ -34,27 +34,34 @@ def create_app():
     initilize_storage_templates()
     
     scheduler = BackgroundScheduler(daemon = True)
+    from functions.pipeline import status_pipeline
     from functions.pipeline import update_pipeline
     from functions.pipeline import data_pipeline
     from functions.pipeline import model_pipeline
 
     given_args = [app.logger]
     scheduler.add_job(
-        func = update_pipeline,
-        trigger = "interval",
-        seconds = 5,
-        args = given_args
-    )
-    scheduler.add_job(
-        func = data_pipeline,
+        func = status_pipeline,
         trigger = "interval",
         seconds = 10,
         args = given_args
     )
     scheduler.add_job(
-        func = model_pipeline,
+        func = update_pipeline,
         trigger = "interval",
         seconds = 20,
+        args = given_args
+    )
+    scheduler.add_job(
+        func = data_pipeline,
+        trigger = "interval",
+        seconds = 30,
+        args = given_args
+    )
+    scheduler.add_job(
+        func = model_pipeline,
+        trigger = "interval",
+        seconds = 40,
         args = given_args
     )
     scheduler.start()

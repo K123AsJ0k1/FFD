@@ -5,13 +5,21 @@ import os
 import json
 import requests
 import psutil
+import time
 
 from functions.general import get_current_experiment_number
+from functions.storage import store_metrics_and_resources
 
 # Refactored and works
 def send_info_to_central(
     logger: any
 ) -> bool:
+    this_process = psutil.Process(os.getpid())
+    mem_start = psutil.virtual_memory().used 
+    disk_start = psutil.disk_usage('.').used
+    cpu_start = this_process.cpu_percent(interval=0.2)
+    time_start = time.time()
+
     storage_folder_path = 'storage'
     # In this simulated infrastructure we will assume that workers can failure restart in such a way that files are lost
     current_experiment_number = get_current_experiment_number()
@@ -44,17 +52,11 @@ def send_info_to_central(
     if worker_status['central-address'] == '':
         return False
 
-    #if not os.path.exists(local_metrics_path):
-    #    return False
-    
     local_metrics = None
     if os.path.exists(worker_resources_path):
         with open(local_metrics_path, 'r') as f:
             local_metrics = json.load(f)
 
-    #if not os.path.exists(worker_resources_path):
-    #    return False
-    
     worker_resources = None
     if os.path.exists(worker_resources_path):
         with open(worker_resources_path, 'r') as f:
@@ -128,15 +130,75 @@ def send_info_to_central(
             with open(worker_status_path, 'w') as f:
                 json.dump(worker_status, f, indent=4)
             
+            time_end = time.time()
+            cpu_end = this_process.cpu_percent(interval=0.2)
+            mem_end = psutil.virtual_memory().used 
+            disk_end = psutil.disk_usage('.').used
+
+            time_diff = (time_end - time_start) 
+            cpu_diff = cpu_end - cpu_start 
+            mem_diff = (mem_end - mem_start) / (1024 ** 2) 
+            disk_diff = (disk_end - disk_start) / (1024 ** 2) 
+
+            resource_metrics = {
+                'name': 'sending-info-to-central',
+                'status-code': response.status_code,
+                'processing-time-seconds': time_diff,
+                'elapsed-time-seconds': response.elapsed.total_seconds(),
+                'cpu-percentage': cpu_diff,
+                'ram-megabytes': mem_diff,
+                'disk-megabytes': disk_diff
+            }
+
+            status = store_metrics_and_resources(
+                type = 'resources',
+                subject = 'worker',
+                area = 'network',
+                metrics = resource_metrics
+            )
+            
             return True
+        
+        time_end = time.time()
+        cpu_end = this_process.cpu_percent(interval=0.2)
+        mem_end = psutil.virtual_memory().used 
+        disk_end = psutil.disk_usage('.').used
+
+        time_diff = (time_end - time_start) 
+        cpu_diff = cpu_end - cpu_start 
+        mem_diff = (mem_end - mem_start) / (1024 ** 2) 
+        disk_diff = (disk_end - disk_start) / (1024 ** 2) 
+
+        resource_metrics = {
+            'name': 'sending-info-to-central',
+            'status-code': response.status_code,
+            'processing-time-seconds': time_diff,
+            'elapsed-time-seconds': response.elapsed.total_seconds(),
+            'cpu-percentage': cpu_diff,
+            'ram-megabytes': mem_diff,
+            'disk-megabytes': disk_diff
+        }
+
+        status = store_metrics_and_resources(
+            type = 'resources',
+            subject = 'worker',
+            area = 'network',
+            metrics = resource_metrics
+        )
         return False
     except Exception as e:
         logger.error('Sending info to central error:' +  str(e)) 
         return False
 # Refactored and works
-def send_update(
+def send_update_to_central(
     logger: any
 ) -> bool:  
+    this_process = psutil.Process(os.getpid())
+    mem_start = psutil.virtual_memory().used 
+    disk_start = psutil.disk_usage('.').used
+    cpu_start = this_process.cpu_percent(interval=0.2)
+    time_start = time.time()
+
     storage_folder_path = 'storage'
     current_experiment_number = get_current_experiment_number()
 
@@ -189,7 +251,61 @@ def send_update(
             with open(worker_status_path, 'w') as f:
                 json.dump(worker_status, f, indent=4)
             os.environ['STATUS'] = 'waiting'
+
+            time_end = time.time()
+            cpu_end = this_process.cpu_percent(interval=0.2)
+            mem_end = psutil.virtual_memory().used 
+            disk_end = psutil.disk_usage('.').used
+
+            time_diff = (time_end - time_start) 
+            cpu_diff = cpu_end - cpu_start 
+            mem_diff = (mem_end - mem_start) / (1024 ** 2) 
+            disk_diff = (disk_end - disk_start) / (1024 ** 2) 
+
+            resource_metrics = {
+                'name': 'sending-update-to-central',
+                'status-code': response.status_code,
+                'processing-time-seconds': time_diff,
+                'elapsed-time-seconds': response.elapsed.total_seconds(),
+                'cpu-percentage': cpu_diff,
+                'ram-megabytes': mem_diff,
+                'disk-megabytes': disk_diff
+            }
+
+            status = store_metrics_and_resources(
+                type = 'resources',
+                subject = 'worker',
+                area = 'network',
+                metrics = resource_metrics
+            )
             return True
+        
+        time_end = time.time()
+        cpu_end = this_process.cpu_percent(interval=0.2)
+        mem_end = psutil.virtual_memory().used 
+        disk_end = psutil.disk_usage('.').used
+
+        time_diff = (time_end - time_start) 
+        cpu_diff = cpu_end - cpu_start 
+        mem_diff = (mem_end - mem_start) / (1024 ** 2) 
+        disk_diff = (disk_end - disk_start) / (1024 ** 2) 
+
+        resource_metrics = {
+            'name': 'sending-update-to-central',
+            'status-code': response.status_code,
+            'processing-time-seconds': time_diff,
+            'elapsed-time-seconds': response.elapsed.total_seconds(),
+            'cpu-percentage': cpu_diff,
+            'ram-megabytes': mem_diff,
+            'disk-megabytes': disk_diff
+        }
+
+        status = store_metrics_and_resources(
+            type = 'resources',
+            subject = 'worker',
+            area = 'network',
+            metrics = resource_metrics
+        )
         return False
     except Exception as e:
         logger.error('Status sending error:' + str(e))

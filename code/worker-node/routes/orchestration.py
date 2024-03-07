@@ -4,7 +4,7 @@ import json
 from functions.storage import store_central_address
 
 orchestration = Blueprint('orchestration', __name__)
-# Created
+# Created and works
 @orchestration.route('/point', methods=["POST"]) 
 def set_point_to_central():
     sent_payload = json.loads(request.json)

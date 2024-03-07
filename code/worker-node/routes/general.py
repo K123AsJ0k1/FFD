@@ -1,8 +1,7 @@
 from flask import Blueprint, current_app, request, jsonify, render_template
 import json
 
-from functions.data import *
-from functions.model import *
+from functions.general import get_metrics_resources_and_status, get_worker_logs
 
 general = Blueprint('general', __name__)
 
@@ -12,14 +11,20 @@ def demo():
 # Created and works
 @general.route('/logs', methods=["GET"]) 
 def worker_logs():
-    with open('logs/worker.log', 'r') as f:
-        logs = f.readlines()
-    return render_template('logs.html', logs = logs)
-# Created
-@general.route('/worker', methods=["GET"]) 
-def worker_status():
-    #worker_status_path = 'logs/worker_status.txt'
-    #worker_status = None
-    #with open(worker_status_path, 'r') as f:
-    #    worker_status = json.load(f)
-    return jsonify({'status':worker_status})
+    current_logs = get_worker_logs()
+    return render_template('logs.html', logs = current_logs)
+# Created and works
+@general.route('/storage', methods=["GET"])
+def worker_metrics_resources_and_status():
+    sent_payload = json.loads(request.json)
+
+    sent_type = sent_payload['type']
+    sent_experiment = sent_payload['experiment']
+    sent_subject = sent_payload['subject']
+
+    data = get_metrics_resources_and_status(
+        type = sent_type,
+        experiment = sent_experiment,
+        subject = sent_subject
+    )
+    return jsonify(data)
