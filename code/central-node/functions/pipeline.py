@@ -39,12 +39,7 @@ def data_pipeline(
         logger = task_logger
     )
     task_logger.info('Central pool preprocessing:' + str(status))
-    # Works
-    status = split_data_between_workers(
-        logger = task_logger
-    )
-    task_logger.info('Worker data split:' + str(status))
-# Refactored
+# Refactored and works
 def model_pipeline(
     task_logger: any
 ):  
@@ -53,16 +48,21 @@ def model_pipeline(
         logger = task_logger
     )
     task_logger.info('Initial model training:' + str(status))
-# Refactored
+# Refactored and works
 def update_pipeline(
     task_logger: any
 ):
+    # Works
+    status = split_data_between_workers(
+        logger = task_logger
+    )
+    task_logger.info('Worker data split:' + str(status))
     # Works
     status = send_context_to_workers(
         logger = task_logger
     )
     task_logger.info('Worker context sending:' + str(status))
-# Refactor
+# Refactored and works
 def aggregation_pipeline(
     task_logger: any
 ):

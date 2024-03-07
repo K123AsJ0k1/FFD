@@ -5,15 +5,13 @@ import torch
 import os 
 import json
 from collections import OrderedDict
-from torch.utils.data import DataLoader
 import time
 import psutil
 
 from functions.model import FederatedLogisticRegression, evaluate
 from functions.general import get_current_experiment_number, get_newest_model_updates, get_current_global_model
 from functions.storage import store_metrics_and_resources
-
-# Refactor
+# Refactored and works
 def model_fed_avg(
     updates: any,
     total_sample_size: int    
@@ -41,7 +39,7 @@ def model_fed_avg(
         ('linear.bias', torch.tensor(FedAvg_bias,dtype=torch.float32))
     ])
     return updated_global_model
-# Refactored
+# Refactored and works
 def update_global_model(
     logger: any
 ) -> bool:
@@ -127,7 +125,7 @@ def update_global_model(
     )
 
     return True
-# Refactored
+# Refactored and works
 def evalute_global_model(
     logger: any
 ):

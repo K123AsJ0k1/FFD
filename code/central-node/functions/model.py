@@ -10,9 +10,8 @@ import numpy as np
 from sklearn.metrics import confusion_matrix
 from torch.utils.data import DataLoader
 
-from functions.general import get_current_experiment_number
+from functions.general import get_current_experiment_number, get_wanted_model
 from functions.storage import store_metrics_and_resources
-
 # Refactored and works
 class FederatedLogisticRegression(nn.Module):
     def __init__(self, dim, bias=True):
@@ -365,42 +364,63 @@ def initial_model_training(
     return True
 # Refactor
 def model_inference(
-    input: any,
-    cycle: int
+    experiment: int,
+    subject: str,
+    cycle: int,
+    input: any
 ) -> any:
-    training_status_path = 'logs/training_status.txt'
-    if not os.path.exists(training_status_path):
-        return False
-    # Might be useful for recoding inference amounts
-    training_status = None
-    with open(training_status_path, 'r') as f:
-        training_status = json.load(f)
+    this_process = psutil.Process(os.getpid())
+    mem_start = psutil.virtual_memory().used 
+    disk_start = psutil.disk_usage('.').used
+    cpu_start = this_process.cpu_percent(interval=0.2)
+    time_start = time.time()
 
-    GLOBAL_PARAMETERS = current_app.config['GLOBAL_PARAMETERS']
+    storage_folder_path = 'storage'
+    current_experiment_number = get_current_experiment_number()
 
-    files = os.listdir('models')
+    model_parameters_path = storage_folder_path + '/parameters/experiment_' + str(current_experiment_number) + '/model.txt'
+    model_parameters = None
+    with open(model_parameters_path, 'r') as f:
+        model_parameters = json.load(f)
 
-    wanted_global_model = ''
-    for file in files:
-        first_split = file.split('.')
-        second_split = first_split[0].split('_')
-        name = str(second_split[0])
-        if name == 'global':
-            model_cycle = int(second_split[1])
-            if cycle == model_cycle:
-                wanted_global_model = 'models/' + file 
-
-    if not os.path.exists(wanted_global_model):
-        return None
+    wanted_model = get_wanted_model(
+        experiment = experiment,
+        subject = subject,
+        cycle = cycle
+    )
     
-    given_parameters = torch.load(wanted_global_model)
+    lr_model = FederatedLogisticRegression(dim = model_parameters['input-size'])
+    lr_model.apply_parameters(lr_model, wanted_model)
     
-    lr_model = FederatedLogisticRegression(dim = GLOBAL_PARAMETERS['input-size'])
-    lr_model.apply_parameters(lr_model, given_parameters)
-    
-    given_input = torch.tensor(np.array(input, dtype=np.float32))
+    input_tensor = torch.tensor(np.array(input, dtype=np.float32))
 
     with torch.no_grad():
-        output = lr_model.prediction(lr_model,given_input)
+        output = lr_model.prediction(lr_model,input_tensor)
+
+    time_end = time.time()
+    cpu_end = this_process.cpu_percent(interval=0.2)
+    mem_end = psutil.virtual_memory().used 
+    disk_end = psutil.disk_usage('.').used
+
+    time_diff = (time_end - time_start) 
+    cpu_diff = cpu_end - cpu_start 
+    mem_diff = (mem_end - mem_start) / (1024 ** 2) 
+    disk_diff = (disk_end - disk_start) / (1024 ** 2) 
+
+    resource_metrics = {
+        'name': str(experiment) + '-' + subject + '-' + str(cycle) + '-prediction',
+        'sample-amount': len(input_tensor),
+        'time-seconds': time_diff,
+        'cpu-percentage': cpu_diff,
+        'ram-megabytes': mem_diff,
+        'disk-megabytes': disk_diff
+    }
+
+    status = store_metrics_and_resources(
+        type = 'resources',
+        subject = 'central',
+        area = 'function',
+        metrics = resource_metrics
+    )
 
     return output.tolist()
