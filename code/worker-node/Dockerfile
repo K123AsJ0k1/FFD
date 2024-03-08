@@ -4,25 +4,15 @@ FROM python:3.11-slim-bookworm
 
 WORKDIR /worker
 
-COPY config.py .
-
 COPY run.py .
 
 COPY app.py .
 
-COPY templates /worker/templates
-
-COPY data /worker/data
-
-COPY logs /worker/logs
-
-COPY models /worker/models
-
-COPY tensors /worker/tensors
-
 COPY routes /worker/routes
 
 COPY functions /worker/functions
+
+COPY templates /worker/templates
 
 COPY requirements.txt .
 

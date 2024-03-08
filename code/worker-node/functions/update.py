@@ -24,12 +24,10 @@ def send_info_to_central(
     # In this simulated infrastructure we will assume that workers can failure restart in such a way that files are lost
     current_experiment_number = get_current_experiment_number()
 
-    worker_status_path = None
+    worker_status_path = storage_folder_path + '/status/templates/worker.txt'
     local_metrics_path = None
     worker_resources_path = None
-    if current_experiment_number == 0:
-        worker_status_path = storage_folder_path + '/status/templates/worker.txt'
-    else:
+    if not current_experiment_number == 0:
         worker_folder_path = storage_folder_path + '/status/experiment_' + str(current_experiment_number) 
         metrics_folder_path = storage_folder_path + '/metrics/experiment_' + str(current_experiment_number)
         resource_folder_path = storage_folder_path + '/resources/experiment_' + str(current_experiment_number)
@@ -53,14 +51,16 @@ def send_info_to_central(
         return False
 
     local_metrics = None
-    if os.path.exists(worker_resources_path):
-        with open(local_metrics_path, 'r') as f:
-            local_metrics = json.load(f)
+    if not local_metrics_path == None:
+        if os.path.exists(local_metrics_path):
+            with open(local_metrics_path, 'r') as f:
+                local_metrics = json.load(f)
 
     worker_resources = None
-    if os.path.exists(worker_resources_path):
-        with open(worker_resources_path, 'r') as f:
-            worker_resources = json.load(f)
+    if not worker_resources_path == worker_resources_path:
+        if os.path.exists(worker_resources_path):
+            with open(worker_resources_path, 'r') as f:
+                worker_resources = json.load(f)
     
     worker_status['status'] = os.environ.get('STATUS')
 
@@ -72,6 +72,7 @@ def send_info_to_central(
         }
     }
     # key order changes
+    # Refactor to have failure fixing
     payload = json.dumps(info) 
     address = worker_status['central-address'] + '/status'
     try:
@@ -237,6 +238,7 @@ def send_update_to_central(
     
     payload = json.dumps(update)
     central_url = worker_status['central-address'] + '/update'
+    # If an error happens in central, update might not be received
     try:
         response = requests.post(
             url = central_url, 
@@ -247,6 +249,7 @@ def send_update_to_central(
             }
         )
         if response.status_code == 200:
+            # This sometimes doesn't work, leaving in a unrefocerabel state
             worker_status['updated'] = True
             with open(worker_status_path, 'w') as f:
                 json.dump(worker_status, f, indent=4)

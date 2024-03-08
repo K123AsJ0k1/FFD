@@ -166,7 +166,7 @@ def store_metrics_and_resources(
             data_path = storage_folder_path + '/resources/experiment_' + str(current_experiment_number) + '/worker.txt'
             if not os.path.exists(data_path):
                 return False
-            
+            # There is a extra }, when is ran long enough
             stored_data = None
             with open(data_path, 'r') as f:
                 stored_data = json.load(f)

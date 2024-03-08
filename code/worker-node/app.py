@@ -1,6 +1,6 @@
 from flask import Flask, request
-from config import Config
 from apscheduler.schedulers.background import BackgroundScheduler
+
 import logging
 import os
 
@@ -21,7 +21,6 @@ def create_app():
     if os.path.exists(worker_log_path):
         os.remove(worker_log_path)
 
-    app.config.from_object(Config)
     logger = logging.getLogger('worker-logger')
     logger.setLevel(logging.INFO)
     file_handler = logging.FileHandler(worker_log_path)
@@ -47,12 +46,6 @@ def create_app():
         args = given_args
     )
     scheduler.add_job(
-        func = update_pipeline,
-        trigger = "interval",
-        seconds = 20,
-        args = given_args
-    )
-    scheduler.add_job(
         func = data_pipeline,
         trigger = "interval",
         seconds = 30,
@@ -60,6 +53,12 @@ def create_app():
     )
     scheduler.add_job(
         func = model_pipeline,
+        trigger = "interval",
+        seconds = 60,
+        args = given_args
+    )
+    scheduler.add_job(
+        func = update_pipeline,
         trigger = "interval",
         seconds = 40,
         args = given_args
