@@ -77,7 +77,7 @@ def send_context_to_workers(
         'weights': global_model['linear.weight'].numpy().tolist(),
         'bias': global_model['linear.bias'].numpy().tolist()
     }
-
+    # Refactor to have failure fixing
     for i in range(0,5):
         payload_status = {}
         data_folder_path = storage_folder_path + '/data/experiment_' + str(current_experiment_number)

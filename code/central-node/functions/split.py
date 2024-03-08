@@ -119,6 +119,8 @@ def split_data_between_workers(
     central_status_path = status_folder_path + '/central.txt'
     if not os.path.exists(central_status_path):
         return False
+
+    #print('1')
     
     central_status = None
     with open(central_status_path, 'r') as f:
@@ -126,19 +128,29 @@ def split_data_between_workers(
 
     if not central_status['start']:
         return False
+    
+    #print('2')
 
     if central_status['complete']:
         return False
+    
+    #print('3')
 
     if not central_status['preprocessed']:
         return False
     
+    #print('4')
+    
     if central_status['worker-split']:
         return False
+    
+    #print('5')
     
     worker_status_path = status_folder_path + '/workers.txt'
     if not os.path.exists(worker_status_path):
         return False
+    
+    #print('6')
 
     worker_status = None
     with open(worker_status_path, 'r') as f:
@@ -149,6 +161,8 @@ def split_data_between_workers(
     if not os.path.exists(central_parameters_path):
         return False
     
+    #print('7')
+    
     central_parameters = None
     with open(central_parameters_path, 'r') as f:
         central_parameters = json.load(f)
@@ -156,6 +170,8 @@ def split_data_between_workers(
     worker_parameters_path = parameters_folder_path + '/worker.txt'
     if not os.path.exists(worker_parameters_path):
         return False
+    
+    #print('8')
     
     worker_parameters = None
     with open(worker_parameters_path, 'r') as f:
@@ -167,16 +183,19 @@ def split_data_between_workers(
     os.environ['STATUS'] = 'worker splitting'
     
     worker_pool_df = pd.read_csv(worker_pool_path)
-
+    # Needs a better way of checking status
     available_workers = []
     for worker_key in worker_status.keys():
         worker_metadata = worker_status[worker_key]
-        if worker_metadata['status'] == 'waiting':
+        if not worker_metadata['stored'] or (worker_metadata['stored'] and worker_metadata['preprocessed'] and worker_metadata['trained'] and worker_metadata['updated'] and not worker_metadata['complete']): 
             available_workers.append(worker_key)
     #print('Hello')
     #print(len(available_workers))
     if not central_parameters['min-update-amount'] <= len(available_workers):
         return False
+    
+    #print('9')
+
     # Format for worker data is worker_(id)_(cycle)_(size).csv
     if worker_parameters['data-augmentation']['active']:
         for worker_key in available_workers:

@@ -211,10 +211,12 @@ def evalute_global_model(
  
     central_status['evaluated'] = True
     if central_parameters['min-metric-success'] <= succesful_metrics or central_status['cycle'] == central_parameters['max-cycles']:
+        logger.info('Global model has passed ' + str(succesful_metrics) + ' metrics, stopping training')
         central_status['complete'] = True
         central_status['sent'] = False
         central_status['cycle'] = central_status['cycle'] + 1
     else: 
+        logger.info('Global model pased only' + str(succesful_metrics) + ' metrics, continouing training')
         central_status['worker-split'] = False
         central_status['sent'] = False
         central_status['updated'] = False
