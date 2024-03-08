@@ -4,8 +4,6 @@ FROM python:3.11-slim-bookworm
 
 WORKDIR /worker
 
-COPY config.py .
-
 COPY run.py .
 
 COPY app.py .
@@ -13,6 +11,8 @@ COPY app.py .
 COPY routes /worker/routes
 
 COPY functions /worker/functions
+
+COPY templates /worker/templates
 
 COPY requirements.txt .
 

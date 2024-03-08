@@ -4,8 +4,6 @@ FROM python:3.11-slim-bookworm
 
 WORKDIR /worker
 
-COPY config.py .
-
 COPY run.py .
 
 COPY app.py .
@@ -14,10 +12,12 @@ COPY routes /worker/routes
 
 COPY functions /worker/functions
 
+COPY templates /worker/templates
+
 COPY requirements.txt .
 
-RUN pip3 install -r requirements.txt
+RUN pip install -r requirements.txt 
 
-EXPOSE 7500
+EXPOSE 7600
 
 CMD ["python", "run.py"]
