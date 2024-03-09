@@ -1,10 +1,13 @@
 from flask import current_app
 
 import os 
-import json
+
+from functions.storage import store_file_data
 
 # Refactored and works
-def initilize_storage_templates():
+def initilize_storage_templates(
+    file_lock: any
+):
     # Types: 0 = int, [] = list, 0.0 = float and {} = dict 
     model_parameters = {
         'seed': 0,
@@ -308,15 +311,15 @@ def initilize_storage_templates():
     }
 
     paths = [
-        'storage/parameters/templates/model.txt',
-        'storage/parameters/templates/central.txt',
-        'storage/parameters/templates/worker.txt',
-        'storage/status/templates/central.txt',
-        'storage/status/templates/workers.txt',
-        'storage/metrics/templates/global.txt',
-        'storage/metrics/templates/local.txt',
-        'storage/resources/templates/central.txt',
-        'storage/resources/templates/workers.txt'
+        'parameters/templates/model.txt',
+        'parameters/templates/central.txt',
+        'parameters/templates/worker.txt',
+        'status/templates/central.txt',
+        'status/templates/workers.txt',
+        'metrics/templates/global.txt',
+        'metrics/templates/local.txt',
+        'resources/templates/central.txt',
+        'resources/templates/workers.txt'
     ]
 
     templates = {
@@ -341,12 +344,15 @@ def initilize_storage_templates():
 
     os.environ['STATUS'] = 'initilizing'
     
-    for path in paths:
-        first_split = path.split('.')
+    for template_path in paths:
+        first_split = template_path.split('.')
         second_split = first_split[0].split('/')
-        path_template = templates[second_split[1]][second_split[3]]
-        if not os.path.exists(path):
-            folder_path = 'storage/' + second_split[1] + '/templates'
-            os.makedirs(folder_path, exist_ok=True)
-            with open(path, 'w') as f:
-                json.dump(path_template , f, indent=4) 
+        path_template = templates[second_split[0]][second_split[2]]
+        template_folder_path = second_split[0] + '/templates'
+        store_file_data(
+            file_lock = file_lock,
+            replace = False,
+            file_folder_path = template_folder_path,
+            file_path = template_path,
+            data = path_template
+        )

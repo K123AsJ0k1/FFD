@@ -9,12 +9,13 @@ import pandas as pd
 import time
 import psutil 
 
-from functions.general import get_current_experiment_number
-from functions.storage import store_metrics_and_resources
+from functions.general import get_current_experiment_number, get_file_data
+from functions.storage import store_metrics_and_resources, store_file_data
 from functions.data import data_augmented_sample
 
 # Refactored and works
 def central_worker_data_split(
+    file_lock: any,
     logger: any
 ) -> bool:
     this_process = psutil.Process(os.getpid())
@@ -23,16 +24,13 @@ def central_worker_data_split(
     cpu_start = this_process.cpu_percent(interval=0.2)
     time_start = time.time()
 
-    storage_folder_path = 'storage'
     current_experiment_number = get_current_experiment_number()
-    central_status_path = storage_folder_path + '/status/experiment_' + str(current_experiment_number) + '/central.txt'
-    if not os.path.exists(central_status_path):
-        return False
+    central_status_path = 'status/experiment_' + str(current_experiment_number) + '/central.txt'
+    central_status = get_file_data(
+        file_lock = file_lock,
+        file_path = central_status_path
+    )
     
-    central_status = None
-    with open(central_status_path, 'r') as f:
-        central_status = json.load(f)
-
     if not central_status['start']:
         return False
 
@@ -42,25 +40,32 @@ def central_worker_data_split(
     if central_status['data-split']:
         return False
     
-    parameter_folder_path = storage_folder_path + '/parameters/experiment_' + str(current_experiment_number)
+    parameter_folder_path = 'parameters/experiment_' + str(current_experiment_number)
     central_parameters_path = parameter_folder_path + '/central.txt'
-    central_parameters = None
-    with open(central_parameters_path, 'r') as f:
-        central_parameters = json.load(f)
-
     worker_parameters_path = parameter_folder_path + '/worker.txt'
-    worker_parameters = None
-    with open(worker_parameters_path, 'r') as f:
-        worker_parameters = json.load(f)
-    
-    data_experiment_folder = storage_folder_path + '/data/experiment_' + str(current_experiment_number)
-    source_data_path = data_experiment_folder + '/source.csv'
-    central_pool_path = data_experiment_folder + '/central_pool.csv'
-    worker_pool_path = data_experiment_folder + '/worker_pool.csv'
+
+    central_parameters = get_file_data(
+        file_lock = file_lock,
+        file_path = central_parameters_path
+    )
+
+    worker_parameters = get_file_data(
+        file_lock = file_lock,
+        file_path = worker_parameters_path
+    )
+
+    data_folder = 'data/experiment_' + str(current_experiment_number)
+
+    source_data_path = data_folder + '/source.csv'
+    central_pool_path = data_folder + '/central_pool.csv'
+    worker_pool_path = data_folder + '/worker_pool.csv'
 
     os.environ['STATUS'] = 'data splitting'
     
-    source_df = pd.read_csv(source_data_path)
+    source_df = get_file_data(
+        file_lock = file_lock,
+        file_path = source_data_path
+    )
     splitted_data_df = source_df.drop('step', axis = 1)
     
     central_data_pool = splitted_data_df.sample(n = central_parameters['sample-pool'])
@@ -68,12 +73,30 @@ def central_worker_data_split(
     splitted_data_df.drop(central_indexes)
     worker_data_pool = splitted_data_df.sample(n = worker_parameters['sample-pool'])
 
-    central_data_pool.to_csv(central_pool_path, index = False)    
-    worker_data_pool.to_csv(worker_pool_path, index = False)
-    
+    store_file_data(
+        file_lock = file_lock,
+        replace = False,
+        file_folder_path = data_folder,
+        file_path = central_pool_path,
+        data = central_data_pool
+    )
+
+    store_file_data(
+        file_lock = file_lock,
+        replace = False,
+        file_folder_path = data_folder,
+        file_path = worker_pool_path,
+        data = worker_data_pool
+    )
+
     central_status['data-split'] = True
-    with open(central_status_path, 'w') as f:
-        json.dump(central_status, f, indent=4) 
+    store_file_data(
+        file_lock = file_lock,
+        replace = True,
+        file_folder_path = '',
+        file_path = central_status_path,
+        data = central_status
+    )
     
     time_end = time.time()
     cpu_end = this_process.cpu_percent(interval=0.2)
@@ -94,6 +117,7 @@ def central_worker_data_split(
     }
 
     status = store_metrics_and_resources(
+        file_lock = file_lock,
         type = 'resources',
         subject = 'central',
         area = 'function',
@@ -120,8 +144,6 @@ def split_data_between_workers(
     if not os.path.exists(central_status_path):
         return False
 
-    #print('1')
-    
     central_status = None
     with open(central_status_path, 'r') as f:
         central_status = json.load(f)
@@ -129,29 +151,19 @@ def split_data_between_workers(
     if not central_status['start']:
         return False
     
-    #print('2')
-
     if central_status['complete']:
         return False
     
-    #print('3')
-
     if not central_status['preprocessed']:
         return False
     
-    #print('4')
-    
     if central_status['worker-split']:
         return False
-    
-    #print('5')
-    
+     
     worker_status_path = status_folder_path + '/workers.txt'
     if not os.path.exists(worker_status_path):
         return False
     
-    #print('6')
-
     worker_status = None
     with open(worker_status_path, 'r') as f:
         worker_status = json.load(f)
@@ -161,8 +173,6 @@ def split_data_between_workers(
     if not os.path.exists(central_parameters_path):
         return False
     
-    #print('7')
-    
     central_parameters = None
     with open(central_parameters_path, 'r') as f:
         central_parameters = json.load(f)
@@ -170,9 +180,7 @@ def split_data_between_workers(
     worker_parameters_path = parameters_folder_path + '/worker.txt'
     if not os.path.exists(worker_parameters_path):
         return False
-    
-    #print('8')
-    
+     
     worker_parameters = None
     with open(worker_parameters_path, 'r') as f:
         worker_parameters = json.load(f)
@@ -183,19 +191,16 @@ def split_data_between_workers(
     os.environ['STATUS'] = 'worker splitting'
     
     worker_pool_df = pd.read_csv(worker_pool_path)
-    # Needs a better way of checking status
     available_workers = []
     for worker_key in worker_status.keys():
         worker_metadata = worker_status[worker_key]
-        if not worker_metadata['stored'] or (worker_metadata['stored'] and worker_metadata['preprocessed'] and worker_metadata['trained'] and worker_metadata['updated'] and not worker_metadata['complete']): 
+        if not worker_metadata['stored'] and not worker_metadata['complete']: 
             available_workers.append(worker_key)
-    #print('Hello')
-    #print(len(available_workers))
+    
     if not central_parameters['min-update-amount'] <= len(available_workers):
         return False
     
-    #print('9')
-
+    # Might have concurrency issues
     # Format for worker data is worker_(id)_(cycle)_(size).csv
     if worker_parameters['data-augmentation']['active']:
         for worker_key in available_workers:

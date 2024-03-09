@@ -78,7 +78,7 @@ def send_context_to_workers(
         'bias': global_model['linear.bias'].numpy().tolist()
     }
     # Refactor to have failure fixing
-    for i in range(0,5):
+    for i in range(0,10):
         payload_status = {}
         data_folder_path = storage_folder_path + '/data/experiment_' + str(current_experiment_number)
         data_files = os.listdir(data_folder_path)
@@ -188,6 +188,7 @@ def send_context_to_workers(
         for worker_key in payload_status.keys():
             worker_data = payload_status[worker_key]
             if worker_data['response'] == 200 :
+                # Check
                 if worker_data['message'] == 'stored' or worker_data['message'] == 'ongoing jobs':
                     successes = successes + 1
                 continue

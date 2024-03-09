@@ -3,6 +3,27 @@ from flask import current_app
 import torch 
 import os 
 import json
+import pandas as pd
+import torch
+# Created
+def get_file_data(
+    file_lock: any,
+    file_path: str
+):
+    storage_folder_path = 'storage'
+    used_file_path = storage_folder_path + '/' + file_path
+    file_data = None
+    if not os.path.exists(used_file_path):
+        return file_data
+    with file_lock:
+        if '.txt' in used_file_path:
+            with open(used_file_path, 'r') as f:
+                file_data = json.load(f)
+        if '.csv' in used_file_path:
+            file_data = pd.read_csv(used_file_path)
+        if '.pt' in used_file_path:
+            file_data = torch.load(used_file_path)
+    return file_data
 # Refactored and works
 def get_central_logs():
     storage_folder_path = 'storage'
@@ -38,8 +59,9 @@ def get_metrics_resources_and_status(
     wanted_data = None
     if not experiment == 0:
         wanted_data_path = wanted_folder_path + '/experiment_' + str(experiment) + '/' + subject + '.txt'
-        with open(wanted_data_path, 'r') as f:
-            wanted_data = json.load(f)
+        wanted_data = get_file_dict(
+            file_path = wanted_data_path
+        )
     else:
         wanted_data = {}
         experiments = os.listdir(wanted_folder_path)
@@ -47,8 +69,9 @@ def get_metrics_resources_and_status(
             if 'experiment' in exp:
                 exp_id = exp.split('_')[1]
                 data_path = wanted_folder_path + '/' + str(exp) + '/' + subject + '.txt' 
-                with open(data_path, 'r') as f:
-                    wanted_data[str(exp_id)] = json.load(f)
+                wanted_data[str(exp_id)] = get_file_dict(
+                    file_path = data_path
+                )
     return {'data':wanted_data}
 # Refactored and works
 def get_current_global_model() -> any: 

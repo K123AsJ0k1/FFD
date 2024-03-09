@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 import json
 
 from functions.storage import store_training_context, store_update
@@ -15,6 +15,7 @@ def set_training_context():
     sent_columns = sent_payload['columns']
 
     status = store_training_context(
+        file_lock = current_app.file_lock,
         parameters = sent_parameters,
         df_data = sent_data,
         df_columns = sent_columns
@@ -24,21 +25,24 @@ def set_training_context():
 # Refactored and works
 @pipeline.route('/start', methods=["POST"])
 def start_training():
-    status = start_pipeline()
+    status = start_pipeline(
+        file_lock = current_app.file_lock
+    )
     return 'Ok', 200
 # Refactored and works
 @pipeline.route('/update', methods=["POST"]) 
 def set_worker_update(): 
-    sent_payload = json.loads(request.json)
-    
-    sent_worker_id = sent_payload['worker-id']
-    sent_local_model = sent_payload['local-model']
-    sent_cycle = sent_payload['cycle']
+    with current_app.file_lock:
+        sent_payload = json.loads(request.json)
+        
+        sent_worker_id = sent_payload['worker-id']
+        sent_local_model = sent_payload['local-model']
+        sent_cycle = sent_payload['cycle']
 
-    store_update(
-        id = sent_worker_id,
-        model = sent_local_model,
-        cycle = sent_cycle 
-    ) 
-    
-    return 'Ok', 200
+        store_update(
+            id = sent_worker_id,
+            model = sent_local_model,
+            cycle = sent_cycle 
+        ) 
+            
+        return 'Ok', 200

@@ -1,11 +1,14 @@
 from flask import Flask
 from apscheduler.schedulers.background import BackgroundScheduler
 
+import threading
 import logging
 import os
 # Refactor
 def create_app():
     app = Flask(__name__)
+
+    app.file_lock = threading.Lock()
 
     os.makedirs('storage', exist_ok=True)
     os.makedirs('storage/logs', exist_ok=True)
@@ -30,25 +33,28 @@ def create_app():
     app.logger = logger
 
     from functions.initilization import initilize_storage_templates
-    initilize_storage_templates()
-     
+    initilize_storage_templates(
+        file_lock = app.file_lock
+    )
+
     scheduler = BackgroundScheduler(daemon = True)
     from functions.pipeline import data_pipeline
     from functions.pipeline import model_pipeline
-    from functions.pipeline import update_pipeline
-    from functions.pipeline import aggregation_pipeline
+    #from functions.pipeline import update_pipeline
+    #from functions.pipeline import aggregation_pipeline
     
     given_args = [
+        app.file_lock,
         app.logger
     ] 
-    # Works
+    # Works 40 sec
     scheduler.add_job(
         func = data_pipeline,
         trigger = "interval",
         seconds = 40,
         args = given_args 
     )
-    # Works
+    # Works 60 sec
     scheduler.add_job(
         func = model_pipeline,
         trigger = "interval",
@@ -56,19 +62,19 @@ def create_app():
         args = given_args 
     )
     # Works
-    scheduler.add_job(
-        func = update_pipeline,
-        trigger = "interval",
-        seconds = 20,
-        args = given_args 
-    )
+    #scheduler.add_job(
+    #    func = update_pipeline,
+    #    trigger = "interval",
+    #    seconds = 20,
+    #    args = given_args 
+    # )
     # Works
-    scheduler.add_job(
-        func = aggregation_pipeline,
-        trigger = "interval",
-        seconds = 80,
-        args = given_args 
-    )
+    #scheduler.add_job(
+    #    func = aggregation_pipeline,
+    #    trigger = "interval",
+    #    seconds = 80,
+    #    args = given_args 
+    #)
     scheduler.start()
     app.logger.info('Scheduler ready')
 

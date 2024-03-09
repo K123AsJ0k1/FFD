@@ -6,59 +6,89 @@ import json
 import copy
 import pandas as pd
 import psutil
+import torch
 
 from collections import OrderedDict
 
-from functions.general import get_current_experiment_number
-
+from functions.general import get_current_experiment_number, get_file_data
+# Created
+def store_file_data(
+    file_lock: any,
+    replace: bool,
+    file_folder_path: str,
+    file_path: str,
+    data: any
+):  
+    storage_folder_path = 'storage'
+    perform = False
+    if replace:
+        perform = True
+    if not replace and not os.path.exists(file_path):
+        perform = True
+    used_folder_path = storage_folder_path + '/' + file_folder_path
+    used_file_path = storage_folder_path + '/' + file_path
+    if perform:
+        with file_lock:
+            if not file_folder_path == '':
+                os.makedirs(used_folder_path, exist_ok=True)
+            if '.txt' in used_file_path:
+                with open(used_file_path, 'w') as f:
+                    json.dump(data , f, indent=4) 
+            if '.csv' in used_file_path:
+                data.to_csv(used_file_path, index = False)
+            if '.pt' in used_file_path:
+                torch.save(data, used_file_path)
 # Refactored and works
 def store_training_context(
+    file_lock: any,
     parameters: any,
     df_data: list,
     df_columns: list
 ) -> bool:
     # Separate training artifacts will have the following folder format of experiment_(int)
-    storage_folder_path = 'storage'
     current_experiment_number = get_current_experiment_number()
-    central_status_path = storage_folder_path + '/status/experiment_' + str(current_experiment_number) + '/central.txt'
+    central_status_path = 'status/experiment_' + str(current_experiment_number) + '/central.txt'
     if os.path.exists(central_status_path):
-        central_status = None
-        with open(central_status_path, 'r') as f:
-            central_status = json.load(f)
+        central_status = get_file_data(
+            file_lock = file_lock,
+            file_path = central_status_path
+        )
         if not central_status['complete']:
             return False
 
     new_folder_id = current_experiment_number + 1
 
     template_paths = [
-        'storage/parameters/templates/model.txt',
-        'storage/parameters/templates/central.txt',
-        'storage/parameters/templates/worker.txt',
-        'storage/status/templates/central.txt',
-        'storage/status/templates/workers.txt',
-        'storage/metrics/templates/global.txt',
-        'storage/metrics/templates/local.txt',
-        'storage/resources/templates/central.txt',
-        'storage/resources/templates/workers.txt'
+        'parameters/templates/model.txt',
+        'parameters/templates/central.txt',
+        'parameters/templates/worker.txt',
+        'status/templates/central.txt',
+        'status/templates/workers.txt',
+        'metrics/templates/global.txt',
+        'metrics/templates/local.txt',
+        'resources/templates/central.txt',
+        'resources/templates/workers.txt'
     ]
 
-    for path in template_paths:
-        first_split = path.split('.')
+    for template_path in template_paths:
+        first_split = template_path.split('.')
         second_split = first_split[0].split('/')
 
-        stored_template = None
-        with open(path, 'r') as f:
-            stored_template = json.load(f)
-        
-        file_path = storage_folder_path + '/' + second_split[1] + '/experiment_' + str(new_folder_id) + '/' + second_split[3] + '.txt'
-        if second_split[1] == 'parameters':
-            given_parameters = parameters[second_split[3]]
+        stored_template = get_file_data(
+            file_lock = file_lock,
+            file_path = template_path
+        )
+
+        modified_template = None
+        if second_split[0] == 'parameters':
+            given_parameters = parameters[second_split[2]]
             modified_template = copy.deepcopy(stored_template)
             for key in stored_template.keys():
                 modified_template[key] = given_parameters[key]
-            stored_template = copy.deepcopy(modified_template)
-        if second_split[1] == 'resources' and second_split[3] == 'central':
-            stored_template = {
+        if second_split[0] == 'status' and second_split[2] == 'central':
+            modified_template = copy.deepcopy(stored_template)
+        if second_split[0] == 'resources' and second_split[2] == 'central':
+            modified_template = {
                 'general': {
                     'physical-cpu-amount': psutil.cpu_count(logical=False),
                     'total-cpu-amount': psutil.cpu_count(logical=True),
@@ -74,72 +104,91 @@ def store_training_context(
                 'training': {},
                 'inference': {}
             }
-        if (second_split[1] == 'metrics' and (second_split[3] == 'global' or second_split[3] == 'local') 
-            or (second_split[1] == 'status' and second_split[3] == 'workers')
-            or (second_split[1] == 'resources' and second_split[3] == 'workers')):
-            stored_template = {}
+        if (second_split[0] == 'metrics' and (second_split[2] == 'global' or second_split[2] == 'local') 
+            or (second_split[0] == 'status' and second_split[2] == 'workers')
+            or (second_split[0] == 'resources' and second_split[2] == 'workers')):
+            modified_template = {}
         
-        if not os.path.exists(file_path):
-            directory_path = storage_folder_path + '/' + second_split[1] + '/experiment_' + str(new_folder_id)
-            os.makedirs(directory_path, exist_ok=True)
-            with open(file_path, 'w') as f:
-                json.dump(stored_template, f, indent=4)
+        modified_template_folder_path = second_split[0] + '/experiment_' + str(new_folder_id)
+        modified_template_path = modified_template_folder_path + '/' + second_split[2] + '.txt'
+        store_file_data(
+            file_lock = file_lock,
+            replace = False,
+            file_folder_path = modified_template_folder_path,
+            file_path =  modified_template_path,
+            data = modified_template
+        )
+    
+    data_folder_path = 'data/experiment_' + str(new_folder_id)
+    data_path = data_folder_path + '/source.csv'
 
-    file_path = storage_folder_path + '/data/experiment_' + str(new_folder_id) + '/source.csv'
-    if not os.path.exists(file_path):
-        directory_path = storage_folder_path + '/data/experiment_' + str(new_folder_id)
-        os.makedirs(directory_path, exist_ok=True)
-        source_df = pd.DataFrame(df_data, columns = df_columns)
-        source_df.to_csv(file_path)
+    source_df = pd.DataFrame(df_data, columns = df_columns)
+    store_file_data(
+        file_lock = file_lock,
+        replace = False,
+        file_folder_path = data_folder_path,
+        file_path = data_path,
+        data = source_df
+    )
+    
     return True
 # Refactored and works
 def store_metrics_and_resources( 
+   file_lock: any,
    type: str,
    subject: str,
    area: str,
    metrics: any
 ) -> bool:
-    storage_folder_path = 'storage'
     current_experiment_number = get_current_experiment_number()
     stored_data = None
     data_path = None
     if type == 'metrics':
         if subject == 'global':
-            data_path = storage_folder_path + '/metrics/experiment_' + str(current_experiment_number) + '/global.txt'
-            if not os.path.exists(data_path):
+            data_path = 'metrics/experiment_' + str(current_experiment_number) + '/global.txt'
+            stored_data = get_file_data(
+                file_lock = file_lock,
+                file_path = data_path
+            )
+
+            if stored_data is None:
                 return False
-        
-            stored_data = None
-            with open(data_path, 'r') as f:
-                stored_data = json.load(f)
 
             new_key = len(stored_data) + 1
             stored_data[str(new_key)] = metrics
     if type == 'resources':
-        central_status_path = storage_folder_path + '/status/experiment_' + str(current_experiment_number) + '/central.txt'
-        if not os.path.exists(central_status_path):
+        central_status_path = 'status/experiment_' + str(current_experiment_number) + '/central.txt'
+        central_status = get_file_data(
+            file_lock = file_lock,
+            file_path = central_status_path
+        )
+
+        if central_status is None:
             return False
         
-        central_status = None
-        with open(central_status_path, 'r') as f:
-            central_status = json.load(f)
-
         if subject == 'central':
-            data_path = storage_folder_path + '/resources/experiment_' + str(current_experiment_number) + '/central.txt'
-            if not os.path.exists(data_path):
+            data_path = 'resources/experiment_' + str(current_experiment_number) + '/central.txt'
+        
+            stored_data = get_file_data(
+                file_lock = file_lock,
+                file_path = data_path
+            )
+
+            if stored_data is None:
                 return False
-            
-            stored_data = None
-            with open(data_path, 'r') as f:
-                stored_data = json.load(f)
 
             if not str(central_status['cycle']) in stored_data[area]:
                 stored_data[area][str(central_status['cycle'])] = {}
             new_key = len(stored_data[area][str(central_status['cycle'])]) + 1
             stored_data[area][str(central_status['cycle'])][str(new_key)] = metrics
     
-    with open(data_path, 'w') as f:
-        json.dump(stored_data, f, indent=4) 
+    store_file_data(
+        file_lock = file_lock,
+        replace = True,
+        file_folder_path = '',
+        file_path = data_path,
+        data = stored_data
+    )
     
     return True
 # refactored and works
@@ -165,6 +214,7 @@ def store_worker(
         return False
     
     worker_status = None
+    # Concurrency issues
     with open(worker_status_path, 'r') as f:
         worker_status = json.load(f)
 

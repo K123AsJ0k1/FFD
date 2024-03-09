@@ -10,8 +10,8 @@ import numpy as np
 from sklearn.metrics import confusion_matrix
 from torch.utils.data import DataLoader
 
-from functions.general import get_current_experiment_number, get_wanted_model
-from functions.storage import store_metrics_and_resources
+from functions.general import get_current_experiment_number, get_wanted_model, get_file_data
+from functions.storage import store_metrics_and_resources, store_file_data
 # Refactored and works
 class FederatedLogisticRegression(nn.Module):
     def __init__(self, dim, bias=True):
@@ -66,6 +66,7 @@ def get_train_test_loaders(
     return train_loader,test_loader
 # Refactored and works
 def train(
+    file_lock: any,
     logger: any,
     model: any,
     train_loader: any,
@@ -119,6 +120,7 @@ def train(
     }
 
     status = store_metrics_and_resources(
+        file_lock = file_lock,
         type = 'resources',
         subject = 'central',
         area = 'training',
@@ -126,6 +128,7 @@ def train(
     )
 # Refactored and works
 def test(
+    file_lock: any,
     model: any, 
     test_loader: any,
     name: any
@@ -180,6 +183,7 @@ def test(
         }
 
         status = store_metrics_and_resources(
+            file_lock = file_lock,
             type = 'resources',
             subject = 'central',
             area = 'training',
@@ -223,17 +227,21 @@ def test(
         return metrics
 # Created and works
 def evaluate(
+    file_lock: any,
     train_amount: int,
     current_model: any
 ):  
-    storage_folder_path = 'storage'
     current_experiment_number = get_current_experiment_number()
-    eval_tensor_path = storage_folder_path + '/tensors/experiment_' + str(current_experiment_number) + '/eval_0.pt'
+    eval_tensor_path = 'tensors/experiment_' + str(current_experiment_number) + '/eval_0.pt'
+    eval_tensor = get_file_data(
+        file_lock = file_lock,
+        file_path = eval_tensor_path
+    )
 
-    eval_tensor = torch.load(eval_tensor_path)
     eval_loader = DataLoader(eval_tensor, 64)
 
     test_metrics = test(
+        file_lock = file_lock,
         name = 'evalution',
         model = current_model, 
         test_loader = eval_loader
@@ -243,6 +251,7 @@ def evaluate(
     test_metrics['test-amount'] = 0
     test_metrics['eval-amount'] = len(eval_tensor)
     status = store_metrics_and_resources(
+        file_lock = file_lock,
         type = 'metrics',
         subject = 'global',
         area = '',
@@ -250,6 +259,7 @@ def evaluate(
     )
 # Refactored and works
 def initial_model_training(
+    file_lock: any,
     logger: any
 ) -> bool:
     this_process = psutil.Process(os.getpid())
@@ -258,15 +268,12 @@ def initial_model_training(
     cpu_start = this_process.cpu_percent(interval=0.2)
     time_start = time.time()
 
-    storage_folder_path = 'storage'
     current_experiment_number = get_current_experiment_number()
-    central_status_path = storage_folder_path + '/status/experiment_' + str(current_experiment_number) + '/central.txt'
-    if not os.path.exists(central_status_path):
-        return False
-    
-    central_status = None
-    with open(central_status_path, 'r') as f:
-        central_status = json.load(f)
+    central_status_path =  'status/experiment_' + str(current_experiment_number) + '/central.txt'
+    central_status = get_file_data(
+        file_lock = file_lock,
+        file_path = central_status_path
+    )
 
     if not central_status['start']:
         return False
@@ -277,27 +284,34 @@ def initial_model_training(
     if central_status['trained']:
         return False
     
-    model_parameters_path = storage_folder_path + '/parameters/experiment_' + str(current_experiment_number) + '/model.txt'
-    model_parameters = None
-    with open(model_parameters_path, 'r') as f:
-        model_parameters = json.load(f)
-
-    tensor_folder_path = storage_folder_path + '/tensors/experiment_' + str(current_experiment_number)
-    train_tensor_path = tensor_folder_path +  '/train_0.pt'
-    test_tensor_path = tensor_folder_path +  '/test_0.pt'
-
-    train_tensor = torch.load(train_tensor_path)
-    test_tensor = torch.load(test_tensor_path)
-
+    model_parameters_path = 'parameters/experiment_' + str(current_experiment_number) + '/model.txt'
+    model_parameters = get_file_data(
+        file_lock = file_lock,
+        file_path = model_parameters_path
+    )
     torch.manual_seed(model_parameters['seed'])
+    lr_model = FederatedLogisticRegression(dim = model_parameters['input-size'])
+
+    tensor_folder_path = 'tensors/experiment_' + str(current_experiment_number)
+    train_tensor_path = tensor_folder_path +  '/train_0.pt'
+    train_tensor = get_file_data(
+        file_lock = file_lock,
+        file_path = train_tensor_path
+    )
+    test_tensor_path = tensor_folder_path +  '/test_0.pt'
+    test_tensor = get_file_data(
+        file_lock = file_lock,
+        file_path = test_tensor_path
+    )
+
     given_train_loader, given_test_loader = get_train_test_loaders(
         train_tensor = train_tensor,
         test_tensor = test_tensor,
         model_parameters = model_parameters
     )
-    lr_model = FederatedLogisticRegression(dim = model_parameters['input-size'])
     
     train(
+        file_lock = file_lock,
         logger = logger,
         model = lr_model, 
         train_loader = given_train_loader,  
@@ -305,6 +319,7 @@ def initial_model_training(
     )
     
     test_metrics = test(
+        file_lock = file_lock,
         name = 'testing',
         model = lr_model, 
         test_loader = given_test_loader
@@ -314,6 +329,7 @@ def initial_model_training(
     test_metrics['test-amount'] = len(test_tensor)
     test_metrics['eval-amount'] = 0
     status = store_metrics_and_resources(
+        file_lock = file_lock,
         type = 'metrics',
         subject = 'global',
         area = '',
@@ -321,21 +337,33 @@ def initial_model_training(
     )
 
     evaluate(
+        file_lock = file_lock,
         train_amount = len(train_tensor),
         current_model = lr_model
     )
     
+    model_parameters = lr_model.get_parameters(lr_model)
     #The used format for models is global_(cycle)_(updates)_(samples).pth
-    model_experiment_folder = storage_folder_path + '/models/experiment_' + str(current_experiment_number)
-    os.makedirs(model_experiment_folder, exist_ok = True)
-    model_path = model_experiment_folder + '/global_0_0_' + str(central_status['train-amount']) + '.pth'
-    parameters = lr_model.get_parameters(lr_model)
-    torch.save(parameters, model_path)
+    model_folder_path = 'models/experiment_' + str(current_experiment_number)
+    model_path = model_folder_path + '/global_0_0_' + str(central_status['train-amount']) + '.pth'
+    
+    store_file_data(
+        file_lock = file_lock,
+        replace = False,
+        file_folder_path = model_folder_path,
+        file_path = model_path,
+        data = model_parameters 
+    )
     
     central_status['trained'] = True
-    with open(central_status_path, 'w') as f:
-        json.dump(central_status, f, indent=4) 
-
+    store_file_data(
+        file_lock = file_lock,
+        replace = True,
+        file_folder_path = '',
+        file_path = central_status_path,
+        data = central_status
+    )
+    
     time_end = time.time()
     cpu_end = this_process.cpu_percent(interval=0.2)
     mem_end = psutil.virtual_memory().used 
@@ -355,6 +383,7 @@ def initial_model_training(
     }
 
     status = store_metrics_and_resources(
+        file_lock = file_lock,
         type = 'resources',
         subject = 'central',
         area = 'function',
