@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 import json
 
 from functions.storage import store_training_context
@@ -16,6 +16,7 @@ def set_training_context():
     sent_worker_data_columns = sent_payload['worker-data-columns']
     
     payload = store_training_context(
+        file_lock = current_app.file_lock,
         parameters = sent_parameters ,
         global_model = sent_global_model,
         df_data = sent_worker_data_list,

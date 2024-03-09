@@ -7,7 +7,7 @@ from functions.update import send_info_to_central, send_update_to_central
 def status_pipeline(
     task_logger: any
 ):
-    # Works
+    # Check
     status = send_info_to_central(
         logger = task_logger
     )
@@ -16,7 +16,7 @@ def status_pipeline(
 def data_pipeline(
     task_logger: any
 ):
-    # Works
+    # Check
     status = preprocess_into_train_test_and_eval_tensors(
         logger = task_logger
     )
@@ -25,7 +25,7 @@ def data_pipeline(
 def model_pipeline(
     task_logger: any
 ): 
-    # Works
+    # Check
     status = local_model_training(
         logger = task_logger
     )
@@ -34,6 +34,7 @@ def model_pipeline(
 def update_pipeline(
     task_logger: any
 ):
+    # Check
     status = send_update_to_central(
         logger = task_logger
     )

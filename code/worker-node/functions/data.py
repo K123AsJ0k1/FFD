@@ -11,10 +11,11 @@ import psutil
 from sklearn.model_selection import train_test_split
 from torch.utils.data import TensorDataset
 
-from functions.general import get_current_experiment_number
-from functions.storage import store_metrics_and_resources
+from functions.general import get_current_experiment_number, get_file_data
+from functions.storage import store_metrics_and_resources, store_file_data
 # Refactored and works
 def preprocess_into_train_test_and_eval_tensors(
+    file_lock: any,
     logger: any
 ) -> bool:
     this_process = psutil.Process(os.getpid())
@@ -23,15 +24,16 @@ def preprocess_into_train_test_and_eval_tensors(
     cpu_start = this_process.cpu_percent(interval=0.2)
     time_start = time.time()
 
-    storage_folder_path = 'storage'
     current_experiment_number = get_current_experiment_number()
-    worker_status_path = storage_folder_path + '/status/experiment_' + str(current_experiment_number) + '/worker.txt'
-    if not os.path.exists(worker_status_path):
-        return False
+    worker_status_path = 'status/experiment_' + str(current_experiment_number) + '/worker.txt'
     
-    worker_status = None
-    with open(worker_status_path, 'r') as f:
-        worker_status = json.load(f)
+    worker_status = get_file_data(
+        file_lock = file_lock,
+        file_path = worker_status_path
+    )
+
+    if worker_status is None:
+        return False
     
     if worker_status['complete']:
         return False
@@ -41,31 +43,35 @@ def preprocess_into_train_test_and_eval_tensors(
 
     if worker_status['preprocessed']:
         return False
-    
-    worker_data_path = storage_folder_path + '/data/experiment_' + str(current_experiment_number) + '/sample_' + str(worker_status['cycle']) + '.csv'
-    if not os.path.exists(worker_data_path):
-       return False
-    
+
     os.environ['STATUS'] = 'preprocessing'
-
-    model_parameters_path = storage_folder_path + '/parameters/experiment_' + str(current_experiment_number) + '/model.txt'
-    worker_parameters_path = storage_folder_path + '/parameters/experiment_' + str(current_experiment_number) + '/worker.txt'
     
-    model_parameters = None
-    with open(model_parameters_path, 'r') as f:
-        model_parameters = json.load(f) 
+    parameter_folder_path = 'parameters/experiment_' + str(current_experiment_number)
+    model_parameters_path = parameter_folder_path + '/model.txt'
+    worker_parameters_path = parameter_folder_path + '/worker.txt'
 
-    worker_parameters = None
-    with open(worker_parameters_path, 'r') as f:
-        worker_parameters = json.load(f) 
+    model_parameters = get_file_data(
+        file_lock = file_lock,
+        file_path = model_parameters_path
+    )
 
-    tensor_folder_path = storage_folder_path + '/tensors/experiment_' + str(current_experiment_number)
-    os.makedirs(tensor_folder_path, exist_ok = True)
-    train_tensor_path = tensor_folder_path + '/train_' + str(worker_status['cycle']) + '.pt'
-    test_tensor_path = tensor_folder_path + '/test_' + str(worker_status['cycle']) + '.pt'
-    eval_tensor_path = tensor_folder_path + '/eval_' + str(worker_status['cycle']) + '.pt'
-    
-    sample_df = pd.read_csv(worker_data_path)
+    if model_parameters is None:
+        return False
+
+    worker_parameters = get_file_data(
+        file_lock = file_lock,
+        file_path = worker_parameters_path
+    )
+
+    if worker_parameters is None:
+        return False
+
+    worker_data_path = 'data/experiment_' + str(current_experiment_number) + '/sample_' + str(worker_status['cycle']) + '.csv'
+    sample_df = get_file_data(
+        file_lock = file_lock,
+        file_path = worker_data_path
+    )
+
     preprocessed_df = sample_df[model_parameters['used-columns']]
     for column in model_parameters['scaled-columns']:
         mean = preprocessed_df[column].mean()
@@ -109,18 +115,46 @@ def preprocess_into_train_test_and_eval_tensors(
         torch.tensor(X_eval), 
         torch.tensor(y_eval, dtype=torch.float32)
     )
-    
-    torch.save(train_tensor,train_tensor_path)
-    torch.save(test_tensor,test_tensor_path)
-    torch.save(eval_tensor,eval_tensor_path)
 
+    tensor_folder_path = 'tensors/experiment_' + str(current_experiment_number)
+    train_tensor_path = tensor_folder_path + '/train_' + str(worker_status['cycle']) + '.pt'
+    store_file_data(
+        file_lock = file_lock,
+        replace = False,
+        file_folder_path = tensor_folder_path,
+        file_path = train_tensor_path,
+        data = train_tensor
+    )
+    test_tensor_path = tensor_folder_path + '/test_' + str(worker_status['cycle']) + '.pt'
+    store_file_data(
+        file_lock = file_lock,
+        replace = False,
+        file_folder_path = tensor_folder_path,
+        file_path = test_tensor_path,
+        data = test_tensor
+    )
+    eval_tensor_path = tensor_folder_path + '/eval_' + str(worker_status['cycle']) + '.pt'
+    store_file_data(
+        file_lock = file_lock,
+        replace = False,
+        file_folder_path = tensor_folder_path,
+        file_path = eval_tensor_path,
+        data = eval_tensor
+    )
+    
     worker_status['preprocessed'] = True
     worker_status['train-amount'] = X_train.shape[0]
     worker_status['test-amount'] = X_test.shape[0]
     worker_status['eval-amount'] = X_eval.shape[0]
-    with open(worker_status_path, 'w') as f:
-        json.dump(worker_status, f, indent=4)
-
+    
+    store_file_data(
+        file_lock = file_lock,
+        replace = True,
+        file_folder_path = '',
+        file_path = worker_status_path,
+        data = worker_status
+    )
+    
     os.environ['STATUS'] = 'preprocessed'
 
     time_end = time.time()
@@ -142,6 +176,7 @@ def preprocess_into_train_test_and_eval_tensors(
     }
 
     status = store_metrics_and_resources(
+        file_lock = file_lock,
         type = 'resources',
         subject = 'worker',
         area = 'function',

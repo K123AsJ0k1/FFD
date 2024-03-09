@@ -1,8 +1,34 @@
 from flask import current_app
-import os
+import torch 
+import os 
 import json
-import torch
-
+import pandas as pd
+# Created and works
+def get_file_data(
+    file_lock: any,
+    file_path: str
+):
+    storage_folder_path = 'storage'
+    used_file_path = storage_folder_path + '/' + file_path
+    file_data = None
+    if not os.path.exists(used_file_path):
+        return file_data
+    with file_lock:
+        if '.txt' in used_file_path:
+            with open(used_file_path, 'r') as f:
+                file_data = json.load(f)
+        if '.csv' in used_file_path:
+            file_data = pd.read_csv(used_file_path)
+        if '.pt' in used_file_path:
+            file_data = torch.load(used_file_path)
+    return file_data
+# Created and works
+def get_files(
+    folder_path: str
+) -> any:
+    storage_folder_path = 'storage'
+    checked_directory = storage_folder_path + '/' + folder_path
+    return os.listdir(checked_directory)
 # Refactored and works
 def get_worker_logs():
     storage_folder_path = 'storage'
@@ -13,7 +39,7 @@ def get_worker_logs():
     return logs
 # Refactored and works
 def get_current_experiment_number():
-    parameter_files = os.listdir('storage/status')
+    parameter_files = get_files('parameters')
     highest_experiment_number = 0
     for file in parameter_files:
         if not 'template' in file:
@@ -21,7 +47,7 @@ def get_current_experiment_number():
             if highest_experiment_number < experiment_number:
                 highest_experiment_number = experiment_number
     return highest_experiment_number
-# Refactored and works
+# Refactor
 def get_metrics_resources_and_status(
     type: str,
     experiment: int,
@@ -50,7 +76,7 @@ def get_metrics_resources_and_status(
                 with open(data_path, 'r') as f:
                     wanted_data[str(exp_id)] = json.load(f)
     return {'data':wanted_data}
-# Created and works
+# Refactor
 def get_wanted_model(
     experiment: int,
     subject: int,

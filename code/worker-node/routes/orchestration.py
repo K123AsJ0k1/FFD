@@ -1,7 +1,8 @@
-from flask import Blueprint, current_app, request, jsonify, render_template
-import json
+from flask import Blueprint, current_app, request
 
 from functions.storage import store_central_address
+
+import json
 
 orchestration = Blueprint('orchestration', __name__)
 # Created and works
@@ -12,6 +13,7 @@ def set_point_to_central():
     sent_central_address = sent_payload['central-address']
 
     status = store_central_address(
+        file_lock = current_app.file_lock,
         central_address = sent_central_address
     )
 

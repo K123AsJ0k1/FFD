@@ -1,11 +1,14 @@
 from flask import Flask, request
 from apscheduler.schedulers.background import BackgroundScheduler
 
+import threading
 import logging
 import os
 
 def create_app():
     app = Flask(__name__)
+
+    app.file_lock = threading.Lock()
 
     os.makedirs('storage', exist_ok=True)
     os.makedirs('storage/logs', exist_ok=True)
@@ -30,7 +33,9 @@ def create_app():
     app.logger = logger
     
     from functions.initilization import initilize_storage_templates
-    initilize_storage_templates()
+    initilize_storage_templates(
+        file_lock = app.file_lock
+    )
     
     scheduler = BackgroundScheduler(daemon = True)
     from functions.pipeline import status_pipeline
@@ -38,7 +43,10 @@ def create_app():
     from functions.pipeline import data_pipeline
     from functions.pipeline import model_pipeline
 
-    given_args = [app.logger]
+    given_args = [
+        app.file_lock,
+        app.logger
+    ]
     scheduler.add_job(
         func = status_pipeline,
         trigger = "interval",
