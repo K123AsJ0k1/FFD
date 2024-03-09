@@ -32,17 +32,17 @@ def start_training():
 # Refactored and works
 @pipeline.route('/update', methods=["POST"]) 
 def set_worker_update(): 
-    with current_app.file_lock:
-        sent_payload = json.loads(request.json)
-        
-        sent_worker_id = sent_payload['worker-id']
-        sent_local_model = sent_payload['local-model']
-        sent_cycle = sent_payload['cycle']
+    sent_payload = json.loads(request.json)
+    
+    sent_worker_id = sent_payload['worker-id']
+    sent_local_model = sent_payload['local-model']
+    sent_cycle = sent_payload['cycle']
 
-        store_update(
-            id = sent_worker_id,
-            model = sent_local_model,
-            cycle = sent_cycle 
-        ) 
-            
-        return 'Ok', 200
+    store_update(
+        file_lock = current_app.file_lock,
+        id = sent_worker_id,
+        model = sent_local_model,
+        cycle = sent_cycle 
+    ) 
+        
+    return 'Ok', 200

@@ -8,6 +8,7 @@ import pandas as pd
 import psutil
 import time
 import torch
+from pathlib import Path
 
 from collections import OrderedDict
 
@@ -21,13 +22,12 @@ def store_file_data(
     data: any
 ):  
     storage_folder_path = 'storage'
-    perform = False
-    if replace:
-        perform = True
-    if not replace and not os.path.exists(file_path):
-        perform = True
+    perform = True
     used_folder_path = storage_folder_path + '/' + file_folder_path
     used_file_path = storage_folder_path + '/' + file_path
+    relative_path = Path(used_file_path)
+    if not replace and relative_path.exists():
+        perform = False
     if perform:
         with file_lock:
             if not file_folder_path == '':
@@ -249,7 +249,7 @@ def store_worker(
 
     if workers_resources is None:
         return False
-
+    
     if status['id'] == 0:
         # When worker isn't registered either due to being new or failure restart
         duplicate_id = -1

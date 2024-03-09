@@ -13,7 +13,7 @@ from functions.general import get_current_experiment_number, get_file_data
 from functions.storage import store_metrics_and_resources, store_file_data
 from functions.data import data_augmented_sample
 
-# Refactored and works
+# Refactored and works 
 def central_worker_data_split(
     file_lock: any,
     logger: any
@@ -36,12 +36,14 @@ def central_worker_data_split(
     
     if not central_status['start']:
         return False
-
+    
     if central_status['complete']:
         return False
-
+    
     if central_status['data-split']:
         return False
+    
+    os.environ['STATUS'] = 'data splitting'
     
     parameter_folder_path = 'parameters/experiment_' + str(current_experiment_number)
     central_parameters_path = parameter_folder_path + '/central.txt'
@@ -62,14 +64,10 @@ def central_worker_data_split(
 
     if worker_parameters is None:
         return False
-
+    
     data_folder = 'data/experiment_' + str(current_experiment_number)
 
     source_data_path = data_folder + '/source.csv'
-    central_pool_path = data_folder + '/central_pool.csv'
-    worker_pool_path = data_folder + '/worker_pool.csv'
-
-    os.environ['STATUS'] = 'data splitting'
     
     source_df = get_file_data(
         file_lock = file_lock,
@@ -78,10 +76,7 @@ def central_worker_data_split(
     splitted_data_df = source_df.drop('step', axis = 1)
     
     central_data_pool = splitted_data_df.sample(n = central_parameters['sample-pool'])
-    central_indexes = central_data_pool.index.tolist()
-    splitted_data_df.drop(central_indexes)
-    worker_data_pool = splitted_data_df.sample(n = worker_parameters['sample-pool'])
-
+    central_pool_path = data_folder + '/central_pool.csv'
     store_file_data(
         file_lock = file_lock,
         replace = False,
@@ -90,6 +85,10 @@ def central_worker_data_split(
         data = central_data_pool
     )
 
+    central_indexes = central_data_pool.index.tolist()
+    splitted_data_df.drop(central_indexes)
+    worker_data_pool = splitted_data_df.sample(n = worker_parameters['sample-pool'])
+    worker_pool_path = data_folder + '/worker_pool.csv'
     store_file_data(
         file_lock = file_lock,
         replace = False,
@@ -145,7 +144,7 @@ def split_data_between_workers(
     disk_start = psutil.disk_usage('.').used
     cpu_start = this_process.cpu_percent(interval=0.2)
     time_start = time.time()
-
+    
     current_experiment_number = get_current_experiment_number()
     status_folder_path = 'status/experiment_' + str(current_experiment_number)
     central_status_path = status_folder_path + '/central.txt'
@@ -154,10 +153,10 @@ def split_data_between_workers(
         file_lock = file_lock,
         file_path = central_status_path
     )
-
+    
     if central_status is None:
         return False
-
+   
     if not central_status['start']:
         return False
     
@@ -169,7 +168,7 @@ def split_data_between_workers(
     
     if central_status['worker-split']:
         return False
-     
+    
     worker_status_path = status_folder_path + '/workers.txt'
 
     worker_status = get_file_data(
@@ -179,7 +178,7 @@ def split_data_between_workers(
 
     if worker_status is None:
         return False
-
+    
     parameters_folder_path = 'parameters/experiment_' + str(current_experiment_number)
     central_parameters_path = parameters_folder_path + '/central.txt'
     worker_parameters_path = parameters_folder_path + '/worker.txt'
@@ -199,7 +198,7 @@ def split_data_between_workers(
 
     if worker_parameters is None:
         return False
-
+    
     data_folder_path = 'data/experiment_' + str(current_experiment_number)
     worker_pool_path = data_folder_path + '/worker_pool.csv'
     worker_pool_df = get_file_data(
@@ -214,10 +213,10 @@ def split_data_between_workers(
         worker_metadata = worker_status[worker_key]
         if not worker_metadata['stored'] and not worker_metadata['complete']: 
             available_workers.append(worker_key)
+    
     # Could be reconsidered
     if not central_parameters['min-update-amount'] <= len(available_workers):
         return False
-    
     # Might have concurrency issues
     # Format for worker data is worker_(id)_(cycle)_(size).csv
     if worker_parameters['data-augmentation']['active']:
@@ -251,11 +250,10 @@ def split_data_between_workers(
                 data = worker_dfs[index]
             )
             index = index + 1
-
     central_status['worker-split'] = True
     store_file_data(
         file_lock = file_lock,
-        replace = False,
+        replace = True,
         file_folder_path = '',
         file_path = central_status_path,
         data = central_status

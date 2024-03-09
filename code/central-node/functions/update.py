@@ -7,10 +7,10 @@ import requests
 import psutil
 import time
 
-from functions.general import get_current_experiment_number,get_current_global_model, get_file_data
+from functions.general import get_current_experiment_number,get_current_global_model, get_file_data, get_files
 from functions.storage import store_metrics_and_resources, store_file_data
 
-# Refactored and works
+# Refactored and works 
 def send_context_to_workers(
     file_lock: any,
     logger: any
@@ -82,7 +82,9 @@ def send_context_to_workers(
     if worker_parameters is None:
         return False
 
-    global_model = get_current_global_model()
+    global_model = get_current_global_model(
+        file_lock = file_lock
+    )
     formatted_global_model = {
         'weights': global_model['linear.weight'].numpy().tolist(),
         'bias': global_model['linear.bias'].numpy().tolist()
@@ -95,7 +97,7 @@ def send_context_to_workers(
 
         payload_status = {}
         data_folder_path = 'data/experiment_' + str(current_experiment_number)
-        data_files = os.listdir(data_folder_path)
+        data_files = get_files(data_folder_path)
         for worker_key in workers_status.keys():
             this_process = psutil.Process(os.getpid())
             net_mem_start = psutil.virtual_memory().used 
@@ -117,7 +119,11 @@ def send_context_to_workers(
                     if second_split[0] == 'worker':
                         if second_split[1] == worker_key and second_split[2] == str(central_status['cycle']):
                             data_path = data_folder_path + '/' + data_file
-                worker_df = pd.read_csv(data_path)
+                
+                worker_df = get_file_data(
+                    file_lock = file_lock,
+                    file_path = data_path
+                )
                 worker_data_list = worker_df.values.tolist()
                 worker_data_columns = worker_df.columns.tolist()
 

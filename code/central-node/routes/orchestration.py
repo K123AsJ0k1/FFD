@@ -8,16 +8,16 @@ orchestration = Blueprint('orchestration', __name__)
 # Refactored and works
 @orchestration.route('/status', methods=["POST"])
 def worker_status():
-    with current_app.file_lock:
-        received_worker_ip = request.remote_addr
-        sent_payload = json.loads(request.json)
-        sent_status = sent_payload['status']
-        sent_metrics = sent_payload['metrics']
+    received_worker_ip = request.remote_addr
+    sent_payload = json.loads(request.json)
+    sent_status = sent_payload['status']
+    sent_metrics = sent_payload['metrics']
 
-        payload = store_worker(
-            address = received_worker_ip,
-            status = sent_status,
-            metrics = sent_metrics
-        )
+    payload = store_worker(
+        file_lock = current_app.file_lock,
+        address = received_worker_ip,
+        status = sent_status,
+        metrics = sent_metrics
+    )
 
-        return jsonify(payload) 
+    return jsonify(payload) 

@@ -83,6 +83,7 @@ def update_global_model(
         return False
 
     available_updates, collective_sample_size = get_newest_model_updates(
+        file_lock = file_lock,
         current_cycle = central_status['cycle']
     )
     # Could be reconsidered
@@ -99,7 +100,7 @@ def update_global_model(
         file_lock = file_lock,
         replace = False,
         file_folder_path = '',
-        file_path = update_global_model,
+        file_path = update_model_path,
         data = new_global_model
     )
     
@@ -107,7 +108,7 @@ def update_global_model(
     central_status['updated'] = True
     store_file_data(
         file_lock = file_lock,
-        replace = False,
+        replace = True,
         file_folder_path = '',
         file_path = central_status_path,
         data = central_status
@@ -164,10 +165,10 @@ def evalute_global_model(
     
     if not central_status['start']:
         return False
-
+    
     if not central_status['updated']:
         return False
-
+    
     if central_status['evaluated']:
         return False
 
@@ -190,8 +191,10 @@ def evalute_global_model(
 
     if model_parameters is None:
         return False
-
-    current_global_model_parameters = get_current_global_model()
+   
+    current_global_model_parameters = get_current_global_model(
+        file_lock = file_lock
+    )
     lr_model = FederatedLogisticRegression(dim = model_parameters['input-size'])
     lr_model.apply_parameters(lr_model, current_global_model_parameters)
 
@@ -241,6 +244,14 @@ def evalute_global_model(
         central_status['evaluated'] = False
         central_status['worker-updates'] = 0
         central_status['cycle'] = central_status['cycle'] + 1
+
+    store_file_data(
+        file_lock = file_lock,
+        replace = True,
+        file_folder_path = '',
+        file_path = central_status_path,
+        data = central_status
+    )
     
     time_end = time.time()
     cpu_end = this_process.cpu_percent(interval=0.2)
@@ -267,13 +278,5 @@ def evalute_global_model(
         area = 'function',
         metrics = resource_metrics
     ) 
-
-    store_file_data(
-        file_lock = file_lock,
-        replace = False,
-        file_folder_path = '',
-        file_path = central_status_path,
-        data = central_status
-    )
 
     return True

@@ -4,7 +4,6 @@ import torch
 import os 
 import json
 import pandas as pd
-import torch
 # Created and wokrs
 def get_file_data(
     file_lock: any,
@@ -24,6 +23,7 @@ def get_file_data(
         if '.pt' in used_file_path:
             file_data = torch.load(used_file_path)
     return file_data
+# Created
 def get_files(
     folder_path: str
 ) -> any:
@@ -40,7 +40,7 @@ def get_central_logs():
     return logs
 # Refactored and works
 def get_current_experiment_number():
-    parameter_files = os.listdir('storage/parameters')
+    parameter_files = get_files('parameters')
     highest_experiment_number = 0
     for file in parameter_files:
         if not 'templates' in file:

@@ -64,29 +64,35 @@ def model_pipeline(
     task_logger.info('Initial model training:' + str(status))
 # Refactored and works
 def update_pipeline(
+    task_file_lock: any,
     task_logger: any
 ):
     # Check
     status = split_data_between_workers(
+        file_lock = task_file_lock,
         logger = task_logger
     )
     task_logger.info('Worker data split:' + str(status))
     # Check
     status = send_context_to_workers(
+        file_lock = task_file_lock,
         logger = task_logger
     )
     task_logger.info('Worker context sending:' + str(status))
 # Refactored and works
 def aggregation_pipeline(
+    task_file_lock: any,
     task_logger: any
 ):
     # Check
     status = update_global_model(
+        file_lock = task_file_lock,
         logger = task_logger
     )
     task_logger.info('Updating global model:' + str(status))
     # Check
     status = evalute_global_model(
+        file_lock = task_file_lock,
         logger = task_logger
     )
     task_logger.info('Global model evaluation:' + str(status))
