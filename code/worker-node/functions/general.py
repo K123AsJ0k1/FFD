@@ -8,9 +8,11 @@ def get_file_data(
     file_lock: any,
     file_path: str
 ):
+    file_data = None
+    if file_path is None:
+        return file_data
     storage_folder_path = 'storage'
     used_file_path = storage_folder_path + '/' + file_path
-    file_data = None
     if not os.path.exists(used_file_path):
         return file_data
     with file_lock:
@@ -39,7 +41,7 @@ def get_worker_logs():
     return logs
 # Refactored and works
 def get_current_experiment_number():
-    parameter_files = get_files('parameters')
+    parameter_files = get_files('status')
     highest_experiment_number = 0
     for file in parameter_files:
         if not 'template' in file:

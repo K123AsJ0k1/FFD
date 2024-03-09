@@ -5,6 +5,7 @@ import torch
 import os
 import json
 import psutil
+from pathlib import Path
 
 from collections import OrderedDict
 
@@ -18,13 +19,17 @@ def store_file_data(
     data: any
 ):  
     storage_folder_path = 'storage'
-    perform = False
+    perform = True
     if replace:
-        perform = True
-    if not replace and not os.path.exists(file_path):
         perform = True
     used_folder_path = storage_folder_path + '/' + file_folder_path
     used_file_path = storage_folder_path + '/' + file_path
+    relative_path = Path(used_file_path)
+    if not replace and relative_path.exists():
+        perform = False
+    #print(used_file_path)
+    #print(relative_path.exists())
+    
     if perform:
         with file_lock:
             if not file_folder_path == '':
@@ -102,14 +107,16 @@ def store_training_context(
             file_lock = file_lock,
             replace = True,
             file_folder_path = parameters_folder_path,
-            file_path = model_parameters_path
+            file_path = model_parameters_path,
+            data = parameters['model']
         )
 
         store_file_data(
             file_lock = file_lock,
             replace = True,
             file_folder_path = parameters_folder_path,
-            file_path = worker_parameters_path
+            file_path = worker_parameters_path,
+            data = parameters['worker']
         )
 
         worker_status['preprocessed'] = False
@@ -151,8 +158,8 @@ def store_training_context(
             data = worker_df
         )
         worker_status['preprocessed'] = False
-    
-    worker_resource_path = 'resources/experiment_' + str(current_experiment_number) + '/worker.txt'
+    resource_folder_path = 'resources/experiment_' + str(current_experiment_number)
+    worker_resource_path = resource_folder_path + '/worker.txt'
     resource_template = {
         'general': {
             'physical-cpu-amount': psutil.cpu_count(logical=False),
@@ -173,7 +180,7 @@ def store_training_context(
     store_file_data(
         file_lock = file_lock,
         replace = False,
-        file_folder_path = '',
+        file_folder_path = resource_folder_path,
         file_path = worker_resource_path,
         data = resource_template
     )

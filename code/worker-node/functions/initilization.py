@@ -180,6 +180,7 @@ def initilize_storage_templates(
         second_split = first_split[0].split('/')
         path_template = templates[second_split[0]][second_split[2]]
         template_folder_path = second_split[0] + '/templates'
+        # This replaces 
         store_file_data(
             file_lock = file_lock,
             replace = False,

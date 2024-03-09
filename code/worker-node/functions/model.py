@@ -349,7 +349,7 @@ def local_model_training(
         area = '',
         metrics = test_metrics
     )
-    local_model_path = models_folder_path + 'local_' + str(worker_status['cycle']) + '.pth'
+    local_model_path = models_folder_path + '/local_' + str(worker_status['cycle']) + '.pth'
     local_model_parameters = lr_model.get_parameters(lr_model)
     
     store_file_data(

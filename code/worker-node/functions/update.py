@@ -40,7 +40,7 @@ def send_info_to_central(
         file_lock = file_lock,
         file_path = worker_status_path
     )
-
+    
     if worker_status is None:
         return False
 
@@ -69,6 +69,7 @@ def send_info_to_central(
     # key order changes
     # Refactor to have failure fixing
     address = worker_status['central-address'] + '/status'
+    
     payload = json.dumps(info) 
     try:
         response = requests.post(
@@ -102,9 +103,6 @@ def send_info_to_central(
                     local_metrics = sent_payload['metrics']['local']
                     worker_resources = sent_payload['metrics']['resources']
                     if not len(local_metrics) == 0: 
-                        #with open(local_metrics_path, 'w') as f:
-                        #    json.dump(local_metrics, f, indent=4
-                        #)
                         store_file_data(
                             file_lock = file_lock,
                             replace = True,
@@ -113,8 +111,6 @@ def send_info_to_central(
                             data = local_metrics
                         )
                     if not len(worker_resources) == 0:
-                        #with open(worker_resources_path, 'w') as f:
-                        #    json.dump(worker_resources, f, indent=4)
                         store_file_data(
                             file_lock = file_lock,
                             replace = True,
@@ -141,13 +137,14 @@ def send_info_to_central(
             if message == 'rerouted':
                 worker_status['id'] = sent_payload['status']['id']
 
-            store_file_data(
-                file_lock = file_lock,
-                replace = True,
-                file_folder_path = '',
-                file_path = worker_status,
-                data = {}
-            )
+            if not message == 'checked':
+                store_file_data(
+                    file_lock = file_lock,
+                    replace = True,
+                    file_folder_path = worker_folder_path,
+                    file_path = worker_status_path,
+                    data = worker_status
+                )
             
             time_end = time.time()
             cpu_end = this_process.cpu_percent(interval=0.2)
@@ -228,6 +225,9 @@ def send_update_to_central(
         file_lock = file_lock,
         file_path = worker_status_path
     )
+
+    if worker_status is None:
+        return False
     
     if not worker_status['stored'] or not worker_status['preprocessed'] or not worker_status['trained']:
         return False
