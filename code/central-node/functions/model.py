@@ -275,6 +275,9 @@ def initial_model_training(
         file_path = central_status_path
     )
 
+    if central_status is None:
+        return False
+
     if not central_status['start']:
         return False
 

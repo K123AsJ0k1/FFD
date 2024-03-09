@@ -66,12 +66,12 @@ def model_pipeline(
 def update_pipeline(
     task_logger: any
 ):
-    # Works
+    # Check
     status = split_data_between_workers(
         logger = task_logger
     )
     task_logger.info('Worker data split:' + str(status))
-    # Works
+    # Check
     status = send_context_to_workers(
         logger = task_logger
     )
@@ -80,12 +80,12 @@ def update_pipeline(
 def aggregation_pipeline(
     task_logger: any
 ):
-    # Works
+    # Check
     status = update_global_model(
         logger = task_logger
     )
     task_logger.info('Updating global model:' + str(status))
-    # Works
+    # Check
     status = evalute_global_model(
         logger = task_logger
     )

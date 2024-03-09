@@ -6,12 +6,13 @@ import json
 import copy
 import pandas as pd
 import psutil
+import time
 import torch
 
 from collections import OrderedDict
 
 from functions.general import get_current_experiment_number, get_file_data
-# Created
+# Created and works
 def store_file_data(
     file_lock: any,
     replace: bool,
@@ -53,6 +54,10 @@ def store_training_context(
             file_lock = file_lock,
             file_path = central_status_path
         )
+
+        if central_status is None:
+            return False
+
         if not central_status['complete']:
             return False
 
@@ -193,54 +198,65 @@ def store_metrics_and_resources(
     return True
 # refactored and works
 def store_worker(
+    file_lock: any,
     address: str,
     status: any,
     metrics: any
 ) -> any:
-    storage_folder_path = 'storage'
+    this_process = psutil.Process(os.getpid())
+    mem_start = psutil.virtual_memory().used 
+    disk_start = psutil.disk_usage('.').used
+    cpu_start = this_process.cpu_percent(interval=0.2)
+    time_start = time.time()
+
     current_experiment_number = get_current_experiment_number()
-    status_folder_path = storage_folder_path + '/status/experiment_' + str(current_experiment_number)
+    status_folder_path = 'status/experiment_' + str(current_experiment_number)
     
     central_status_path = status_folder_path + '/central.txt'
-    if not os.path.exists(central_status_path):
-        return False
-    
-    central_status = None
-    with open(central_status_path, 'r') as f:
-        central_status = json.load(f)
 
-    worker_status_path = status_folder_path + '/workers.txt'
-    if not os.path.exists(worker_status_path):
-        return False
-    
-    worker_status = None
-    # Concurrency issues
-    with open(worker_status_path, 'r') as f:
-        worker_status = json.load(f)
+    central_status = get_file_data(
+        file_lock = file_lock,
+        file_path = central_status_path
+    )
 
-    local_metrics_path = storage_folder_path + '/metrics/experiment_' + str(current_experiment_number) + '/local.txt'
-    if not os.path.exists(local_metrics_path):
+    if central_status is None:
         return False
     
-    local_metrics = None
-    with open(local_metrics_path, 'r') as f:
-        local_metrics = json.load(f)
+    workers_status_path = status_folder_path + '/workers.txt'
+    workers_status = get_file_data(
+        file_lock = file_lock,
+        file_path = workers_status_path
+    )
 
-    workers_resources_path = storage_folder_path + '/resources/experiment_' + str(current_experiment_number) + '/workers.txt'
-    if not os.path.exists(workers_resources_path):
+    if workers_status is None:
         return False
     
-    workers_resources = None
-    with open(workers_resources_path, 'r') as f:
-        workers_resources = json.load(f)
+    local_metrics_path =  'metrics/experiment_' + str(current_experiment_number) + '/local.txt'
+    local_metrics = get_file_data(
+        file_lock = file_lock,
+        file_path = local_metrics_path 
+    )
+
+    if local_metrics is None:
+        return False
+
+    workers_resources_path = 'resources/experiment_' + str(current_experiment_number) + '/workers.txt'
+
+    workers_resources = get_file_data(
+        file_lock = file_lock,
+        file_path = workers_resources_path 
+    )
+
+    if workers_resources is None:
+        return False
 
     if status['id'] == 0:
         # When worker isn't registered either due to being new or failure restart
         duplicate_id = -1
         used_keys = []
         
-        for worker_key in worker_status.keys():
-            worker_metadata = worker_status[worker_key]
+        for worker_key in workers_status.keys():
+            worker_metadata = workers_status[worker_key]
             if worker_metadata['worker-address'] == status['worker-address']:
                 duplicate_id = int(worker_key)
             used_keys.append(int(worker_key))
@@ -256,7 +272,7 @@ def store_worker(
         if -1 < duplicate_id:
             old_local_metrics = local_metrics[str(duplicate_id)]
             old_resources = workers_resources[str(duplicate_id)]
-            del worker_status[str(duplicate_id)]
+            del workers_status[str(duplicate_id)]
             del local_metrics[str(duplicate_id)]
             del workers_resources[str(duplicate_id)]
 
@@ -269,18 +285,33 @@ def store_worker(
         status['worker-address'] = 'http://' + address + ':7500'
         status['cycle'] = central_status['cycle']
 
-        worker_status[str(smallest_missing_id)] = status
+        workers_status[str(smallest_missing_id)] = status
         local_metrics[str(smallest_missing_id)] = old_local_metrics
         workers_resources[str(smallest_missing_id)] = old_resources
 
-        with open(worker_status_path, 'w') as f:
-            json.dump(worker_status, f, indent=4)
+        store_file_data(
+            file_lock = file_lock,
+            replace = True,
+            file_folder_path = '',
+            file_path = workers_status_path,
+            data = workers_status,
+        )
 
-        with open(local_metrics_path, 'w') as f:
-            json.dump(local_metrics, f, indent=4)
+        store_file_data(
+            file_lock = file_lock,
+            replace = True,
+            file_folder_path = '',
+            file_path = local_metrics_path,
+            data = local_metrics,
+        )
 
-        with open(workers_resources_path, 'w') as f:
-            json.dump(workers_resources, f, indent=4)
+        store_file_data(
+            file_lock = file_lock,
+            replace = True,
+            file_folder_path = '',
+            file_path = workers_resources_path,
+            data = workers_resources,
+        )
 
         existing_metrics = {
             'local': old_local_metrics,
@@ -290,20 +321,46 @@ def store_worker(
         payload = {
             'message': 'registered', 
             'experiment_id': current_experiment_number,
-            'status': worker_status[str(smallest_missing_id)], 
+            'status': workers_status[str(smallest_missing_id)], 
             'metrics': existing_metrics
         }
+
+        time_end = time.time()
+        cpu_end = this_process.cpu_percent(interval=0.2)
+        mem_end = psutil.virtual_memory().used 
+        disk_end = psutil.disk_usage('.').used
+
+        time_diff = (time_end - time_start) 
+        cpu_diff = cpu_end - cpu_start 
+        mem_diff = (mem_end - mem_start) / (1024 ** 2) 
+        disk_diff = (disk_end - disk_start) / (1024 ** 2)
+
+        resource_metrics = {
+            'name': 'store-worker-' + str(smallest_missing_id),
+            'time-seconds': round(time_diff,5),
+            'cpu-percentage': cpu_diff,
+            'ram-megabytes': round(mem_diff,5),
+            'disk-megabytes': round(disk_diff,5)
+        }
+
+        status = store_metrics_and_resources(
+            file_lock = file_lock,
+            type = 'resources',
+            subject = 'central',
+            area = 'function',
+            metrics = resource_metrics
+        )
         
         return payload 
     else:
         # New experiment has been started
         action = ''
-        if not len(worker_status) == 0:
-            worker_metadata = worker_status[str(status['id'])]
+        if not len(workers_status) == 0:
+            worker_metadata = workers_status[str(status['id'])]
             if worker_metadata['worker-address'] == 'http://' + address + ':7500':
                 # When worker is already registered and address has stayed the same
                 if not status is None:
-                    worker_status[str(status['id'])] = status
+                    workers_status[str(status['id'])] = status
                 if not metrics['local'] is None:
                     local_metrics[str(status['id'])] = metrics['local']
                 if not metrics['resources'] is None:
@@ -313,7 +370,7 @@ def store_worker(
                 # When worker id has stayed the same, but address has changed due to load balancing
                 if not status is None:
                     status['worker-address'] = 'http://' + address + ':7500'
-                    worker_status[str(status['id'])] = status
+                    workers_status[str(status['id'])] = status
                 if not metrics['local'] is None:
                     local_metrics[str(status['id'])] = metrics['local']
                 if not metrics['resources'] is None:
@@ -322,40 +379,88 @@ def store_worker(
         else:
             action = 'experiment'
         # status key order doesn't stay the same
-        with open(worker_status_path, 'w') as f:
-            json.dump(worker_status, f, indent=4)
-            
-        with open(local_metrics_path, 'w') as f:
-            json.dump(local_metrics, f, indent=4)
+        store_file_data(
+            file_lock = file_lock,
+            replace = True,
+            file_folder_path = '',
+            file_path = workers_status_path,
+            data = workers_status,
+        )
 
-        with open(workers_resources_path, 'w') as f:
-            json.dump(workers_resources, f, indent=4)
+        store_file_data(
+            file_lock = file_lock,
+            replace = True,
+            file_folder_path = '',
+            file_path = local_metrics_path,
+            data = local_metrics,
+        )
+
+        store_file_data(
+            file_lock = file_lock,
+            replace = True,
+            file_folder_path = '',
+            file_path = workers_resources_path,
+            data = workers_resources,
+        )
 
         payload = {
             'message': action, 
             'experiment_id': current_experiment_number,
-            'status': worker_status, 
+            'status': workers_status[str(status['id'])], 
             'metrics': None
         }
+
+        time_end = time.time()
+        cpu_end = this_process.cpu_percent(interval=0.2)
+        mem_end = psutil.virtual_memory().used 
+        disk_end = psutil.disk_usage('.').used
+
+        time_diff = (time_end - time_start) 
+        cpu_diff = cpu_end - cpu_start 
+        mem_diff = (mem_end - mem_start) / (1024 ** 2) 
+        disk_diff = (disk_end - disk_start) / (1024 ** 2)
+
+        resource_metrics = {
+            'name': 'store-worker-' + str(status['id']),
+            'time-seconds': round(time_diff,5),
+            'cpu-percentage': cpu_diff,
+            'ram-megabytes': round(mem_diff,5),
+            'disk-megabytes': round(disk_diff,5)
+        }
+
+        status = store_metrics_and_resources(
+            file_lock = file_lock,
+            type = 'resources',
+            subject = 'central',
+            area = 'function',
+            metrics = resource_metrics
+        )
 
         return payload
 # Refactored and works
 def store_update( 
+    file_lock: any,
     id: str,
     model: any,
     cycle: int
 ) -> bool:
-    storage_folder_path = 'storage'
+    this_process = psutil.Process(os.getpid())
+    mem_start = psutil.virtual_memory().used 
+    disk_start = psutil.disk_usage('.').used
+    cpu_start = this_process.cpu_percent(interval=0.2)
+    time_start = time.time()
+
     current_experiment_number = get_current_experiment_number()
-    status_folder_path = storage_folder_path + '/status/experiment_' + str(current_experiment_number)
+    status_folder_path = 'status/experiment_' + str(current_experiment_number)
 
     central_status_path = status_folder_path + '/central.txt'
-    if not os.path.exists(central_status_path):
+    central_status = get_file_data(
+        file_lock = file_lock,
+        file_path = central_status_path
+    )
+
+    if central_status is None:
         return False
-    
-    central_status = None
-    with open(central_status_path, 'r') as f:
-        central_status = json.load(f)
 
     if not central_status['cycle'] == cycle:
         return False 
@@ -370,15 +475,17 @@ def store_update(
         return False
     
     workers_status_path = status_folder_path + '/workers.txt'
-    if not os.path.exists(workers_status_path):
+    
+    workers_status = get_file_data(
+        file_lock = file_lock,
+        file_path = workers_status_path
+    )
+
+    if workers_status is None:
         return False
 
-    workers_status = None
-    with open(workers_status_path, 'r') as f:
-        workers_status = json.load(f)
-
     # Model format is local_(worker id)_(cycle)_(train_amount).pth
-    local_model_folder_path = storage_folder_path + '/models/experiment_' + str(current_experiment_number)
+    local_model_folder_path = 'models/experiment_' + str(current_experiment_number)
     train_amount = workers_status[id]['train-amount']
     local_model_path = local_model_folder_path + '/local_'  + str(id) + '_' + str(central_status['cycle']) + '_' + str(train_amount) + '.pth'
     
@@ -386,15 +493,57 @@ def store_update(
         ('linear.weight', torch.tensor(model['weights'],dtype=torch.float32)),
         ('linear.bias', torch.tensor(model['bias'],dtype=torch.float32))
     ])
-    
-    torch.save(formatted_model, local_model_path)
+
+    store_file_data(
+        file_lock = file_lock,
+        replace = False,
+        file_folder_path = local_model_folder_path,
+        file_path = local_model_path,
+        data = formatted_model
+    )
     
     workers_status[id]['status'] = 'complete'
-    with open(workers_status_path, 'w') as f:
-        json.dump(workers_status, f, indent=4) 
+    store_file_data(
+        file_lock = file_lock,
+        replace = True,
+        file_folder_path = '',
+        file_path = workers_status_path,
+        data =  workers_status
+    )
 
     central_status['worker-updates'] = central_status['worker-updates'] + 1
-    with open(central_status_path, 'w') as f:
-        json.dump(central_status, f, indent=4) 
+    store_file_data(
+        file_lock = file_lock,
+        replace = True,
+        file_folder_path = '',
+        file_path = central_status_path,
+        data =  central_status
+    )
 
+    time_end = time.time()
+    cpu_end = this_process.cpu_percent(interval=0.2)
+    mem_end = psutil.virtual_memory().used 
+    disk_end = psutil.disk_usage('.').used
+
+    time_diff = (time_end - time_start) 
+    cpu_diff = cpu_end - cpu_start 
+    mem_diff = (mem_end - mem_start) / (1024 ** 2) 
+    disk_diff = (disk_end - disk_start) / (1024 ** 2)
+
+    resource_metrics = {
+        'name': 'update-from-worker-' + str(id),
+        'time-seconds': round(time_diff,5),
+        'cpu-percentage': cpu_diff,
+        'ram-megabytes': round(mem_diff,5),
+        'disk-megabytes': round(disk_diff,5)
+    }
+
+    status = store_metrics_and_resources(
+        file_lock = file_lock,
+        type = 'resources',
+        subject = 'central',
+        area = 'function',
+        metrics = resource_metrics
+    )
+    
     return True
