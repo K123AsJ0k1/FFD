@@ -3,6 +3,7 @@ import json
 import requests
 import psutil
 import time
+from datetime import datetime
 
 from functions.general import get_current_experiment_number, get_file_data, get_wanted_model
 from functions.storage import store_metrics_and_resources, store_file_data
@@ -107,6 +108,14 @@ def send_info_to_central(
                             file_path = local_metrics_path,
                             data = local_metrics
                         )
+                    else:
+                        store_file_data(
+                            file_lock = file_lock,
+                            replace = True,
+                            file_folder_path = metrics_folder_path,
+                            file_path = local_metrics_path,
+                            data = {}
+                        )
                     if not len(worker_resources) == 0:
                         store_file_data(
                             file_lock = file_lock,
@@ -115,7 +124,80 @@ def send_info_to_central(
                             file_path = worker_resources_path,
                             data = worker_resources
                         )
+                    else:
+                        resource_template = {
+                            'general': {
+                                'physical-cpu-amount': psutil.cpu_count(logical=False),
+                                'total-cpu-amount': psutil.cpu_count(logical=True),
+                                'min-cpu-frequency-mhz': psutil.cpu_freq().min,
+                                'max-cpu-frequency-mhz': psutil.cpu_freq().max,
+                                'total-ram-amount-bytes': psutil.virtual_memory().total,
+                                'available-ram-amount-bytes': psutil.virtual_memory().free,
+                                'total-disk-amount-bytes': psutil.disk_usage('.').total,
+                                'available-disk-amount-bytes': psutil.disk_usage('.').free,
+                                'times': {
+                                    'experiment-date': 0,
+                                    'experiment-time-start': 0,
+                                    'experiment-time-end': 0,
+                                    'experiment-total-seconds':0
+                                }
+                            },
+                            'function': {},
+                            'network': {},
+                            'training': {},
+                            'inference': {}
+                        }
+                        store_file_data(
+                            file_lock = file_lock,
+                            replace = True,
+                            file_folder_path = resource_folder_path,
+                            file_path = worker_resources_path,
+                            data = resource_template
+                        )
                 if message == 'experiment':
+                    store_file_data(
+                        file_lock = file_lock,
+                        replace = True,
+                        file_folder_path = metrics_folder_path,
+                        file_path = local_metrics_path,
+                        data = {}
+                    )
+
+                    resource_template = {
+                        'general': {
+                            'physical-cpu-amount': psutil.cpu_count(logical=False),
+                            'total-cpu-amount': psutil.cpu_count(logical=True),
+                            'min-cpu-frequency-mhz': psutil.cpu_freq().min,
+                            'max-cpu-frequency-mhz': psutil.cpu_freq().max,
+                            'total-ram-amount-bytes': psutil.virtual_memory().total,
+                            'available-ram-amount-bytes': psutil.virtual_memory().free,
+                            'total-disk-amount-bytes': psutil.disk_usage('.').total,
+                            'available-disk-amount-bytes': psutil.disk_usage('.').free,
+                            'times': {
+                                'experiment-date': 0,
+                                'experiment-time-start': 0,
+                                'experiment-time-end': 0,
+                                'experiment-total-seconds':0,
+                                '1':{
+                                    'cycle-time-start':0,
+                                    'cycle-time-end':0,
+                                    'cycle-total-seconds':0
+                                }
+                            }
+                        },
+                        'function': {},
+                        'network': {},
+                        'training': {},
+                        'inference': {}
+                    }
+                    store_file_data(
+                        file_lock = file_lock,
+                        replace = True,
+                        file_folder_path = resource_folder_path,
+                        file_path = worker_resources_path,
+                        data = resource_template
+                    )
+
                     worker_status_template_path = 'status/templates/worker.txt'
                     worker_status = get_file_data(
                         file_lock = file_lock,
@@ -267,6 +349,26 @@ def send_update_to_central(
             )
             if response.status_code == 200:
                 success = True
+
+                worker_resources_path = 'resources/experiment_' + str(current_experiment_number) + '/worker.txt'
+                worker_resources = get_file_data(
+                    file_lock = file_lock,
+                    file_path = worker_resources_path
+                )
+                # Potential info loss
+                cycle_start = worker_resources['general']['times'][str(worker_status['cycle'])]['cycle-time-start']
+                cycle_end = time.time()
+                cycle_total = cycle_end-cycle_start
+                worker_resources['general']['times'][str(worker_status['cycle'])]['cycle-time-end'] = cycle_end
+                worker_resources['general']['times'][str(worker_status['cycle'])]['cycle-total-seconds'] = cycle_total
+                store_file_data(
+                    file_lock = file_lock,
+                    replace = True,
+                    file_folder_path = '',
+                    file_path = worker_resources_path,
+                    data = worker_resources
+                )
+
                 worker_status['updated'] = True
                 worker_status['stored'] = False
                 store_file_data(

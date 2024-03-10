@@ -4,6 +4,8 @@ import os
 import json
 import psutil
 from pathlib import Path
+from datetime import datetime
+import time
 
 from collections import OrderedDict
 
@@ -154,7 +156,32 @@ def store_training_context(
             data = worker_df
         )
         worker_status['preprocessed'] = False
+
+    worker_resources_path = 'resources/experiment_' + str(current_experiment_number) + '/worker.txt'
+    worker_resources = get_file_data(
+        file_lock = file_lock,
+        file_path = worker_resources_path
+    )
     
+    if worker_status['complete']:
+        experiment_start = worker_resources['general']['times']['experiment-time-start']
+        experiment_end = time.time()
+        experiment_total = experiment_end - experiment_start
+        worker_resources['general']['times']['experiment-time-end'] = experiment_end
+        worker_resources['general']['times']['experiment-total-seconds'] = experiment_total
+    else:
+        if str(worker_status['cycle']) == '1':
+            worker_resources['general']['times']['experiment-date'] = datetime.now().strftime('%Y-%m-%d-%H:%M:%S.%f')
+            worker_resources['general']['times']['experiment-time-start'] = time.time()
+
+    store_file_data(
+        file_lock = file_lock,
+        replace = True,
+        file_folder_path = '',
+        file_path = worker_resources_path,
+        data = worker_resources
+    )
+
     worker_status['stored'] = True
     store_file_data(
         file_lock = file_lock,
@@ -216,22 +243,7 @@ def store_metrics_and_resources(
             )
 
             if stored_data is None:
-                stored_data = {
-                    'general': {
-                        'physical-cpu-amount': psutil.cpu_count(logical=False),
-                        'total-cpu-amount': psutil.cpu_count(logical=True),
-                        'min-cpu-frequency-mhz': psutil.cpu_freq().min,
-                        'max-cpu-frequency-mhz': psutil.cpu_freq().max,
-                        'total-ram-amount-bytes': psutil.virtual_memory().total,
-                        'available-ram-amount-bytes': psutil.virtual_memory().free,
-                        'total-disk-amount-bytes': psutil.disk_usage('.').total,
-                        'available-disk-amount-bytes': psutil.disk_usage('.').free
-                    },
-                    'function': {},
-                    'network': {},
-                    'training': {},
-                    'inference': {}
-                }
+                return False
 
             if not str(worker_status['cycle']) in stored_data[area]:
                 stored_data[area][str(worker_status['cycle'])] = {}

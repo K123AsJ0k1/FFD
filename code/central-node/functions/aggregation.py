@@ -260,6 +260,31 @@ def evalute_global_model(
         central_status['worker-updates'] = 0
         central_status['cycle'] = central_status['cycle'] + 1
 
+    central_resources_path = 'resources/experiment_' + str(current_experiment_number) + '/central.txt'
+    central_resources = get_file_data(
+        file_lock = file_lock,
+        file_path = central_resources_path
+    )
+    # Potential info loss
+    cycle_start = central_resources['general']['times'][str(central_status['cycle']-1)]['cycle-time-start']
+    cycle_end = time.time()
+    cycle_total = cycle_end-cycle_start
+    central_resources['general']['times'][str(central_status['cycle']-1)]['cycle-time-end'] = cycle_end
+    central_resources['general']['times'][str(central_status['cycle']-1)]['cycle-total-seconds'] = cycle_total
+    if not central_status['complete']:
+        central_resources['general']['times'][str(central_status['cycle'])] = {
+            'cycle-time-start':time.time(),
+            'cycle-time-end': 0,
+            'cycle-total-seconds': 0
+        }
+    store_file_data(
+        file_lock = file_lock,
+        replace = True,
+        file_folder_path = '',
+        file_path = central_resources_path,
+        data = central_resources
+    )
+        
     store_file_data(
         file_lock = file_lock,
         replace = True,

@@ -6,6 +6,7 @@ import pandas as pd
 import psutil
 import time
 import torch
+from datetime import datetime
 
 from pathlib import Path
 from collections import OrderedDict
@@ -100,7 +101,18 @@ def store_training_context(
                     'total-ram-amount-bytes': psutil.virtual_memory().total,
                     'available-ram-amount-bytes': psutil.virtual_memory().free,
                     'total-disk-amount-bytes': psutil.disk_usage('.').total,
-                    'available-disk-amount-bytes': psutil.disk_usage('.').free
+                    'available-disk-amount-bytes': psutil.disk_usage('.').free,
+                    'times': {
+                        'experiment-date': datetime.now().strftime('%Y-%m-%d-%H:%M:%S.%f'),
+                        'experiment-time-start': time.time(),
+                        'experiment-time-end': 0,
+                        'experiment-total-seconds':0,
+                        '1':{
+                            'cycle-time-start':0,
+                            'cycle-time-end':0,
+                            'cycle-total-seconds':0
+                        }
+                    }
                 },
                 'function': {},
                 'network': {},
@@ -179,7 +191,7 @@ def store_metrics_and_resources(
 
             if stored_data is None:
                 return False
-
+            
             if not str(central_status['cycle']) in stored_data[area]:
                 stored_data[area][str(central_status['cycle'])] = {}
             new_key = len(stored_data[area][str(central_status['cycle'])]) + 1

@@ -84,7 +84,7 @@ def send_context_to_workers(
         file_lock = file_lock,
         experiment = current_experiment_number,
         subject = 'global',
-        cycle = central_status['cycle']
+        cycle = central_status['cycle']-1
     )
 
     formatted_global_model = {
@@ -224,6 +224,26 @@ def send_context_to_workers(
                 os.environ['STATUS'] = 'waiting updates'
             else: 
                 os.environ['STATUS'] = 'training complete'
+
+    if central_status['complete']:
+        central_resources_path = 'resources/experiment_' + str(current_experiment_number) + '/central.txt'
+        central_resources = get_file_data(
+            file_lock = file_lock,
+            file_path = central_resources_path
+        )
+        # Potential info loss
+        experiment_start = central_resources['general']['times']['experiment-time-start']
+        experiment_end = time.time()
+        experiment_total = experiment_end - experiment_start
+        central_resources['general']['times']['experiment-time-end'] = experiment_end
+        central_resources['general']['times']['experiment-total-seconds'] = experiment_total
+        store_file_data(
+            file_lock = file_lock,
+            replace = True,
+            file_folder_path = '',
+            file_path = central_resources_path,
+            data = central_resources
+        )
             
     store_file_data(
         file_lock = file_lock,

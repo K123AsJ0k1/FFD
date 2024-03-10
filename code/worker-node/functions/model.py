@@ -290,8 +290,7 @@ def local_model_training(
     )
 
     models_folder_path = 'models/experiment_' + str(current_experiment_number)
-    #global_model_path = models_folder_path + '/global_' + str(worker_status['cycle']-1) + '.pth'
-
+    
     global_model_parameters = get_wanted_model(
         file_lock = file_lock,
         experiment = current_experiment_number,

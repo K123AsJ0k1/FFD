@@ -106,12 +106,10 @@ def get_wanted_model(
             if str(cycle) == second_split[1]:
                 wanted_model_path = model_folder_path + '/' + model
         if 'local' in subject:
-            worker_id = str(subject.split('-')[1])
             first_split = model.split('.')
             second_split = first_split[0].split('_')
-            if worker_id == second_split[1]:
-                if str(cycle) == second_split[2]:
-                    wanted_model_path = model_folder_path + '/' + model
+            if str(cycle) == second_split[1]:
+                wanted_model_path = model_folder_path + '/' + model
     
     wanted_model = get_file_data(
         file_lock = file_lock,

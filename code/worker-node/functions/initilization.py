@@ -75,7 +75,18 @@ def initilize_storage_templates(
             'total-ram-amount-bytes': 0.0,
             'available-ram-amount-bytes': 0.0,
             'total-disk-amount-bytes': 0.0,
-            'available-disk-amount-bytes': 0.0
+            'available-disk-amount-bytes': 0.0,
+            'times': {
+                'experiment-date': '2024-9-28-14:43:23.042',
+                'experiment-time-start':0,
+                'experiment-time-end':0,
+                'experiment-total-seconds': 0,
+                '1': {
+                    'cycle-time-start':0,
+                    'cycle-time-end':0,
+                    'cycle-total-seconds':0
+                }
+            }
         },
         'function': {
             '1': {

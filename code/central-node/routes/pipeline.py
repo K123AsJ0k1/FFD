@@ -27,7 +27,8 @@ def start_training():
     status = start_pipeline(
         file_lock = current_app.file_lock
     )
-    return 'Ok', 200
+    current_app.logger.info('Starting training: ' + str(status))
+    return jsonify({'training': status})
 # Refactored and works
 @pipeline.route('/update', methods=["POST"]) 
 def set_worker_update(): 
