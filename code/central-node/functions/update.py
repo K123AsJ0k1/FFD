@@ -7,7 +7,7 @@ import requests
 import psutil
 import time
 
-from functions.general import get_current_experiment_number,get_current_global_model, get_file_data, get_files
+from functions.general import get_current_experiment_number, get_wanted_model, get_file_data, get_files
 from functions.storage import store_metrics_and_resources, store_file_data
 
 # Refactored and works 
@@ -45,7 +45,8 @@ def send_context_to_workers(
     if central_status['sent']:
         return False
     
-    os.environ['STATUS'] = 'sending'
+    os.environ['STATUS'] = 'sending context to workers'
+    logger.info('Sending context to workers')
 
     workers_status_path = status_folder_path + '/workers.txt'
     workers_status = get_file_data(
@@ -81,17 +82,21 @@ def send_context_to_workers(
 
     if worker_parameters is None:
         return False
-
-    global_model = get_current_global_model(
-        file_lock = file_lock
+    
+    global_model = get_wanted_model(
+        file_lock = file_lock,
+        experiment = current_experiment_number,
+        subject = 'global',
+        cycle = central_status['cycle']
     )
+
     formatted_global_model = {
         'weights': global_model['linear.weight'].numpy().tolist(),
         'bias': global_model['linear.bias'].numpy().tolist()
     }
-    # Refactor to have failure fixing
+    # Refactor to have failure fixing 
     success = False
-    for i in range(0,50):
+    for i in range(0,10):
         if success:
             break
 
@@ -106,7 +111,7 @@ def send_context_to_workers(
             net_time_start = time.time()
             
             worker_metadata = workers_status[worker_key]
-            if not worker_metadata['status'] == 'waiting':
+            if worker_metadata['stored']:
                 continue
 
             worker_url = worker_metadata['worker-address'] + '/context'
@@ -169,7 +174,7 @@ def send_context_to_workers(
                 )
 
                 sent_message = json.loads(response.text)
-                
+                # Needs refactoring
                 payload_status[worker_key] = {
                     'response': response.status_code,
                     'message': sent_message['message']
@@ -182,8 +187,8 @@ def send_context_to_workers(
 
                 net_time_diff = (net_time_end - net_time_start) 
                 net_cpu_diff = net_cpu_end - net_cpu_start 
-                net_mem_diff = (net_mem_end - net_mem_start) / (1024 ** 2) 
-                net_disk_diff = (net_disk_end - net_disk_start) / (1024 ** 2) 
+                net_mem_diff = (net_mem_end - net_mem_start) 
+                net_disk_diff = (net_disk_end - net_disk_start) 
 
                 resource_metrics = {
                     'name': 'sending-context-to-worker-' + str(worker_key),
@@ -191,8 +196,8 @@ def send_context_to_workers(
                     'processing-time-seconds': net_time_diff,
                     'elapsed-time-seconds': response.elapsed.total_seconds(),
                     'cpu-percentage': net_cpu_diff,
-                    'ram-megabytes': net_mem_diff,
-                    'disk-megabytes': net_disk_diff
+                    'ram-bytes': net_mem_diff,
+                    'disk-bytes': net_disk_diff
                 }
 
                 status = store_metrics_and_resources(
@@ -231,6 +236,9 @@ def send_context_to_workers(
         data = central_status
     )
 
+    os.environ['STATUS'] = 'context sent to workers'
+    logger.info('Context sent to workers')
+
     func_time_end = time.time()
     func_cpu_end = this_process.cpu_percent(interval=0.2)
     func_mem_end = psutil.virtual_memory().used 
@@ -238,24 +246,22 @@ def send_context_to_workers(
 
     func_time_diff = (func_time_end - func_time_start) 
     func_cpu_diff = func_cpu_end - func_cpu_start 
-    func_mem_diff = (func_mem_end - func_mem_start) / (1024 ** 2) 
-    func_disk_diff = (func_disk_end - func_disk_start) / (1024 ** 2) 
+    func_mem_diff = (func_mem_end - func_mem_start)
+    func_disk_diff = (func_disk_end - func_disk_start) 
 
     resource_metrics = {
         'name': 'send-context-to-workers',
-        'status-code': response.status_code,
-        'processing-time-seconds': func_time_diff,
-        'elapsed-time-seconds': response.elapsed.total_seconds(),
+        'time-seconds': func_time_diff,
         'cpu-percentage': func_cpu_diff,
-        'ram-megabytes': func_mem_diff,
-        'disk-megabytes': func_disk_diff
+        'ram-bytes': func_mem_diff,
+        'disk-bytes': func_disk_diff
     }
 
     status = store_metrics_and_resources(
         file_lock = file_lock,
         type = 'resources',
         subject = 'central',
-        area = 'network',
+        area = 'function',
         metrics = resource_metrics
     )
     

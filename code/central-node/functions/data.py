@@ -67,7 +67,8 @@ def preprocess_into_train_test_and_evaluate_tensors(
     if central_status['preprocessed']:
         return False
     
-    os.environ['STATUS'] = 'preprocessing'
+    os.environ['STATUS'] = 'preprocessing into tensors'
+    logger.info('Preprocessing into tensors')
 
     parameter_folder_path = 'parameters/experiment_' + str(current_experiment_number)
     central_parameters_path = parameter_folder_path + '/central.txt'
@@ -180,6 +181,9 @@ def preprocess_into_train_test_and_evaluate_tensors(
         file_path = central_status_path,
         data = central_status
     )
+    
+    os.environ['STATUS'] = 'tensors created'
+    logger.info('Tensors created')
 
     time_end = time.time()
     cpu_end = this_process.cpu_percent(interval=0.2)
@@ -188,15 +192,15 @@ def preprocess_into_train_test_and_evaluate_tensors(
     
     time_diff = (time_end - time_start) 
     cpu_diff = cpu_end - cpu_start 
-    mem_diff = (mem_end - mem_start) / (1024 ** 2) 
-    disk_diff = (disk_end - disk_start) / (1024 ** 2)
+    mem_diff = (mem_end - mem_start) 
+    disk_diff = (disk_end - disk_start)
 
     resource_metrics = {
         'name': 'preprocess-into-train-test-and-evalute-tensors',
         'time-seconds': round(time_diff,5),
         'cpu-percentage': cpu_diff,
-        'ram-megabytes': round(mem_diff,5),
-        'disk-megabytes': round(disk_diff,5)
+        'ram-bytes': round(mem_diff,5),
+        'disk-bytes': round(disk_diff,5)
     }
 
     status = store_metrics_and_resources(

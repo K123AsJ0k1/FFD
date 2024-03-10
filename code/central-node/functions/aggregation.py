@@ -3,13 +3,12 @@ from flask import current_app
 import numpy as np
 import torch 
 import os 
-import json
 from collections import OrderedDict
 import time
 import psutil
 
 from functions.model import FederatedLogisticRegression, evaluate
-from functions.general import get_current_experiment_number, get_newest_model_updates, get_current_global_model, get_file_data
+from functions.general import get_current_experiment_number, get_newest_model_updates, get_file_data, get_wanted_model
 from functions.storage import store_metrics_and_resources, store_file_data
 # Refactored and works
 def model_fed_avg(
@@ -72,6 +71,9 @@ def update_global_model(
     if central_status['updated']:
         return False
     
+    os.environ['STATUS'] = 'updating global model'
+    logger.info('Updating global model')
+    
     central_parameters_path = 'parameters/experiment_' + str(current_experiment_number) + '/central.txt'
     
     central_parameters = get_file_data(
@@ -114,6 +116,9 @@ def update_global_model(
         data = central_status
     )
 
+    os.environ['STATUS'] = 'global model updated'
+    logger.info('Global model updated')
+
     time_end = time.time()
     cpu_end = this_process.cpu_percent(interval=0.2)
     mem_end = psutil.virtual_memory().used 
@@ -121,15 +126,15 @@ def update_global_model(
     
     time_diff = (time_end - time_start) 
     cpu_diff = cpu_end - cpu_start 
-    mem_diff = (mem_end - mem_start) / (1024 ** 2) 
-    disk_diff = (disk_end - disk_start) / (1024 ** 2)
+    mem_diff = (mem_end - mem_start) # Bytes
+    disk_diff = (disk_end - disk_start)
 
     resource_metrics = {
         'name': 'update-global-model',
         'time-seconds': round(time_diff,5),
         'cpu-percentage': cpu_diff,
-        'ram-megabytes': round(mem_diff,5),
-        'disk-megabytes': round(disk_diff,5)
+        'ram-bytes': round(mem_diff,5),
+        'disk-bytes': round(disk_diff,5)
     }
 
     status = store_metrics_and_resources(
@@ -171,6 +176,9 @@ def evalute_global_model(
     
     if central_status['evaluated']:
         return False
+    
+    os.environ['STATUS'] = 'evaluating global model'
+    logger.info('Evaluating global model')
 
     parameters_folder_path = 'parameters/experiment_' + str(current_experiment_number)
     central_parameters_path = parameters_folder_path + '/central.txt'
@@ -191,10 +199,14 @@ def evalute_global_model(
 
     if model_parameters is None:
         return False
-   
-    current_global_model_parameters = get_current_global_model(
-        file_lock = file_lock
+    
+    current_global_model_parameters = get_wanted_model(
+        file_lock = file_lock,
+        experiment = current_experiment_number,
+        subject = 'global',
+        cycle = central_status['cycle']
     )
+   
     lr_model = FederatedLogisticRegression(dim = model_parameters['input-size'])
     lr_model.apply_parameters(lr_model, current_global_model_parameters)
 
@@ -219,25 +231,30 @@ def evalute_global_model(
     for key,value in evaluation_metrics.items():
         if 'amount' in key:
             continue
-        logger.info('Metric ' + str(key) + ' with threshold ' + str(thresholds[key]) + ' and condition ' + str(conditions[key]))
+        message = 'Metric ' + str(key)
         if conditions[key] == '>=' and thresholds[key] <= value:
-            logger.info('Passed with ' + str(value))
+            message = message + ' succeeded with ' + str(value) + str(conditions[key]) + str(thresholds[key])
+            logger.info(message)
             succesful_metrics += 1
             continue
         if conditions[key] == '<=' and value <= thresholds[key]:
-            logger.info('Passed with ' + str(value))
+            message = message + ' succeeded with ' + str(value) + str(conditions[key]) + str(thresholds[key])
+            logger.info(message)
             succesful_metrics += 1
             continue
-        logger.info('Failed with ' + str(value))
+        message = message + ' failed with ' + str(value) + str(conditions[key]) + str(thresholds[key])
+        logger.info(message)
  
     central_status['evaluated'] = True
     if central_parameters['min-metric-success'] <= succesful_metrics or central_status['cycle'] == central_parameters['max-cycles']:
-        logger.info('Global model has passed ' + str(succesful_metrics) + ' metrics, stopping training')
+        message = 'Global model achieved ' + str(succesful_metrics) + '/' + str(central_parameters['min-metric-success']) + ' in ' + str(central_status['cycle']) + '/' + str(central_parameters['max-cycles'])
+        logger.info(message)
         central_status['complete'] = True
         central_status['sent'] = False
         central_status['cycle'] = central_status['cycle'] + 1
     else: 
-        logger.info('Global model pased only' + str(succesful_metrics) + ' metrics, continouing training')
+        message = 'Global model failed ' + str(succesful_metrics) + '/' + str(central_parameters['min-metric-success']) + ' in ' + str(central_status['cycle']) + '/' + str(central_parameters['max-cycles'])
+        logger.info(message)
         central_status['worker-split'] = False
         central_status['sent'] = False
         central_status['updated'] = False
@@ -252,6 +269,9 @@ def evalute_global_model(
         file_path = central_status_path,
         data = central_status
     )
+
+    os.environ['STATUS'] = 'global model evaluated'
+    logger.info('Global model evaluated')
     
     time_end = time.time()
     cpu_end = this_process.cpu_percent(interval=0.2)
@@ -260,15 +280,15 @@ def evalute_global_model(
     
     time_diff = (time_end - time_start) 
     cpu_diff = cpu_end - cpu_start 
-    mem_diff = (mem_end - mem_start) / (1024 ** 2) 
-    disk_diff = (disk_end - disk_start) / (1024 ** 2)
+    mem_diff = (mem_end - mem_start)
+    disk_diff = (disk_end - disk_start)
 
     resource_metrics = {
         'name': 'evaluate-global-model',
         'time-seconds': round(time_diff,5),
         'cpu-percentage': cpu_diff,
-        'ram-megabytes': round(mem_diff,5),
-        'disk-megabytes': round(disk_diff,5)
+        'ram-bytes': round(mem_diff,5),
+        'disk-bytes': round(disk_diff,5)
     }
 
     status = store_metrics_and_resources(

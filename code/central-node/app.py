@@ -47,11 +47,11 @@ def create_app():
         app.file_lock,
         app.logger
     ] 
-    # Works 40 sec
+    # Works 30 sec
     scheduler.add_job(
         func = data_pipeline,
         trigger = "interval",
-        seconds = 40,
+        seconds = 30,
         args = given_args 
     )
     # Works 60 sec
@@ -61,18 +61,18 @@ def create_app():
         seconds = 60,
         args = given_args 
     )
-    # Works
+    # Works 20 sec
     scheduler.add_job(
         func = update_pipeline,
         trigger = "interval",
         seconds = 20,
         args = given_args 
     )
-    # Works
+    # Works 40 sec
     scheduler.add_job(
         func = aggregation_pipeline,
         trigger = "interval",
-        seconds = 80,
+        seconds = 40,
         args = given_args 
     )
     scheduler.start()

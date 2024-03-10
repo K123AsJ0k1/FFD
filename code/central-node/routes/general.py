@@ -1,7 +1,7 @@
-from flask import Blueprint, jsonify, render_template, request
+from flask import Blueprint, jsonify, render_template, request, current_app
 import json
 
-from functions.general import get_models, get_central_logs, get_metrics_resources_and_status
+from functions.general import get_models, get_central_logs, get_metrics_resources_and_status, get_directory_and_file_sizes
 
 general = Blueprint('general', __name__)
 
@@ -23,6 +23,7 @@ def intrastructure_metrics_resources_and_status():
     sent_subject = sent_payload['subject']
 
     data = get_metrics_resources_and_status(
+        file_lock = current_app.file_lock,
         type = sent_type,
         experiment = sent_experiment,
         subject = sent_subject
@@ -37,7 +38,13 @@ def stored_models():
     sent_subject = sent_payload['subject']
 
     data = get_models(
+        file_lock = current_app.file_lock,
         experiment = sent_experiment,
         subject = sent_subject
     )
+    return jsonify(data)
+# Refactored and works
+@general.route('/files', methods=["GET"])
+def stored_file():
+    data = get_directory_and_file_sizes()
     return jsonify(data)

@@ -43,7 +43,8 @@ def central_worker_data_split(
     if central_status['data-split']:
         return False
     
-    os.environ['STATUS'] = 'data splitting'
+    os.environ['STATUS'] = 'splitting central and worker data'
+    logger.info('Splitting data into central and workers pools')
     
     parameter_folder_path = 'parameters/experiment_' + str(current_experiment_number)
     central_parameters_path = parameter_folder_path + '/central.txt'
@@ -105,6 +106,8 @@ def central_worker_data_split(
         file_path = central_status_path,
         data = central_status
     )
+    os.environ['STATUS'] = 'central and worker data split'
+    logger.info('Central and workers pools created')
     
     time_end = time.time()
     cpu_end = this_process.cpu_percent(interval=0.2)
@@ -113,15 +116,15 @@ def central_worker_data_split(
 
     time_diff = (time_end - time_start) 
     cpu_diff = cpu_end - cpu_start 
-    mem_diff = (mem_end - mem_start) / (1024 ** 2) 
-    disk_diff = (disk_end - disk_start) / (1024 ** 2) 
+    mem_diff = (mem_end - mem_start) 
+    disk_diff = (disk_end - disk_start) 
 
     resource_metrics = {
         'name': 'central-worker-data-split',
         'time-seconds': round(time_diff,5),
         'cpu-percentage': round(cpu_diff,5),
-        'ram-megabytes': round(mem_diff,5),
-        'disk-megabytes': round(disk_diff,5)
+        'ram-bytes': round(mem_diff,5),
+        'disk-bytes': round(disk_diff,5)
     }
 
     status = store_metrics_and_resources(
@@ -168,6 +171,9 @@ def split_data_between_workers(
     
     if central_status['worker-split']:
         return False
+    
+    os.environ['STATUS'] = 'splitting data between workers'
+    logger.info('Splitting data between workers')
     
     worker_status_path = status_folder_path + '/workers.txt'
 
@@ -259,6 +265,9 @@ def split_data_between_workers(
         data = central_status
     )
 
+    os.environ['STATUS'] = 'worker data split'
+    logger.info('Worker data split')
+
     time_end = time.time()
     cpu_end = this_process.cpu_percent(interval=0.2)
     mem_end = psutil.virtual_memory().used 
@@ -266,15 +275,15 @@ def split_data_between_workers(
 
     time_diff = (time_end - time_start) 
     cpu_diff = cpu_end - cpu_start 
-    mem_diff = (mem_end - mem_start) / (1024 ** 2) 
-    disk_diff = (disk_end - disk_start) / (1024 ** 2)
+    mem_diff = (mem_end - mem_start) 
+    disk_diff = (disk_end - disk_start)
 
     resource_metrics = {
         'name': 'split-data-between-workers',
         'time-seconds': round(time_diff,5),
         'cpu-percentage': cpu_diff,
-        'ram-megabytes': round(mem_diff,5),
-        'disk-megabytes': round(disk_diff,5)
+        'ram-bytes': round(mem_diff,5),
+        'disk-bytes': round(disk_diff,5)
     }
 
     status = store_metrics_and_resources(

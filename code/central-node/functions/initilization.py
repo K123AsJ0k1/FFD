@@ -154,10 +154,10 @@ def initilize_storage_templates(
             'total-cpu-amount': 0,
             'min-cpu-frequency-mhz': 0.0,
             'max-cpu-frequency-mhz': 0.0,
-            'total-ram-amount-megabytes': 0.0,
-            'available-ram-amount-megabytes': 0.0,
-            'total-disk-amount-megabytes': 0.0,
-            'available-disk-amount-megabytes': 0.0
+            'total-ram-amount-bytes': 0.0,
+            'available-ram-amount-bytes': 0.0,
+            'total-disk-amount-bytes': 0.0,
+            'available-disk-amount-bytes': 0.0
         },
         'function': {
             '1': {
@@ -165,8 +165,8 @@ def initilize_storage_templates(
                     'name': 'initial-model-training',           
                     'time-seconds': 0.0,
                     'cpu-percentage': 0.0,
-                    'ram-megabytes': 0.0,
-                    'disk-megabytes': 0.0
+                    'ram-bytes': 0.0,
+                    'disk-bytes': 0.0
                 }
             }
         },
@@ -176,8 +176,8 @@ def initilize_storage_templates(
                     'name': 'sending-context',
                     'time-seconds': 0.0,
                     'cpu-percentage': 0.0,
-                    'ram-megabytes': 0.0,
-                    'disk-megabytes': 0.0
+                    'ram-bytes': 0.0,
+                    'disk-bytes': 0.0
                 }
             }
         },
@@ -190,8 +190,8 @@ def initilize_storage_templates(
                     'average-batch-size': 0,
                     'time-seconds': 0.0,
                     'cpu-percentage': 0.0,
-                    'ram-megabytes': 0.0,
-                    'disk-megabytes': 0.0
+                    'ram-bytes': 0.0,
+                    'disk-bytes': 0.0
                 },
                 '2': {
                     'name': 'model-testing',
@@ -199,8 +199,8 @@ def initilize_storage_templates(
                     'average-batch-size': 0,
                     'time-seconds': 0.0,
                     'cpu-percentage': 0.0,
-                    'ram-megabytes': 0.0,
-                    'disk-megabytes': 0.0
+                    'ram-bytes': 0.0,
+                    'disk-bytes': 0.0
                 },
                 '3': {
                     'name': 'model-evaluation',
@@ -208,8 +208,8 @@ def initilize_storage_templates(
                     'average-batch-size': 0,
                     'time-seconds': 0.0,
                     'cpu-percentage': 0.0,
-                    'ram-megabytes': 0.0,
-                    'disk-megabytes': 0.0
+                    'ram-bytes': 0.0,
+                    'disk-bytes': 0.0
                 }
             }
         },
@@ -220,8 +220,8 @@ def initilize_storage_templates(
                     'sample-amount': 0,
                     'time-seconds': 0.0,
                     'cpu-percentage': 0.0,
-                    'ram-megabytes': 0.0,
-                    'disk-megabytes': 0.0
+                    'ram-bytes': 0.0,
+                    'disk-bytes': 0.0
                 }
             }
         }
@@ -234,10 +234,10 @@ def initilize_storage_templates(
                 'total-cpu-amount': 0,
                 'min-cpu-frequency-mhz': 0.0,
                 'max-cpu-frequency-mhz': 0.0,
-                'total-ram-amount-megabytes': 0.0,
-                'available-ram-amount-megabytes': 0.0,
-                'total-disk-amount-megabytes': 0.0,
-                'available-disk-amount-megabytes': 0.0
+                'total-ram-amount-bytes': 0.0,
+                'available-ram-amount-bytes': 0.0,
+                'total-disk-amount-bytes': 0.0,
+                'available-disk-amount-bytes': 0.0
             },
             'function': {
                 '1': {
@@ -245,8 +245,8 @@ def initilize_storage_templates(
                         'name': 'model-training',           
                         'time-seconds': 0.0,
                         'cpu-percentage': 0.0,
-                        'ram-megabytes': 0.0,
-                        'disk-megabytes': 0.0
+                        'ram-bytes': 0.0,
+                        'disk-bytes': 0.0
                     }
                 }
             },
@@ -258,8 +258,8 @@ def initilize_storage_templates(
                         'processing-time-seconds': 0.0,
                         'elapsed-time-seconds': 0.0,
                         'cpu-percentage': 0.0,
-                        'ram-megabytes': 0.0,
-                        'disk-megabytes': 0.0
+                        'ram-bytes': 0.0,
+                        'disk-bytes': 0.0
                     }
                 }
             },
@@ -272,8 +272,8 @@ def initilize_storage_templates(
                         'batch-size': 0,
                         'time-seconds': 0.0,
                         'cpu-percentage': 0.0,
-                        'ram-megabytes': 0.0,
-                        'disk-megabytes': 0.0
+                        'ram-bytes': 0.0,
+                        'disk-bytes': 0.0
                     },
                     '2': {
                         'name': 'model-testing',
@@ -281,8 +281,8 @@ def initilize_storage_templates(
                         'batch-size': 0,
                         'time-seconds': 0.0,
                         'cpu-percentage': 0.0,
-                        'ram-megabytes': 0.0,
-                        'disk-megabytes': 0.0
+                        'ram-bytes': 0.0,
+                        'disk-bytes': 0.0
                     },
                     '3': {
                         'name': 'model-evaluation',
@@ -290,8 +290,8 @@ def initilize_storage_templates(
                         'batch-size':0, 
                         'time-seconds': 0.0,
                         'cpu-percentage': 0.0,
-                        'ram-megabytes': 0.0,
-                        'disk-megabytes': 0.0
+                        'ram-bytes': 0.0,
+                        'disk-bytes': 0.0
                     }
                 }
             },
@@ -302,8 +302,8 @@ def initilize_storage_templates(
                         'sample-amount': 0,
                         'time-seconds': 0.0,
                         'cpu-percentage': 0.0,
-                        'ram-megabytes': 0.0,
-                        'disk-megabytes': 0.0
+                        'ram-bytes': 0.0,
+                        'disk-bytes': 0.0
                     }
                 }
             }
@@ -343,7 +343,6 @@ def initilize_storage_templates(
     }
 
     os.environ['STATUS'] = 'initilizing'
-    
     for template_path in paths:
         first_split = template_path.split('.')
         second_split = first_split[0].split('/')
@@ -356,3 +355,4 @@ def initilize_storage_templates(
             file_path = template_path,
             data = path_template
         )
+    os.environ['STATUS'] = 'initilized'

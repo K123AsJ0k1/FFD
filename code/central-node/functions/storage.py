@@ -99,10 +99,10 @@ def store_training_context(
                     'total-cpu-amount': psutil.cpu_count(logical=True),
                     'min-cpu-frequency-mhz': psutil.cpu_freq().min,
                     'max-cpu-frequency-mhz': psutil.cpu_freq().max,
-                    'total-ram-amount-megabytes': psutil.virtual_memory().total / (1024 ** 2),
-                    'available-ram-amount-megabytes': psutil.virtual_memory().free / (1024 ** 2),
-                    'total-disk-amount-megabytes': psutil.disk_usage('.').total / (1024 ** 2),
-                    'available-disk-amount-megabytes': psutil.disk_usage('.').free / (1024 ** 2)
+                    'total-ram-amount-bytes': psutil.virtual_memory().total,
+                    'available-ram-amount-bytes': psutil.virtual_memory().free,
+                    'total-disk-amount-bytes': psutil.disk_usage('.').total,
+                    'available-disk-amount-bytes': psutil.disk_usage('.').free
                 },
                 'function': {},
                 'network': {},
@@ -332,15 +332,15 @@ def store_worker(
 
         time_diff = (time_end - time_start) 
         cpu_diff = cpu_end - cpu_start 
-        mem_diff = (mem_end - mem_start) / (1024 ** 2) 
-        disk_diff = (disk_end - disk_start) / (1024 ** 2)
+        mem_diff = (mem_end - mem_start) 
+        disk_diff = (disk_end - disk_start)
 
         resource_metrics = {
             'name': 'store-worker-' + str(smallest_missing_id),
             'time-seconds': round(time_diff,5),
             'cpu-percentage': cpu_diff,
-            'ram-megabytes': round(mem_diff,5),
-            'disk-megabytes': round(disk_diff,5)
+            'ram-bytes': round(mem_diff,5),
+            'disk-bytes': round(disk_diff,5)
         }
 
         status = store_metrics_and_resources(
@@ -402,13 +402,21 @@ def store_worker(
             file_path = workers_resources_path,
             data = workers_resources,
         )
-
-        payload = {
-            'message': action, 
-            'experiment_id': current_experiment_number,
-            'status': workers_status[str(status['id'])], 
-            'metrics': None
-        }
+        payload = None
+        if not action == 'experiment':
+            payload = {
+                'message': action, 
+                'experiment_id': current_experiment_number,
+                'status': workers_status[str(status['id'])], 
+                'metrics': None
+            }
+        else:
+            payload = {
+                'message': action, 
+                'experiment_id': current_experiment_number,
+                'status': {}, 
+                'metrics': None
+            }
 
         time_end = time.time()
         cpu_end = this_process.cpu_percent(interval=0.2)
@@ -417,15 +425,15 @@ def store_worker(
 
         time_diff = (time_end - time_start) 
         cpu_diff = cpu_end - cpu_start 
-        mem_diff = (mem_end - mem_start) / (1024 ** 2) 
-        disk_diff = (disk_end - disk_start) / (1024 ** 2)
+        mem_diff = (mem_end - mem_start) 
+        disk_diff = (disk_end - disk_start)
 
         resource_metrics = {
             'name': 'store-worker-' + str(status['id']),
             'time-seconds': round(time_diff,5),
             'cpu-percentage': cpu_diff,
-            'ram-megabytes': round(mem_diff,5),
-            'disk-megabytes': round(disk_diff,5)
+            'ram-bytes': round(mem_diff,5),
+            'disk-bytes': round(disk_diff,5)
         }
 
         status = store_metrics_and_resources(
@@ -527,15 +535,15 @@ def store_update(
 
     time_diff = (time_end - time_start) 
     cpu_diff = cpu_end - cpu_start 
-    mem_diff = (mem_end - mem_start) / (1024 ** 2) 
-    disk_diff = (disk_end - disk_start) / (1024 ** 2)
+    mem_diff = (mem_end - mem_start) 
+    disk_diff = (disk_end - disk_start)
 
     resource_metrics = {
         'name': 'update-from-worker-' + str(id),
         'time-seconds': round(time_diff,5),
         'cpu-percentage': cpu_diff,
-        'ram-megabytes': round(mem_diff,5),
-        'disk-megabytes': round(disk_diff,5)
+        'ram-bytes': round(mem_diff,5),
+        'disk-bytes': round(disk_diff,5)
     }
 
     status = store_metrics_and_resources(
