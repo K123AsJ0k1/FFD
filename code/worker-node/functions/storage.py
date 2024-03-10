@@ -1,5 +1,3 @@
-from flask import current_app
-
 import pandas as pd
 import torch  
 import os
@@ -27,8 +25,6 @@ def store_file_data(
     relative_path = Path(used_file_path)
     if not replace and relative_path.exists():
         perform = False
-    #print(used_file_path)
-    #print(relative_path.exists())
     
     if perform:
         with file_lock:
@@ -158,33 +154,7 @@ def store_training_context(
             data = worker_df
         )
         worker_status['preprocessed'] = False
-    resource_folder_path = 'resources/experiment_' + str(current_experiment_number)
-    worker_resource_path = resource_folder_path + '/worker.txt'
-    resource_template = {
-        'general': {
-            'physical-cpu-amount': psutil.cpu_count(logical=False),
-            'total-cpu-amount': psutil.cpu_count(logical=True),
-            'min-cpu-frequency-mhz': psutil.cpu_freq().min,
-            'max-cpu-frequency-mhz': psutil.cpu_freq().max,
-            'total-ram-amount-megabytes': psutil.virtual_memory().total / (1024 ** 2),
-            'available-ram-amount-megabytes': psutil.virtual_memory().free / (1024 ** 2),
-            'total-disk-amount-megabytes': psutil.disk_usage('.').total / (1024 ** 2),
-            'available-disk-amount-megabytes': psutil.disk_usage('.').free / (1024 ** 2)
-        },
-        'function': {},
-        'network': {},
-        'training': {},
-        'inference': {}
-    }
-
-    store_file_data(
-        file_lock = file_lock,
-        replace = False,
-        file_folder_path = resource_folder_path,
-        file_path = worker_resource_path,
-        data = resource_template
-    )
-
+    
     worker_status['stored'] = True
     store_file_data(
         file_lock = file_lock,
@@ -207,18 +177,20 @@ def store_metrics_and_resources(
 ) -> bool:
     current_experiment_number = get_current_experiment_number()
     stored_data = None
-    data_path = None
+    data_folder_path = None
+    data_file_path = None
     if type == 'metrics':
         if subject == 'local':
-            data_path = 'metrics/experiment_' + str(current_experiment_number) + '/local.txt'
+            data_folder_path = 'metrics/experiment_' + str(current_experiment_number)
+            data_file_path = data_folder_path + '/local.txt'
 
             stored_data = get_file_data(
                 file_lock = file_lock,
-                file_path = data_path
+                file_path = data_file_path
             )
 
             if stored_data is None:
-                return False
+                stored_data = {}
 
             new_key = len(stored_data) + 1
             stored_data[str(new_key)] = metrics
@@ -235,15 +207,31 @@ def store_metrics_and_resources(
             return False
         
         if subject == 'worker':
-            data_path = 'resources/experiment_' + str(current_experiment_number) + '/worker.txt'
+            data_folder_path = 'resources/experiment_' + str(current_experiment_number)
+            data_file_path = data_folder_path + '/worker.txt'
             
             stored_data = get_file_data(
                 file_lock = file_lock,
-                file_path = data_path
+                file_path = data_file_path
             )
 
             if stored_data is None:
-                return False
+                stored_data = {
+                    'general': {
+                        'physical-cpu-amount': psutil.cpu_count(logical=False),
+                        'total-cpu-amount': psutil.cpu_count(logical=True),
+                        'min-cpu-frequency-mhz': psutil.cpu_freq().min,
+                        'max-cpu-frequency-mhz': psutil.cpu_freq().max,
+                        'total-ram-amount-bytes': psutil.virtual_memory().total,
+                        'available-ram-amount-bytes': psutil.virtual_memory().free,
+                        'total-disk-amount-bytes': psutil.disk_usage('.').total,
+                        'available-disk-amount-bytes': psutil.disk_usage('.').free
+                    },
+                    'function': {},
+                    'network': {},
+                    'training': {},
+                    'inference': {}
+                }
 
             if not str(worker_status['cycle']) in stored_data[area]:
                 stored_data[area][str(worker_status['cycle'])] = {}
@@ -253,8 +241,8 @@ def store_metrics_and_resources(
     store_file_data(
         file_lock = file_lock,
         replace = True,
-        file_folder_path = '',
-        file_path = data_path,
+        file_folder_path = data_folder_path,
+        file_path = data_file_path,
         data = stored_data
     ) 
     

@@ -1,5 +1,3 @@
-from flask import current_app
-
 from functions.data import preprocess_into_train_test_and_eval_tensors
 from functions.model import local_model_training
 from functions.update import send_info_to_central, send_update_to_central

@@ -1,7 +1,6 @@
 from flask import Blueprint, current_app, request, jsonify, render_template
 import json
-
-from functions.general import get_metrics_resources_and_status, get_worker_logs
+from functions.general import get_metrics_resources_and_status, get_worker_logs, get_directory_and_file_sizes
 
 general = Blueprint('general', __name__)
 
@@ -23,8 +22,14 @@ def worker_metrics_resources_and_status():
     sent_subject = sent_payload['subject']
 
     data = get_metrics_resources_and_status(
+        file_lock = current_app.file_lock,
         type = sent_type,
         experiment = sent_experiment,
         subject = sent_subject
     )
+    return jsonify(data)
+# Refactored and works
+@general.route('/files', methods=["GET"])
+def stored_file():
+    data = get_directory_and_file_sizes()
     return jsonify(data)

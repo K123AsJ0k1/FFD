@@ -1,6 +1,5 @@
 from flask import Blueprint, request, jsonify, current_app
 import json
-
 from functions.storage import store_training_context
 
 pipeline = Blueprint('pipeline', __name__)

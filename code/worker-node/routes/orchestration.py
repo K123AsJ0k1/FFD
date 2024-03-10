@@ -1,8 +1,6 @@
 from flask import Blueprint, current_app, request
-
-from functions.storage import store_central_address
-
 import json
+from functions.storage import store_central_address
 
 orchestration = Blueprint('orchestration', __name__)
 # Created and works

@@ -4,7 +4,6 @@ import torch.nn as nn
 import psutil
 import time
 import os
-import json
 import numpy as np
 
 from sklearn.metrics import confusion_matrix
@@ -107,8 +106,8 @@ def train(
 
     time_diff = (time_end - time_start) 
     cpu_diff = cpu_end - cpu_start 
-    mem_diff = (mem_end - mem_start) / (1024 ** 2) 
-    disk_diff = (disk_end - disk_start) / (1024 ** 2) 
+    mem_diff = (mem_end - mem_start) 
+    disk_diff = (disk_end - disk_start) 
 
     resource_metrics = {
         'name': 'logistic-regression-training',
@@ -117,8 +116,8 @@ def train(
         'average-batch-size': total_size / len(train_loader),
         'time-seconds': round(time_diff,5),
         'cpu-percentage': round(cpu_diff,5),
-        'ram-megabytes': round(mem_diff,5),
-        'disk-megabytes': round(disk_diff,5)
+        'ram-bytes': round(mem_diff,5),
+        'disk-bytes': round(disk_diff,5)
     }
 
     status = store_metrics_and_resources(
@@ -171,8 +170,8 @@ def test(
 
         time_diff = (time_end - time_start) 
         cpu_diff = cpu_end - cpu_start 
-        mem_diff = (mem_end - mem_start) / (1024 ** 2) 
-        disk_diff = (disk_end - disk_start) / (1024 ** 2)
+        mem_diff = (mem_end - mem_start) 
+        disk_diff = (disk_end - disk_start)
 
         resource_metrics = {
             'name': 'logistic-regression-' + name,
@@ -180,8 +179,8 @@ def test(
             'average-batch-size': total_size / len(test_loader),
             'time-seconds': round(time_diff,5),
             'cpu-percentage': round(cpu_diff,5),
-            'ram-megabytes': round(mem_diff,5),
-            'disk-megabytes': round(disk_diff,5)
+            'ram-bytes': round(mem_diff,5),
+            'disk-bytes': round(disk_diff,5)
         }
 
         status = store_metrics_and_resources(
@@ -258,7 +257,8 @@ def local_model_training(
     if worker_status['trained']:
         return False
 
-    os.environ['STATUS'] = 'training'
+    os.environ['STATUS'] = 'training local model'
+    logger.info('Training local model')
     
     model_parameters_path = 'parameters/experiment_' + str(current_experiment_number) + '/model.txt'
 
@@ -290,13 +290,15 @@ def local_model_training(
     )
 
     models_folder_path = 'models/experiment_' + str(current_experiment_number)
-    global_model_path = models_folder_path + '/global_' + str(worker_status['cycle']-1) + '.pth'
+    #global_model_path = models_folder_path + '/global_' + str(worker_status['cycle']-1) + '.pth'
 
-    global_model_parameters = get_file_data(
+    global_model_parameters = get_wanted_model(
         file_lock = file_lock,
-        file_path = global_model_path
+        experiment = current_experiment_number,
+        subject = 'global',
+        cycle = worker_status['cycle']-1
     )
-    
+
     given_train_loader, given_test_loader, given_eval_loader = get_train_test_and_eval_loaders(
         train_tensor = train_tensor,
         test_tensor = test_tensor,
@@ -369,7 +371,8 @@ def local_model_training(
         data = worker_status
     )
     
-    os.environ['STATUS'] = 'trained'
+    os.environ['STATUS'] = 'local model trained'
+    logger.info('Local model trained')
 
     time_end = time.time()
     cpu_end = this_process.cpu_percent(interval=0.2)
@@ -378,15 +381,15 @@ def local_model_training(
 
     time_diff = (time_end - time_start) 
     cpu_diff = cpu_end - cpu_start 
-    mem_diff = (mem_end - mem_start) / (1024 ** 2) 
-    disk_diff = (disk_end - disk_start) / (1024 ** 2) 
+    mem_diff = (mem_end - mem_start) 
+    disk_diff = (disk_end - disk_start)
 
     resource_metrics = {
         'name': 'local-model-training',
         'time-seconds': time_diff,
         'cpu-percentage': cpu_diff,
-        'ram-megabytes': mem_diff,
-        'disk-megabytes': disk_diff
+        'ram-bytes': mem_diff,
+        'disk-bytes': disk_diff
     }
 
     status = store_metrics_and_resources(
@@ -400,6 +403,7 @@ def local_model_training(
     return True
 # Refactored and works
 def model_inference(
+    file_lock: any,
     experiment: int,
     subject: str,
     cycle: int,
@@ -411,15 +415,15 @@ def model_inference(
     cpu_start = this_process.cpu_percent(interval=0.2)
     time_start = time.time()
 
-    storage_folder_path = 'storage'
     current_experiment_number = get_current_experiment_number()
-
-    model_parameters_path = storage_folder_path + '/parameters/experiment_' + str(current_experiment_number) + '/model.txt'
-    model_parameters = None
-    with open(model_parameters_path, 'r') as f:
-        model_parameters = json.load(f)
+    model_parameters_path = 'parameters/experiment_' + str(current_experiment_number) + '/model.txt'
+    model_parameters = get_file_data(
+        file_lock = file_lock,
+        file_path = model_parameters_path
+    )
 
     wanted_model = get_wanted_model(
+        file_lock = file_lock,
         experiment = experiment,
         subject = subject,
         cycle = cycle
@@ -440,19 +444,20 @@ def model_inference(
 
     time_diff = (time_end - time_start) 
     cpu_diff = cpu_end - cpu_start 
-    mem_diff = (mem_end - mem_start) / (1024 ** 2) 
-    disk_diff = (disk_end - disk_start) / (1024 ** 2) 
+    mem_diff = (mem_end - mem_start) 
+    disk_diff = (disk_end - disk_start) 
 
     resource_metrics = {
         'name': str(experiment) + '-' + subject + '-' + str(cycle) + '-prediction',
         'sample-amount': len(input_tensor),
         'time-seconds': time_diff,
         'cpu-percentage': cpu_diff,
-        'ram-megabytes': mem_diff,
-        'disk-megabytes': disk_diff
+        'ram-bytes': mem_diff,
+        'disk-bytes': disk_diff
     }
 
     status = store_metrics_and_resources(
+        file_lock = file_lock,
         type = 'resources',
         subject = 'worker',
         area = 'inference',

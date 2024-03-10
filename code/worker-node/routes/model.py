@@ -1,6 +1,5 @@
-from flask import Blueprint, current_app, request, jsonify, render_template
+from flask import Blueprint, current_app, request, jsonify
 import json
-
 from functions.model import model_inference
 
 model = Blueprint('model', __name__)
@@ -14,6 +13,7 @@ def inference():
     sent_input = sent_payload['input']
 
     given_output = model_inference(
+        file_lock = current_app.file_lock,
         experiment = sent_experiment,
         subject = sent_subject,
         cycle = sent_cycle,

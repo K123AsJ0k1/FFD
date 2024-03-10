@@ -1,13 +1,10 @@
-from flask import current_app
-
-import torch  
 import os
 import json
 import requests
 import psutil
 import time
 
-from functions.general import get_current_experiment_number, get_file_data
+from functions.general import get_current_experiment_number, get_file_data, get_wanted_model
 from functions.storage import store_metrics_and_resources, store_file_data
 
 # Refactored and works
@@ -58,7 +55,7 @@ def send_info_to_central(
     )
 
     worker_status['status'] = os.environ.get('STATUS')
-
+    logger.info('Sending status to central')
     info = {
         'status': worker_status,
         'metrics': {
@@ -119,14 +116,6 @@ def send_info_to_central(
                             data = worker_resources
                         )
                 if message == 'experiment':
-                    store_file_data(
-                        file_lock = file_lock,
-                        replace = True,
-                        file_folder_path = resource_folder_path,
-                        file_path = worker_resources_path,
-                        data = {}
-                    )
-
                     worker_status_template_path = 'status/templates/worker.txt'
                     worker_status = get_file_data(
                         file_lock = file_lock,
@@ -153,8 +142,8 @@ def send_info_to_central(
 
             time_diff = (time_end - time_start) 
             cpu_diff = cpu_end - cpu_start 
-            mem_diff = (mem_end - mem_start) / (1024 ** 2) 
-            disk_diff = (disk_end - disk_start) / (1024 ** 2) 
+            mem_diff = (mem_end - mem_start)
+            disk_diff = (disk_end - disk_start) 
 
             resource_metrics = {
                 'name': 'sending-info-to-central',
@@ -162,8 +151,8 @@ def send_info_to_central(
                 'processing-time-seconds': time_diff,
                 'elapsed-time-seconds': response.elapsed.total_seconds(),
                 'cpu-percentage': cpu_diff,
-                'ram-megabytes': mem_diff,
-                'disk-megabytes': disk_diff
+                'ram-bytes': mem_diff,
+                'disk-bytes': disk_diff
             }
 
             status = store_metrics_and_resources(
@@ -183,8 +172,8 @@ def send_info_to_central(
 
         time_diff = (time_end - time_start) 
         cpu_diff = cpu_end - cpu_start 
-        mem_diff = (mem_end - mem_start) / (1024 ** 2) 
-        disk_diff = (disk_end - disk_start) / (1024 ** 2) 
+        mem_diff = (mem_end - mem_start) 
+        disk_diff = (disk_end - disk_start) 
 
         resource_metrics = {
             'name': 'sending-info-to-central',
@@ -192,8 +181,8 @@ def send_info_to_central(
             'processing-time-seconds': time_diff,
             'elapsed-time-seconds': response.elapsed.total_seconds(),
             'cpu-percentage': cpu_diff,
-            'ram-megabytes': mem_diff,
-            'disk-megabytes': disk_diff
+            'ram-bytes': mem_diff,
+            'disk-bytes': disk_diff
         }
 
         status = store_metrics_and_resources(
@@ -238,13 +227,14 @@ def send_update_to_central(
     if worker_status['updated']:
         return False
 
-    os.environ['STATUS'] = 'updating'
+    os.environ['STATUS'] = 'sending update to central'
+    logger.info('Sending update to central')
 
-    local_model_path = 'models/experiment_' + str(current_experiment_number) + '/local_' + str(worker_status['cycle']) + '.pth'
-
-    local_model = get_file_data(
+    local_model = get_wanted_model(
         file_lock = file_lock,
-        file_path = local_model_path
+        experiment = current_experiment_number,
+        subject = 'local',
+        cycle = worker_status['cycle']
     )
 
     formatted_local_model = {
@@ -276,7 +266,6 @@ def send_update_to_central(
                 }
             )
             if response.status_code == 200:
-                # This sometimes doesn't work, leaving in a unrefocerabel state
                 success = True
                 worker_status['updated'] = True
                 worker_status['stored'] = False
@@ -288,7 +277,8 @@ def send_update_to_central(
                     data = worker_status
                 )
 
-                os.environ['STATUS'] = 'waiting'
+                os.environ['STATUS'] = 'update sent to central'
+                logger.info('Update sent to central')
 
                 time_end = time.time()
                 cpu_end = this_process.cpu_percent(interval=0.2)
@@ -297,8 +287,8 @@ def send_update_to_central(
 
                 time_diff = (time_end - time_start) 
                 cpu_diff = cpu_end - cpu_start 
-                mem_diff = (mem_end - mem_start) / (1024 ** 2) 
-                disk_diff = (disk_end - disk_start) / (1024 ** 2) 
+                mem_diff = (mem_end - mem_start) 
+                disk_diff = (disk_end - disk_start) 
 
                 resource_metrics = {
                     'name': 'sending-update-to-central',
@@ -306,8 +296,8 @@ def send_update_to_central(
                     'processing-time-seconds': time_diff,
                     'elapsed-time-seconds': response.elapsed.total_seconds(),
                     'cpu-percentage': cpu_diff,
-                    'ram-megabytes': mem_diff,
-                    'disk-megabytes': disk_diff
+                    'ram-bytes': mem_diff,
+                    'disk-bytes': disk_diff
                 }
 
                 status = store_metrics_and_resources(
@@ -319,6 +309,9 @@ def send_update_to_central(
                 )
                 return True
             
+            os.environ['STATUS'] = 'update not sent to central'
+            logger.info('Update not sent to central')
+
             time_end = time.time()
             cpu_end = this_process.cpu_percent(interval=0.2)
             mem_end = psutil.virtual_memory().used 
@@ -326,8 +319,8 @@ def send_update_to_central(
 
             time_diff = (time_end - time_start) 
             cpu_diff = cpu_end - cpu_start 
-            mem_diff = (mem_end - mem_start) / (1024 ** 2) 
-            disk_diff = (disk_end - disk_start) / (1024 ** 2) 
+            mem_diff = (mem_end - mem_start) 
+            disk_diff = (disk_end - disk_start)
 
             resource_metrics = {
                 'name': 'sending-update-to-central',
@@ -335,8 +328,8 @@ def send_update_to_central(
                 'processing-time-seconds': time_diff,
                 'elapsed-time-seconds': response.elapsed.total_seconds(),
                 'cpu-percentage': cpu_diff,
-                'ram-megabytes': mem_diff,
-                'disk-megabytes': disk_diff
+                'ram-bytes': mem_diff,
+                'disk-bytes': disk_diff
             }
 
             status = store_metrics_and_resources(
