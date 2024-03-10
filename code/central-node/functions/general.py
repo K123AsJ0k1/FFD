@@ -1,5 +1,3 @@
-from flask import current_app
-
 import torch 
 import os 
 import json

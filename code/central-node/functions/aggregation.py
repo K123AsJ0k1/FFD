@@ -1,5 +1,3 @@
-from flask import current_app
-
 import numpy as np
 import torch 
 import os 

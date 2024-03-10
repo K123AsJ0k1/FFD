@@ -1,6 +1,3 @@
-from flask import current_app
-
-import pandas as pd
 import os 
 import json
 import requests

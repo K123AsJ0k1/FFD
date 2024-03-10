@@ -1,8 +1,3 @@
-from flask import current_app
-
-import os 
-import json
-
 from functions.general import get_current_experiment_number, get_file_data
 from functions.split import central_worker_data_split, split_data_between_workers
 from functions.data import preprocess_into_train_test_and_evaluate_tensors

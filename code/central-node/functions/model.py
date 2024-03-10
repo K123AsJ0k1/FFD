@@ -1,12 +1,11 @@
 from flask import current_app
+
 import torch
 import torch.nn as nn 
 import psutil
 import time
 import os
-import json
 import numpy as np
-
 from sklearn.metrics import confusion_matrix
 from torch.utils.data import DataLoader
 

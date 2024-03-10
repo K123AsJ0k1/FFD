@@ -1,6 +1,5 @@
 from flask import Blueprint, request, jsonify, current_app
 import json
-
 from functions.storage import store_training_context, store_update
 from functions.pipeline import start_pipeline
 

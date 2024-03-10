@@ -4,7 +4,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 import threading
 import logging
 import os
-# Refactor
+# Refactored and works
 def create_app():
     app = Flask(__name__)
 

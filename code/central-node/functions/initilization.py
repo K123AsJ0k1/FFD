@@ -1,7 +1,4 @@
-from flask import current_app
-
 import os 
-
 from functions.storage import store_file_data
 
 # Refactored and works

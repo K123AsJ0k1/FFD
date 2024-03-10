@@ -1,6 +1,5 @@
 from flask import Blueprint, jsonify, render_template, request, current_app
 import json
-
 from functions.general import get_models, get_central_logs, get_metrics_resources_and_status, get_directory_and_file_sizes
 
 general = Blueprint('general', __name__)

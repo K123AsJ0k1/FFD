@@ -1,6 +1,5 @@
 from flask import Blueprint, request, jsonify,current_app
 import json
-
 from functions.storage import store_worker
 
 orchestration = Blueprint('orchestration', __name__)

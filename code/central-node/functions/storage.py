@@ -1,5 +1,3 @@
-from flask import current_app
-
 import torch 
 import os
 import json
@@ -8,8 +6,8 @@ import pandas as pd
 import psutil
 import time
 import torch
-from pathlib import Path
 
+from pathlib import Path
 from collections import OrderedDict
 
 from functions.general import get_current_experiment_number, get_file_data
