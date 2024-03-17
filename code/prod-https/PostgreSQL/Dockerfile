@@ -1,0 +1,7 @@
+FROM docker.io/postgres:13
+
+ENV POSTGRES_USER=postgres
+ENV POSTGRES_PASSWORD=postgres
+ENV POSTGRES_DB=mlflow_db
+
+EXPOSE 5432
