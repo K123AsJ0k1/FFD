@@ -1,0 +1,31 @@
+global:
+  scrape_interval: 10s
+  evaluation_interval: 10s
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets:
+        - '172.17.0.3:9090'
+        - '10.30.10.16:9090'
+  - job_name: 'pushgateway'
+    static_configs:
+      - targets: 
+        - '172.17.0.2:9091'
+        - '10.30.10.15:9091'
+  - job_name: 'central'
+    static_configs:
+      - targets:
+        - '10.30.10.20:7600'
+  - job_name: 'workers'
+    static_configs:
+      - targets:
+        - '10.30.10.21:7500'
+        - '10.30.10.22:7500'
+        - '10.30.10.23:7500'
+        - '10.30.10.24:7500'
+        - '10.30.10.25:7500'
+        - '10.30.10.26:7500'
+        - '10.30.10.27:7500'
+        - '10.30.10.28:7500'
+        - '10.30.10.29:7500'
+        - '10.30.10.30:7500'

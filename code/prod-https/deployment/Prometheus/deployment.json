@@ -1,0 +1,24 @@
+{
+    "microservices" : [
+      {
+        "microserviceID": "",
+        "microservice_name": "prometheus",
+        "microservice_namespace": "test",
+        "virtualization": "container",
+        "cmd": [],
+        "memory": 200,
+        "vcpus": 1,
+        "vgpus": 0,
+        "vtpus": 0,
+        "bandwidth_in": 0,
+        "bandwidth_out": 0,
+        "storage": 200,
+        "code": "docker.io/t9k4b5ndjok1/ffd:prometheus-mvp",
+        "state": "",
+        "port": "9090",
+        "addresses": {
+            "rr_ip": "10.30.10.16"
+        }
+      }
+    ]
+}
