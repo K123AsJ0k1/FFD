@@ -5,9 +5,9 @@ from collections import OrderedDict
 import time
 import psutil
 
-from functions.model import FederatedLogisticRegression, evaluate
+from functions.training.model import FederatedLogisticRegression, evaluate
 from functions.general import get_current_experiment_number, get_newest_model_updates, get_file_data, get_wanted_model
-from functions.storage import store_metrics_and_resources, store_file_data
+from functions.management.storage import store_metrics_and_resources, store_file_data
 # Refactored and works
 def model_fed_avg(
     updates: any,

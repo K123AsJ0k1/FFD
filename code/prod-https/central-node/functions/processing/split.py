@@ -1,16 +1,18 @@
 import os
 import numpy as np
+import pandas as pd
 import time
 import psutil 
 
-from functions.general import get_current_experiment_number, get_file_data
-from functions.storage import store_metrics_and_resources, store_file_data
-from functions.data import data_augmented_sample
-
-# Refactored and works 
+from functions.processing.data import data_augmented_sample
+from functions.platforms.minio import get_object_data_and_metadata, create_or_update_object
+from functions.general import format_metadata_dict, encode_metadata_lists_to_strings
+from functions.management.storage import store_metrics_and_resources
+# Refactored
 def central_worker_data_split(
     file_lock: any,
-    logger: any
+    logger: any,
+    minio_client: any
 ) -> bool:
     this_process = psutil.Process(os.getpid())
     mem_start = psutil.virtual_memory().used 
@@ -18,12 +20,16 @@ def central_worker_data_split(
     cpu_start = this_process.cpu_percent(interval=0.2)
     time_start = time.time()
 
-    current_experiment_number = get_current_experiment_number()
-    central_status_path = 'status/experiment_' + str(current_experiment_number) + '/central.txt'
-    central_status = get_file_data(
-        file_lock = file_lock,
-        file_path = central_status_path
+    experiments_folder = 'experiments'
+    central_bucket = 'central'
+    central_status_path = experiments_folder + '/status'
+    central_status_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = central_status_path
     )
+    central_status = central_status_object['data']
 
     if central_status is None:
         return False
@@ -39,66 +45,86 @@ def central_worker_data_split(
     
     os.environ['STATUS'] = 'splitting central and worker data'
     logger.info('Splitting data into central and workers pools')
-    
-    parameter_folder_path = 'parameters/experiment_' + str(current_experiment_number)
-    central_parameters_path = parameter_folder_path + '/central.txt'
-    worker_parameters_path = parameter_folder_path + '/worker.txt'
 
-    central_parameters = get_file_data(
-        file_lock = file_lock,
-        file_path = central_parameters_path
+    experiment_folder = experiments_folder + '/' + str(central_status['experiment'])
+    
+    parameter_folder_path = experiment_folder + '/parameters'
+    
+    central_parameters_path = parameter_folder_path + '/central'
+    central_parameters_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = central_parameters_path
     )
+    central_parameters = central_parameters_object['data']
 
     if central_parameters is None:
         return False
 
-    worker_parameters = get_file_data(
-        file_lock = file_lock,
-        file_path = worker_parameters_path
+    worker_parameters_path = parameter_folder_path + '/worker'
+    worker_parameters_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = worker_parameters_path
     )
+    worker_parameters = worker_parameters_object['data']
 
     if worker_parameters is None:
         return False
     
-    data_folder = 'data/experiment_' + str(current_experiment_number)
+    data_folder_path = experiment_folder + '/data'
+    source_data_path = data_folder_path + '/source'
 
-    source_data_path = data_folder + '/source.csv'
-    
-    source_df = get_file_data(
-        file_lock = file_lock,
-        file_path = source_data_path
+    source_data_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = source_data_path
     )
+    data_columns = format_metadata_dict(source_data_object['metadata'])['columns']
+    source_df = pd.DataFrame(source_data_object['data'], columns = data_columns)
     splitted_data_df = source_df.drop('step', axis = 1)
     
     central_data_pool = splitted_data_df.sample(n = central_parameters['sample-pool'])
-    central_pool_path = data_folder + '/central_pool.csv'
-    store_file_data(
-        file_lock = file_lock,
-        replace = False,
-        file_folder_path = data_folder,
-        file_path = central_pool_path,
-        data = central_data_pool
+    central_pool_path = data_folder_path + '/central-pool'
+    
+    object_data = central_data_pool.values.tolist()
+    object_metadata = encode_metadata_lists_to_strings({'columns': central_data_pool.columns.tolist()})
+    create_or_update_object(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = central_pool_path,
+        data = object_data,
+        metadata = object_metadata
     )
 
     central_indexes = central_data_pool.index.tolist()
     splitted_data_df.drop(central_indexes)
     worker_data_pool = splitted_data_df.sample(n = worker_parameters['sample-pool'])
-    worker_pool_path = data_folder + '/worker_pool.csv'
-    store_file_data(
-        file_lock = file_lock,
-        replace = False,
-        file_folder_path = data_folder,
-        file_path = worker_pool_path,
-        data = worker_data_pool
+    worker_pool_path = data_folder_path + '/worker-pool'
+
+    object_data = worker_data_pool.values.tolist()
+    object_metadata = encode_metadata_lists_to_strings({'columns': worker_data_pool.columns.tolist()})
+    create_or_update_object(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = worker_pool_path,
+        data = object_data,
+        metadata = object_metadata
     )
 
     central_status['data-split'] = True
-    store_file_data(
-        file_lock = file_lock,
-        replace = True,
-        file_folder_path = '',
-        file_path = central_status_path,
-        data = central_status
+    create_or_update_object(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = central_status_path,
+        data = central_status,
+        metadata = {}
     )
     os.environ['STATUS'] = 'central and worker data split'
     logger.info('Central and workers pools created')
@@ -133,7 +159,8 @@ def central_worker_data_split(
 # Refactored and works
 def split_data_between_workers(
     file_lock: any,
-    logger: any
+    logger: any,
+    minio_client: any
 ) -> bool:
     # For some reason this gets falses
     this_process = psutil.Process(os.getpid())
@@ -141,15 +168,17 @@ def split_data_between_workers(
     disk_start = psutil.disk_usage('.').used
     cpu_start = this_process.cpu_percent(interval=0.2)
     time_start = time.time()
-    
-    current_experiment_number = get_current_experiment_number()
-    status_folder_path = 'status/experiment_' + str(current_experiment_number)
-    central_status_path = status_folder_path + '/central.txt'
-    
-    central_status = get_file_data(
-        file_lock = file_lock,
-        file_path = central_status_path
+
+    experiments_folder = 'experiments'
+    central_bucket = 'central'
+    central_status_path = experiments_folder + '/status'
+    central_status_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = central_status_path
     )
+    central_status = central_status_object['data']
     
     if central_status is None:
         return False

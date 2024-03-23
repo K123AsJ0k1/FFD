@@ -1,113 +1,152 @@
-from functions.general import get_current_experiment_number, get_file_data
-from functions.split import central_worker_data_split, split_data_between_workers
-from functions.data import preprocess_into_train_test_and_evaluate_tensors
-from functions.model import initial_model_training
-from functions.update import send_context_to_workers
-from functions.aggregation import update_global_model, evalute_global_model
-from functions.storage import store_file_data, store_metrics_and_resources
-import time
+from functions.platforms.minio import get_object_data_and_metadata, create_or_update_object
+from functions.general import format_metadata_dict, encode_metadata_lists_to_strings
+from datetime import datetime
 # Refactored and works
 def start_pipeline(
-    file_lock: any
-):
-    current_experiment_number = get_current_experiment_number()
-    central_status_path = 'status/experiment_' + str(current_experiment_number) + '/central.txt'
-    central_status = get_file_data(
-        file_lock = file_lock,
-        file_path = central_status_path
+    file_lock: any,
+    logger: any,
+    minio_client: any,
+    parameters: any,
+    df_data: list,
+    df_columns: list
+):  
+    central_bucket = 'central'
+    central_status_path = 'experiments/status'
+    central_status_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = central_status_path
     )
+    central_status = central_status_object['data']
 
     if central_status is None:
         return False
     
     if central_status['start'] and not central_status['complete']:
         return False
-
-    central_resources_path = 'resources/experiment_' + str(current_experiment_number) + '/central.txt'
-    central_resources = get_file_data(
-        file_lock = file_lock,
-        file_path = central_resources_path
+    
+    times = {
+        'experiment-date': datetime.now().strftime('%Y-%m-%d-%H:%M:%S.%f'),
+        'experiment-time-start':0,
+        'experiment-time-end':0,
+        'experiment-total-seconds': 0,
+    }
+    object_path = 'experiments/' + str(central_status['experiment']) + '/times'
+    create_or_update_object(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = object_path,
+        data = times,
+        metadata = {}
     )
     
-    central_resources['general']['times'][str(central_status['cycle'])]['cycle-time-start'] = time.time()
-    store_file_data(
-        file_lock = file_lock,
-        replace = True,
-        file_folder_path = '',
-        file_path = central_resources_path,
-        data = central_resources
+    for name in parameters.keys():
+        template_parameter_path = 'experiments/templates' + '/' + str(name) + '-parameters'
+        template_parameter_object = get_object_data_and_metadata(
+            logger = logger,
+            minio_client = minio_client,
+            bucket_name = central_bucket ,
+            object_path = template_parameter_path
+        )
+        template_parameters = template_parameter_object['data']
+        given_parameters = parameters[name]
+        for key in template_parameters.keys():
+            template_parameters[key] = given_parameters[key]
+        
+        modified_parameter_path = 'experiments/' + str(central_status['experiment']) + '/parameters/' + str(name)
+        create_or_update_object(
+            logger = logger,
+            minio_client = minio_client,
+            bucket_name = central_bucket,
+            object_path = modified_parameter_path,
+            data = template_parameters,
+            metadata = {}
+        )
+    formatted_metadata = encode_metadata_lists_to_strings({'columns': df_columns})
+    source_data_path = 'experiments/' + str(central_status['experiment']) + '/data/source'
+    create_or_update_object(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = source_data_path,
+        data = df_data,
+        metadata = formatted_metadata
     )
     
     central_status['start'] = True
-    store_file_data(
-        file_lock = file_lock,
-        replace = True,
-        file_folder_path = '',
-        file_path = central_status_path,
-        data = central_status
+    create_or_update_object(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = central_status_path,
+        data = central_status,
+        metadata = {}
     )
-
+    
     return True
-# Refactored and works
-def data_pipeline(
+# Refactor
+def processing_pipeline(
     task_file_lock: any,
     task_logger: any
 ):
-    # Works
+    # 
     status = central_worker_data_split(
         file_lock = task_file_lock,
         logger = task_logger
     )
     task_logger.info('Central-worker data split:' + str(status))
-    # Works
+    # 
     status = preprocess_into_train_test_and_evaluate_tensors(
         file_lock = task_file_lock,
         logger = task_logger
     )
     task_logger.info('Central pool preprocessing:' + str(status))
-# Refactored and works
+'''
+# Refactor
 def model_pipeline(
     task_file_lock: any,
     task_logger: any
 ):  
-    # Works
+    # 
     status = initial_model_training(
         file_lock = task_file_lock,
         logger = task_logger
     )
     task_logger.info('Initial model training:' + str(status))
-# Refactored and works
+# Refactor
 def update_pipeline(
     task_file_lock: any,
     task_logger: any
 ):
-    # Check
+    # 
     status = split_data_between_workers(
         file_lock = task_file_lock,
         logger = task_logger
     )
     task_logger.info('Worker data split:' + str(status))
-    # Check
+    # 
     status = send_context_to_workers(
         file_lock = task_file_lock,
         logger = task_logger
     )
     task_logger.info('Worker context sending:' + str(status))
-# Refactored and works
+# Refactor
 def aggregation_pipeline(
     task_file_lock: any,
     task_logger: any
 ):
-    # Check
+    # 
     status = update_global_model(
         file_lock = task_file_lock,
         logger = task_logger
     )
     task_logger.info('Updating global model:' + str(status))
-    # Check
+    # 
     status = evalute_global_model(
         file_lock = task_file_lock,
         logger = task_logger
     )
     task_logger.info('Global model evaluation:' + str(status))
-
+'''

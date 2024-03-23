@@ -7,8 +7,6 @@ import psutil
 from sklearn.model_selection import train_test_split
 from torch.utils.data import TensorDataset
 
-from functions.general import get_current_experiment_number, get_file_data
-from functions.storage import store_metrics_and_resources, store_file_data
 # Created and works
 def data_augmented_sample(
     pool_df: any,

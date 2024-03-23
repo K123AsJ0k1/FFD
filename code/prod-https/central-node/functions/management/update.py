@@ -5,7 +5,7 @@ import psutil
 import time
 
 from functions.general import get_current_experiment_number, get_wanted_model, get_file_data, get_files
-from functions.storage import store_metrics_and_resources, store_file_data
+from functions.management.storage import store_metrics_and_resources, store_file_data
 
 # Refactored and works 
 def send_context_to_workers(

@@ -1,5 +1,8 @@
 from flask import Flask
 from apscheduler.schedulers.background import BackgroundScheduler
+from minio import Minio
+from prometheus_client import CollectorRegistry
+from mlflow import MlflowClient
 
 import threading
 import logging
@@ -10,17 +13,9 @@ def create_app():
 
     app.file_lock = threading.Lock()
 
-    os.makedirs('storage', exist_ok=True)
-    os.makedirs('storage/logs', exist_ok=True)
-    os.makedirs('storage/parameters', exist_ok=True)
-    os.makedirs('storage/status', exist_ok=True)
-    os.makedirs('storage/data', exist_ok=True)
-    os.makedirs('storage/models', exist_ok=True)
-    os.makedirs('storage/metrics', exist_ok=True)
-    os.makedirs('storage/resources', exist_ok=True)
-    os.makedirs('storage/tensors', exist_ok=True)
-    
-    central_log_path = 'storage/logs/central.log'
+    os.makedirs('status', exist_ok=True)
+
+    central_log_path = 'status/central.log'
     if os.path.exists(central_log_path):
         os.remove(central_log_path)
 
@@ -31,52 +26,75 @@ def create_app():
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
     app.logger = logger
+    
+    registry = CollectorRegistry()
+    app.prometheus_registry = registry
+    app.prometheus_gauges = {}
+    app.logger.warning('Prometheus registry and gauges ready')
 
-    from functions.initilization import initilize_storage_templates
-    initilize_storage_templates(
-        file_lock = app.file_lock
+    minio_client = Minio(
+        endpoint = "127.0.0.1:9000", 
+        access_key = 'minio', 
+        secret_key = 'minio123',
+        secure = False
+    )
+    app.minio_client = minio_client
+    app.logger.warning('Minion client ready')
+
+    mlflow_cient = MlflowClient(
+        tracking_uri = "http://127.0.0.1:9000"
+    )
+    app.mlflow_client = mlflow_cient
+    app.logger.warning('MLflow client ready')
+
+    from functions.initilization import initilize_minio
+    initilize_minio(
+        logger = app.logger,
+        minio_client = minio_client
     )
 
-    scheduler = BackgroundScheduler(daemon = True)
-    from functions.pipeline import data_pipeline
-    from functions.pipeline import model_pipeline
-    from functions.pipeline import update_pipeline
-    from functions.pipeline import aggregation_pipeline
+    #scheduler = BackgroundScheduler(daemon = True)
+    #from functions.pipeline import data_pipeline
+    #from functions.pipeline import model_pipeline
+    #from functions.pipeline import update_pipeline
+    #from functions.pipeline import aggregation_pipeline
     
     given_args = [
         app.file_lock,
         app.logger
     ] 
     # Works 30 sec
-    scheduler.add_job(
-        func = data_pipeline,
-        trigger = "interval",
-        seconds = 30,
-        args = given_args 
-    )
+    #scheduler.add_job(
+    #    func = data_pipeline,
+    #    trigger = "interval",
+    #    seconds = 30,
+    #    args = given_args 
+    #)
     # Works 60 sec
-    scheduler.add_job(
-        func = model_pipeline,
-        trigger = "interval",
-        seconds = 60,
-        args = given_args 
-    )
+    #scheduler.add_job(
+    #    func = model_pipeline,
+    #    trigger = "interval",
+    #    seconds = 60,
+    #    args = given_args 
+    #)
     # Works 20 sec
-    scheduler.add_job(
-        func = update_pipeline,
-        trigger = "interval",
-        seconds = 20,
-        args = given_args 
-    )
+    #scheduler.add_job(
+    #    func = update_pipeline,
+    #    trigger = "interval",
+    #    seconds = 20,
+    #    args = given_args 
+    #)
     # Works 40 sec
-    scheduler.add_job(
-        func = aggregation_pipeline,
-        trigger = "interval",
-        seconds = 40,
-        args = given_args 
-    )
-    scheduler.start()
-    app.logger.info('Scheduler ready')
+    #scheduler.add_job(
+    #    func = aggregation_pipeline,
+    #    trigger = "interval",
+    #    seconds = 40,
+    #    args = given_args 
+    #)
+    #scheduler.start()
+    #app.logger.info('Scheduler ready')
+
+    
 
     from routes.general import general
     from routes.model import model
