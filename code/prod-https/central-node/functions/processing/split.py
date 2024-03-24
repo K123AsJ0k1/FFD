@@ -8,11 +8,13 @@ from functions.processing.data import data_augmented_sample
 from functions.platforms.minio import get_object_data_and_metadata, create_or_update_object
 from functions.general import format_metadata_dict, encode_metadata_lists_to_strings
 from functions.management.storage import store_metrics_and_resources
-# Refactored
+# Refactored and works 
 def central_worker_data_split(
     file_lock: any,
     logger: any,
-    minio_client: any
+    minio_client: any,
+    prometheus_registry: any,
+    prometheus_metrics: any
 ) -> bool:
     this_process = psutil.Process(os.getpid())
     mem_start = psutil.virtual_memory().used 
@@ -137,7 +139,7 @@ def central_worker_data_split(
     time_diff = (time_end - time_start) 
     cpu_diff = cpu_end - cpu_start 
     mem_diff = (mem_end - mem_start) 
-    disk_diff = (disk_end - disk_start) 
+    disk_diff = (disk_end - disk_start)  
 
     resource_metrics = {
         'name': 'central-worker-data-split',
@@ -149,13 +151,17 @@ def central_worker_data_split(
 
     status = store_metrics_and_resources(
         file_lock = file_lock,
+        logger = logger,
+        minio_client = minio_client,
+        prometheus_registry = prometheus_registry,
+        prometheus_metrics = prometheus_metrics,
         type = 'resources',
-        subject = 'central',
         area = 'function',
         metrics = resource_metrics
     )
 
     return True
+'''
 # Refactored and works
 def split_data_between_workers(
     file_lock: any,
@@ -318,3 +324,4 @@ def split_data_between_workers(
     )
 
     return True  
+'''

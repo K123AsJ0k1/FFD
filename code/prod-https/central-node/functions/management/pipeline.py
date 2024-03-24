@@ -1,11 +1,17 @@
 from functions.platforms.minio import get_object_data_and_metadata, create_or_update_object
-from functions.general import format_metadata_dict, encode_metadata_lists_to_strings
+from functions.general import encode_metadata_lists_to_strings
+from functions.processing.split import central_worker_data_split
+from functions.processing.data import preprocess_into_train_test_and_evaluate_tensors
+from functions.training.model import initial_model_training
+from functions.platforms.mlflow import start_experiment
 from datetime import datetime
 # Refactored and works
 def start_pipeline(
     file_lock: any,
     logger: any,
+    mlflow_client: any,
     minio_client: any,
+    experiment: any,
     parameters: any,
     df_data: list,
     df_columns: list
@@ -25,6 +31,13 @@ def start_pipeline(
     
     if central_status['start'] and not central_status['complete']:
         return False
+    
+    experiment_id = start_experiment(
+        logger = logger,
+        mlflow_client = mlflow_client,
+        experiment_name = experiment['name'],
+        experiment_tags = experiment['tags']
+    )
     
     times = {
         'experiment-date': datetime.now().strftime('%Y-%m-%d-%H:%M:%S.%f'),
@@ -74,7 +87,7 @@ def start_pipeline(
         data = df_data,
         metadata = formatted_metadata
     )
-    
+    central_status['experiment-id'] = experiment_id
     central_status['start'] = True
     create_or_update_object(
         logger = logger,
@@ -86,35 +99,52 @@ def start_pipeline(
     )
     
     return True
-# Refactor
+# Refactored and works
 def processing_pipeline(
     task_file_lock: any,
-    task_logger: any
+    task_logger: any,
+    task_minio_client: any,
+    task_prometheus_registry: any,
+    task_prometheus_metrics: any
 ):
-    # 
+    # Works
     status = central_worker_data_split(
         file_lock = task_file_lock,
-        logger = task_logger
+        logger = task_logger,
+        minio_client = task_minio_client,
+        prometheus_registry = task_prometheus_registry,
+        prometheus_metrics = task_prometheus_metrics
     )
     task_logger.info('Central-worker data split:' + str(status))
-    # 
+    # Works
     status = preprocess_into_train_test_and_evaluate_tensors(
         file_lock = task_file_lock,
-        logger = task_logger
+        logger = task_logger,
+        minio_client = task_minio_client,
+        prometheus_registry = task_prometheus_registry,
+        prometheus_metrics = task_prometheus_metrics
     )
     task_logger.info('Central pool preprocessing:' + str(status))
-'''
 # Refactor
 def model_pipeline(
     task_file_lock: any,
-    task_logger: any
+    task_logger: any,
+    task_minio_client: any,
+    task_mlflow_client: any,
+    task_prometheus_registry: any,
+    task_prometheus_metrics: any,
 ):  
     # 
     status = initial_model_training(
         file_lock = task_file_lock,
-        logger = task_logger
+        logger = task_logger,
+        mlflow_client = task_mlflow_client,
+        minio_client = task_minio_client,
+        prometheus_registry = task_prometheus_registry,
+        prometheus_metrics = task_prometheus_metrics
     )
     task_logger.info('Initial model training:' + str(status))
+'''
 # Refactor
 def update_pipeline(
     task_file_lock: any,

@@ -11,14 +11,17 @@ from datetime import datetime
 from pathlib import Path
 from collections import OrderedDict
 
+from prometheus_client import push_to_gateway
+
 from functions.platforms.minio import *
 # Refactored
 def store_metrics_and_resources( 
    file_lock: any,
    logger: any,
    minio_client: any,
+   prometheus_registry: any,
+   prometheus_metrics: any,
    type: str,
-   subject: str,
    area: str,
    metrics: any
 ) -> bool:
@@ -33,25 +36,48 @@ def store_metrics_and_resources(
     )
     central_status = central_status_object['data']
 
-    cycle_folder_path = experiments_folder + '/' + str(central_status['experiments']) + '/' + str(central_status['cycle'])
+    cycle_folder_path = experiments_folder + '/' + str(central_status['experiment']) + '/' + str(central_status['cycle'])
     object_path = None
     object_data = None
     if type == 'metrics' or type == 'resources':
-        if subject == 'global':
+        if type == 'metrics':
             object_path = cycle_folder_path + '/metrics'
-        if subject == 'central':
+            for key,value in metrics.items():
+                if key == 'name':
+                    continue
+                metric_name = prometheus_metrics['central-global-names'][key]
+                prometheus_metrics['central-global'].labels(
+                    date = datetime.now().strftime('%Y-%m-%d-%H:%M:%S.%f'),
+                    experiment = central_status['experiment'], 
+                    cycle = central_status['cycle'],
+                    metric = metric_name,
+                ).set(value)
+        if type == 'resources':
             object_path = cycle_folder_path + '/resources/' + area
-    
+            action_name = metrics['name']
+            for key,value in metrics.items():
+                if key == 'name':
+                    continue
+                metric_name = prometheus_metrics['central-resources-names'][key]
+                prometheus_metrics['central-resources'].labels(
+                    date = datetime.now().strftime('%Y-%m-%d-%H:%M:%S.%f'),
+                    experiment = central_status['experiment'], 
+                    cycle = central_status['cycle'],
+                    area = area,
+                    name = action_name,
+                    metric = metric_name,
+                ).set(value)
+            
         wanted_object = get_object_data_and_metadata(
             logger = logger,
             minio_client = minio_client,
             bucket_name = central_bucket,
             object_path = object_path
         )
-        object_data = wanted_object['data']
-
-        if object_data is None:
+        if wanted_object is None:
             object_data = {}
+        else:
+            object_data = wanted_object['data']
 
         new_key = len(object_data) + 1
         object_data[str(new_key)] = metrics
@@ -64,6 +90,8 @@ def store_metrics_and_resources(
             data = object_data,
             metadata = {}
         )
+
+        #push_to_gateway('http:127.0.0.1:9091', job = 'central-', registry =  prometheus_registry) 
     
     return True
 # refactored

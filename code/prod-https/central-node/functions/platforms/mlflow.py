@@ -28,49 +28,51 @@ MLFlow run format:
         - status: 'RUNNING'
         - user_id: 'unknown'
 '''
-
+# Refactored and works
 def start_experiment(
+    logger: any,
+    mlflow_client: any,
     experiment_name: str,
-    experiemnt_tags: dict
+    experiment_tags: dict
 ) -> int:
-    current_app.logger.info('Starting a experiment in MLflow')
-    MLFLOW_CLIENT = current_app.mlflow_client 
+    MLFLOW_CLIENT = mlflow_client
     try:
         experiment_id = MLFLOW_CLIENT.create_experiment(
             name = experiment_name,
-            tags = experiemnt_tags
+            tags = experiment_tags,
+            artifact_location="s3://mlflow/mlruns"
         )
-        current_app.logger.info('Starting succeeded')
         return experiment_id
     except Exception as e:
-        current_app.logger.error('MLflow experiment starting error')
-        current_app.logger.error(e)
+        logger.error('MLflow experiment starting error')
+        logger.error(e)
         return None
-
+# Refactored
 def check_experiment(
+    logger: any,
+    mlflow_client: any,
     experiment_name: str
 ) -> dict:
-    current_app.logger.info('Checking a experiment in MLflow')
-    MLFLOW_CLIENT = current_app.mlflow_client 
+    MLFLOW_CLIENT = mlflow_client
     try:
         experiment_object = MLFLOW_CLIENT.get_experiment_by_name(
             name = experiment_name
         )
-        current_app.logger.info('Checking succeeded')
         return experiment_object
     except Exception as e:
-        current_app.logger.error('MLflow experiment checking error')
-        current_app.logger.error(e)
+        logger.error('MLflow experiment checking error')
+        logger.error(e)
         return None
-
+# Refactored
 def get_experiments(
+    logger: any,
+    mlflow_client: any,
     experiment_type: int,
     max_amount: int,
     filter: str
 ) -> dict:
     # Types are ACTIVE_ONLY = 1, DELETED_ONLY = 2 and ALL = 3
-    current_app.logger.info('Getting experiments from MLflow')
-    MLFLOW_CLIENT = current_app.mlflow_client 
+    MLFLOW_CLIENT = mlflow_client
     try:
         experiment_objects = MLFLOW_CLIENT.search_experiments(
             view_type = experiment_type,
@@ -87,20 +89,20 @@ def get_experiments(
                 'created': experiment.creation_time,
                 'updated': experiment.last_update_time
             }
-        current_app.logger.info('Getting experiments succeeded')
         return experiment_dict
     except Exception as e:
-        current_app.logger.error('MLflow experiment getting error')
-        current_app.logger.error(e)
+        logger.error('MLflow experiment getting error')
+        logger.error(e)
         return None
-
+# Refactored
 def start_run(
+    logger: any,
+    mlflow_client: any,
     experiment_id: str,
     tags: dict,
     name: str
 ) -> dict:
-    current_app.logger.info('Starting a run in MLflow')
-    MLFLOW_CLIENT = current_app.mlflow_client 
+    MLFLOW_CLIENT = mlflow_client 
     try:
         run_object = MLFLOW_CLIENT.create_run(
             experiment_id = experiment_id,
@@ -114,18 +116,18 @@ def start_run(
             'stage': run_object.info.lifecycle_stage,
             'status': run_object.info.status
         }
-        current_app.logger.info('Starting succeeded')
         return run_dict
     except Exception as e:
-        current_app.logger.error('MLflow run starting error')
-        current_app.logger.error(e)
+        logger.error('MLflow run starting error')
+        logger.error(e)
         return None
-
+# Refactored
 def check_run(
+    logger: any,
+    mlflow_client: any,
     run_id: str
 ) -> dict:
-    current_app.logger.info('Checking a run in MLflow')
-    MLFLOW_CLIENT = current_app.mlflow_client 
+    MLFLOW_CLIENT = mlflow_client
     try:
         run_object = MLFLOW_CLIENT.get_run(
             run_id = run_id
@@ -144,17 +146,19 @@ def check_run(
         }
         return run_dict
     except Exception as e:
-        current_app.logger.error('MLflow run checking error')
-        current_app.logger.error(e)
+        logger.error('MLflow run checking error')
+        logger.error(e)
         return None
-
+# Refactored
 def update_run(
+    logger: any,
+    mlflow_client: any,
     run_id: str,
     parameters: dict,
-    metrics: dict
+    metrics: dict,
+    artifacts: dict
 ) -> bool:
-    current_app.logger.info('Updating a run in MLflow')
-    MLFLOW_CLIENT = current_app.mlflow_client 
+    MLFLOW_CLIENT = mlflow_client 
     try:
         for param_key, param_value in parameters.items():
             MLFLOW_CLIENT.log_param(
@@ -168,40 +172,45 @@ def update_run(
                 key = metric_key,
                 value = metric_value
             )
-        current_app.logger.info('Updating succeeded')
+        for path in artifacts:
+            MLFLOW_CLIENT.log_artifact(
+                run_id = run_id,
+                local_path = path
+            )
         return True
     except Exception as e:
-        current_app.logger.error('MLflow run updating error')
-        current_app.logger.error(e)
+        logger.error('MLflow run updating error')
+        logger.error(e)
         return False
-    
+# Recatored
 def end_run(
+    logger: any,
+    mlflow_client: any,
     run_id: str,
     status: str
 ) -> bool:
     # run status are FAILED = 4, FINISHED = 3, KILLED = 5, RUNNING = 1 and SCHEDULED = 2
-    current_app.logger.info('Ending a run in MLflow')
-    MLFLOW_CLIENT = current_app.mlflow_client
+    MLFLOW_CLIENT = mlflow_client
     try:
         MLFLOW_CLIENT.set_terminated(
             run_id = run_id,
             status = status
         )
-        current_app.logger.info('Ending succeeded')
         return True
     except Exception as e:
-        current_app.logger.error('MLflow run ending error')
-        current_app.logger.error(e)
+        logger.error('MLflow run ending error')
+        logger.error(e)
         return False
-
+# Refactored
 def get_runs(
+    logger: any,
+    mlflow_client: any,
     experiment_ids: list,
     filter: str,
     type: int,
     max_amount: int
 ) -> dict:
-    current_app.logger.info('Getting runs from MLflow')
-    MLFLOW_CLIENT = current_app.mlflow_client 
+    MLFLOW_CLIENT = mlflow_client
     try:
         runs = MLFLOW_CLIENT.search_runs(
             experiment_ids = experiment_ids,
@@ -222,9 +231,8 @@ def get_runs(
                 'parameters': run.data.params,
                 'metrics': run.data.metrics
             }
-        current_app.logger.info('Getting succeeded')
         return run_dict
     except Exception as e:
-        current_app.logger.error('MLflow run getting error')
-        current_app.logger.error(e)
+        logger.error('MLflow run getting error')
+        logger.error(e)
         return None

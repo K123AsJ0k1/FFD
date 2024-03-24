@@ -4,8 +4,12 @@ import pandas as pd
 import torch 
 import time
 import psutil
+
 from sklearn.model_selection import train_test_split
 from torch.utils.data import TensorDataset
+from functions.platforms.minio import get_object_data_and_metadata, create_or_update_object
+from functions.general import format_metadata_dict
+from functions.management.storage import store_metrics_and_resources
 
 # Created and works
 def data_augmented_sample(
@@ -25,10 +29,13 @@ def data_augmented_sample(
     augmented_sample_df = pd.concat([frauds_df,non_fraud_df])
     randomized_sample_df = augmented_sample_df.sample(frac = 1, replace = False)
     return randomized_sample_df
-# Refactored and works
+# Refactored and works 
 def preprocess_into_train_test_and_evaluate_tensors(
     file_lock: any,
-    logger: any
+    logger: any,
+    minio_client: any,
+    prometheus_registry: any,
+    prometheus_metrics: any
 ) -> bool:
     this_process = psutil.Process(os.getpid())
     mem_start = psutil.virtual_memory().used 
@@ -36,13 +43,16 @@ def preprocess_into_train_test_and_evaluate_tensors(
     cpu_start = this_process.cpu_percent(interval=0.2)
     time_start = time.time()
 
-    current_experiment_number = get_current_experiment_number()
-    central_status_path = 'status/experiment_' + str(current_experiment_number) + '/central.txt'
-    
-    central_status = get_file_data(
-        file_lock = file_lock,
-        file_path = central_status_path
+    experiments_folder = 'experiments'
+    central_bucket = 'central'
+    central_status_path = experiments_folder + '/status'
+    central_status_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = central_status_path
     )
+    central_status = central_status_object['data']
 
     if central_status is None:
         return False
@@ -62,26 +72,39 @@ def preprocess_into_train_test_and_evaluate_tensors(
     os.environ['STATUS'] = 'preprocessing into tensors'
     logger.info('Preprocessing into tensors')
 
-    parameter_folder_path = 'parameters/experiment_' + str(current_experiment_number)
-    central_parameters_path = parameter_folder_path + '/central.txt'
-    model_parameters_path = parameter_folder_path + '/model.txt' 
-
-    central_parameters = get_file_data(
-        file_lock = file_lock,
-        file_path = central_parameters_path
-    )
-
-    model_parameters = get_file_data(
-        file_lock = file_lock,
-        file_path = model_parameters_path
-    )
+    experiment_folder = experiments_folder + '/' + str(central_status['experiment'])
     
-    central_pool_path = 'data/experiment_' + str(current_experiment_number) + '/central_pool.csv'
-    central_data_df = get_file_data(
-        file_lock = file_lock,
-        file_path = central_pool_path
+    parameter_folder_path = experiment_folder + '/parameters'
+    central_parameters_path = parameter_folder_path + '/central'
+    central_parameters_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = central_parameters_path
     )
-    
+    central_parameters = central_parameters_object['data']
+
+    model_parameters_path = parameter_folder_path + '/model' 
+    model_parameters_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = model_parameters_path
+    )
+    model_parameters = model_parameters_object['data']
+    data_folder = experiment_folder + '/data'
+
+    central_pool_path = data_folder + '/central-pool'
+    central_pool_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = central_pool_path
+    )
+    central_parameters = central_parameters_object['data']
+    data_columns = format_metadata_dict(central_pool_object['metadata'])['columns']
+    central_data_df = pd.DataFrame(central_pool_object['data'], columns = data_columns)
+
     preprocessed_df = None
     if central_parameters['data-augmentation']['active']:
         used_data_df = data_augmented_sample(
@@ -136,42 +159,47 @@ def preprocess_into_train_test_and_evaluate_tensors(
         torch.tensor(y_eval, dtype=torch.float32)
     )
     # tensors have format train/test/eval_(cycle)
-    tensors_folder_path = 'tensors/experiment_' + str(current_experiment_number)
-    train_tensor_path = tensors_folder_path  + '/train_0.pt'
-    store_file_data(
-        file_lock = file_lock,
-        replace = False,
-        file_folder_path = tensors_folder_path,
-        file_path = train_tensor_path,
-        data = train_tensor
+    tensors_folder_path = experiment_folder + '/tensors'
+    train_tensor_path = tensors_folder_path  + '/train'
+    create_or_update_object(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = train_tensor_path ,
+        data = train_tensor,
+        metadata = {}
     )
-    test_tensor_path = tensors_folder_path  + '/test_0.pt'
-    store_file_data(
-        file_lock = file_lock,
-        replace = False,
-        file_folder_path = tensors_folder_path,
-        file_path = test_tensor_path,
-        data = test_tensor
+ 
+    test_tensor_path = tensors_folder_path  + '/test'
+    create_or_update_object(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = test_tensor_path ,
+        data = test_tensor,
+        metadata = {}
     )
-    eval_tensor_path = tensors_folder_path  + '/eval_0.pt'
-    store_file_data(
-        file_lock = file_lock,
-        replace = False,
-        file_folder_path = tensors_folder_path,
-        file_path = eval_tensor_path,
-        data = eval_tensor
+    eval_tensor_path = tensors_folder_path  + '/eval'
+    create_or_update_object(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = eval_tensor_path ,
+        data = eval_tensor,
+        metadata = {}
     )
 
     central_status['preprocessed'] = True
     central_status['train-amount'] = X_train.shape[0]
     central_status['test-amount'] = X_test.shape[0]
     central_status['eval-amount'] = X_eval.shape[0]
-    store_file_data(
-        file_lock = file_lock,
-        replace = True,
-        file_folder_path = '',
-        file_path = central_status_path,
-        data = central_status
+    create_or_update_object(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = central_status_path,
+        data = central_status,
+        metadata = {}
     )
     
     os.environ['STATUS'] = 'tensors created'
@@ -195,10 +223,13 @@ def preprocess_into_train_test_and_evaluate_tensors(
         'disk-bytes': round(disk_diff,5)
     }
 
-    status = store_metrics_and_resources(
+    store_metrics_and_resources(
         file_lock = file_lock,
+        logger = logger,
+        minio_client = minio_client,
+        prometheus_registry = prometheus_registry,
+        prometheus_metrics = prometheus_metrics,
         type = 'resources',
-        subject = 'central',
         area = 'function',
         metrics = resource_metrics
     )

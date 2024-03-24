@@ -9,6 +9,14 @@ import numpy as np
 from sklearn.metrics import confusion_matrix
 from torch.utils.data import DataLoader
 
+from functions.platforms.minio import get_object_data_and_metadata, create_or_update_object
+from functions.general import format_metadata_dict
+from functions.management.storage import store_metrics_and_resources
+from functions.platforms.mlflow import start_run, update_run, end_run
+
+import os
+import mlflow
+
 # Refactored and works
 class FederatedLogisticRegression(nn.Module):
     def __init__(self, dim, bias=True):
@@ -49,22 +57,12 @@ class FederatedLogisticRegression(nn.Module):
     def apply_parameters(model, parameters):
         model.load_state_dict(parameters)
 # Refactored and works
-def get_train_test_loaders(
-    train_tensor: any,
-    test_tensor: any,
-    model_parameters: any 
-) -> any:
-    train_loader = DataLoader(
-        train_tensor,
-        batch_size = int(len(train_tensor) * model_parameters['sample-rate']),
-        generator = torch.Generator().manual_seed(model_parameters['seed'])
-    )
-    test_loader = DataLoader(test_tensor, 64)
-    return train_loader,test_loader
-# Refactored and works
 def train(
     file_lock: any,
     logger: any,
+    minio_client: any,
+    prometheus_registry: any,
+    prometheus_metrics: any,
     model: any,
     train_loader: any,
     model_parameters: any
@@ -116,16 +114,23 @@ def train(
         'disk-bytes': round(disk_diff,5)
     }
 
-    status = store_metrics_and_resources(
+    store_metrics_and_resources(
         file_lock = file_lock,
+        logger = logger,
+        minio_client = minio_client,
+        prometheus_registry = prometheus_registry,
+        prometheus_metrics = prometheus_metrics,
         type = 'resources',
-        subject = 'central',
         area = 'training',
         metrics = resource_metrics
     )
 # Refactored and works
 def test(
     file_lock: any,
+    logger: any,
+    minio_client: any,
+    prometheus_registry: any,
+    prometheus_metrics: any,
     model: any, 
     test_loader: any,
     name: any
@@ -179,10 +184,13 @@ def test(
             'disk-bytes': round(disk_diff,5)
         }
 
-        status = store_metrics_and_resources(
+        store_metrics_and_resources(
             file_lock = file_lock,
+            logger = logger,
+            minio_client = minio_client,
+            prometheus_registry = prometheus_registry,
+            prometheus_metrics = prometheus_metrics,
             type = 'resources',
-            subject = 'central',
             area = 'training',
             metrics = resource_metrics
         )
@@ -222,42 +230,14 @@ def test(
         }
         
         return metrics
-# Created and works
-def evaluate(
-    file_lock: any,
-    train_amount: int,
-    current_model: any
-):  
-    current_experiment_number = get_current_experiment_number()
-    eval_tensor_path = 'tensors/experiment_' + str(current_experiment_number) + '/eval_0.pt'
-    eval_tensor = get_file_data(
-        file_lock = file_lock,
-        file_path = eval_tensor_path
-    )
-
-    eval_loader = DataLoader(eval_tensor, 64)
-
-    test_metrics = test(
-        file_lock = file_lock,
-        name = 'evalution',
-        model = current_model, 
-        test_loader = eval_loader
-    )
-    
-    test_metrics['train-amount'] = train_amount
-    test_metrics['test-amount'] = 0
-    test_metrics['eval-amount'] = len(eval_tensor)
-    status = store_metrics_and_resources(
-        file_lock = file_lock,
-        type = 'metrics',
-        subject = 'global',
-        area = '',
-        metrics = test_metrics
-    )
 # Refactored and works
 def initial_model_training(
     file_lock: any,
-    logger: any
+    logger: any,
+    mlflow_client: any,
+    minio_client: any,
+    prometheus_registry: any,
+    prometheus_metrics: any
 ) -> bool:
     this_process = psutil.Process(os.getpid())
     mem_start = psutil.virtual_memory().used 
@@ -265,12 +245,16 @@ def initial_model_training(
     cpu_start = this_process.cpu_percent(interval=0.2)
     time_start = time.time()
 
-    current_experiment_number = get_current_experiment_number()
-    central_status_path =  'status/experiment_' + str(current_experiment_number) + '/central.txt'
-    central_status = get_file_data(
-        file_lock = file_lock,
-        file_path = central_status_path
+    experiments_folder = 'experiments'
+    central_bucket = 'central'
+    central_status_path = experiments_folder + '/status'
+    central_status_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = central_status_path
     )
+    central_status = central_status_object['data']
 
     if central_status is None:
         return False
@@ -286,90 +270,220 @@ def initial_model_training(
 
     os.environ['STATUS'] = 'training initial model'
     logger.info('Training initial model')
+
+    artifact_folder = 'artifacts'
+    mlflow_parameters = {}
+    mlflow_metrics = {}
+    mlflow_artifacts = []
     
-    model_parameters_path = 'parameters/experiment_' + str(current_experiment_number) + '/model.txt'
-    model_parameters = get_file_data(
-        file_lock = file_lock,
-        file_path = model_parameters_path
+    run_data = start_run(
+        logger = logger,
+        mlflow_client = mlflow_client,
+        experiment_id = central_status['experiment-id'],
+        tags = {},
+        name = 'central-initial-training'
     )
+    # Is needed to save artifacts
+    os.environ['MLFLOW_S3_ENDPOINT_URL'] = 'http://127.0.0.1:9000'
+    os.environ['AWS_ACCESS_KEY_ID'] = 'minio'
+    os.environ['AWS_SECRET_ACCESS_KEY'] = 'minio123'
+    # This is for using the with instead of client
+    #mlflow.set_tracking_uri('http://127.0.0.1:5000')
+    #mlflow.set_experiment(experiment_id = central_status['experiment-id'])
+
+    experiment_folder = experiments_folder + '/' + str(central_status['experiment'])
+    parameter_folder_path = experiment_folder + '/parameters'
+    model_parameters_path = parameter_folder_path + '/model' 
+    model_parameters_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = model_parameters_path
+    )
+    model_parameters = model_parameters_object['data']
+    
     torch.manual_seed(model_parameters['seed'])
-    lr_model = FederatedLogisticRegression(dim = model_parameters['input-size'])
-
-    tensor_folder_path = 'tensors/experiment_' + str(current_experiment_number)
-    train_tensor_path = tensor_folder_path +  '/train_0.pt'
-    train_tensor = get_file_data(
-        file_lock = file_lock,
-        file_path = train_tensor_path
-    )
-    test_tensor_path = tensor_folder_path +  '/test_0.pt'
-    test_tensor = get_file_data(
-        file_lock = file_lock,
-        file_path = test_tensor_path
-    )
-
-    given_train_loader, given_test_loader = get_train_test_loaders(
-        train_tensor = train_tensor,
-        test_tensor = test_tensor,
-        model_parameters = model_parameters
-    )
+    model = FederatedLogisticRegression(dim = model_parameters['input-size'])
+    mlflow_parameters['seed'] = model_parameters['seed']
+    mlflow_parameters['input-size'] = model_parameters['input-size']
     
+    tensors_folder_path = experiment_folder + '/tensors'
+    train_tensor_path = tensors_folder_path  + '/train'
+    train_tensor_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = train_tensor_path
+    )
+    train_tensor = train_tensor_object['data']
+    train_tensor_temp_path = artifact_folder + '/train.pt'
+    torch.save(train_tensor, train_tensor_temp_path)
+    mlflow_artifacts.append(train_tensor_temp_path)
+
+    test_tensor_path = tensors_folder_path  + '/test'
+    test_tensor_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = test_tensor_path
+    )
+    test_tensor = test_tensor_object['data']
+    test_tensor_temp_path = artifact_folder + '/test.pt'
+    torch.save(test_tensor, test_tensor_temp_path)
+    mlflow_artifacts.append(test_tensor_temp_path)
+
+    eval_tensor_path = tensors_folder_path  + '/eval'
+    eval_tensor_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = eval_tensor_path
+    )
+    eval_tensor = eval_tensor_object['data']
+    eval_tensor_temp_path = artifact_folder + '/eval.pt'
+    torch.save(test_tensor, eval_tensor_temp_path)
+    mlflow_artifacts.append(eval_tensor_temp_path)
+    
+    generator = torch.Generator().manual_seed(model_parameters['seed'])
+    train_batch_size = int(len(train_tensor) * model_parameters['sample-rate'])
+    test_batch_size = 64
+    eval_batch_size = 64
+
+    mlflow_parameters['train-batch-size'] = train_batch_size
+    mlflow_parameters['test-batch-size'] = test_batch_size
+    mlflow_parameters['eval-batch-size'] = eval_batch_size
+    
+    train_loader = DataLoader(
+        dataset = train_tensor,
+        batch_size = train_batch_size,
+        generator = generator
+    )
+    test_loader = DataLoader(
+        dataset = test_tensor, 
+        batch_size = test_batch_size
+    )
+    eval_loader = DataLoader(
+        dataset = eval_tensor, 
+        batch_size= eval_batch_size
+    )
+
     train(
         file_lock = file_lock,
         logger = logger,
-        model = lr_model, 
-        train_loader = given_train_loader,  
+        minio_client = minio_client,
+        prometheus_registry = prometheus_registry,
+        prometheus_metrics = prometheus_metrics,
+        model = model,
+        train_loader = train_loader,
         model_parameters = model_parameters
     )
-    
+
     test_metrics = test(
         file_lock = file_lock,
-        name = 'testing',
-        model = lr_model, 
-        test_loader = given_test_loader
+        logger = logger,
+        minio_client = minio_client,
+        prometheus_registry = prometheus_registry,
+        prometheus_metrics = prometheus_metrics,
+        model = model,
+        test_loader = test_loader,
+        name = 'testing'
     )
-    
+
     test_metrics['train-amount'] = len(train_tensor)
     test_metrics['test-amount'] = len(test_tensor)
     test_metrics['eval-amount'] = 0
-    status = store_metrics_and_resources(
+
+    store_metrics_and_resources(
         file_lock = file_lock,
+        logger = logger,
+        minio_client = minio_client,
+        prometheus_registry = prometheus_registry,
+        prometheus_metrics = prometheus_metrics,
         type = 'metrics',
-        subject = 'global',
         area = '',
         metrics = test_metrics
     )
 
-    evaluate(
+    eval_metrics = test(
         file_lock = file_lock,
-        train_amount = len(train_tensor),
-        current_model = lr_model
+        logger = logger,
+        minio_client = minio_client,
+        prometheus_registry = prometheus_registry,
+        prometheus_metrics = prometheus_metrics,
+        model = model,
+        test_loader = eval_loader,
+        name = 'evaluation'
     )
-    
-    model_parameters = lr_model.get_parameters(lr_model)
-    #The used format for models is global_(cycle)_(updates)_(samples).pth
-    model_folder_path = 'models/experiment_' + str(current_experiment_number)
-    model_path = model_folder_path + '/global_0_0_' + str(central_status['train-amount']) + '.pth'
-    
-    store_file_data(
+
+    eval_metrics['train-amount'] = len(train_tensor)
+    eval_metrics['test-amount'] = 0
+    eval_metrics['eval-amount'] = len(eval_tensor)
+    store_metrics_and_resources(
         file_lock = file_lock,
-        replace = False,
-        file_folder_path = model_folder_path,
-        file_path = model_path,
-        data = model_parameters 
+        logger = logger,
+        minio_client = minio_client,
+        prometheus_registry = prometheus_registry,
+        prometheus_metrics = prometheus_metrics,
+        type = 'metrics',
+        area = '',
+        metrics = eval_metrics
+    )
+
+    for key,value in test_metrics.items():
+        mlflow_metrics['test-' + str(key)] = value
+
+    for key,value in eval_metrics.items():
+        mlflow_metrics['eval-' + str(key)] = value
+
+    cycle_folder_path = experiments_folder + '/' + str(central_status['experiment']) + '/' + str(central_status['cycle'])
+    global_model_path = cycle_folder_path + '/global-init'
+    model_data = model.get_parameters(model)
+    model_metadata = {
+        'train-amount': str(len(train_tensor)),
+        'test-amount':  str(len(test_tensor)),
+        'eval-amount':  str(len(eval_tensor)),
+    }
+    create_or_update_object(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = global_model_path,
+        data = model_data,
+        metadata = model_metadata
+    )
+    model_temp_path = artifact_folder + '/initial-model.pth'
+    torch.save(model_data, model_temp_path)
+    mlflow_artifacts.append(model_temp_path)
+
+    update_run(
+        logger = logger,
+        mlflow_client = mlflow_client,
+        run_id = run_data['id'],
+        parameters = mlflow_parameters,
+        metrics = mlflow_metrics,
+        artifacts = mlflow_artifacts
     )
     
     central_status['trained'] = True
-    store_file_data(
-        file_lock = file_lock,
-        replace = True,
-        file_folder_path = '',
-        file_path = central_status_path,
-        data = central_status
+    create_or_update_object(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = central_status_path,
+        data = central_status,
+        metadata = {}
     )
 
     os.environ['STATUS'] = 'initial model trained'
     logger.info('Initial model trained')
     
+    end_run(
+        logger = logger,
+        mlflow_client = mlflow_client,
+        run_id = run_data['id'],
+        status = 'FINISHED'
+    )
+        
     time_end = time.time()
     cpu_end = this_process.cpu_percent(interval=0.2)
     mem_end = psutil.virtual_memory().used 
@@ -388,15 +502,18 @@ def initial_model_training(
         'disk-bytes': disk_diff
     }
 
-    status = store_metrics_and_resources(
+    store_metrics_and_resources(
         file_lock = file_lock,
+        logger = logger,
+        minio_client = minio_client,
+        prometheus_registry = prometheus_registry,
+        prometheus_metrics = prometheus_metrics,
         type = 'resources',
-        subject = 'central',
         area = 'function',
         metrics = resource_metrics
     )
-
     return True
+
 # Refactored
 def model_inference(
     file_lock: any,

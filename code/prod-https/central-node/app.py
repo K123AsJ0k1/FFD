@@ -13,9 +13,10 @@ def create_app():
 
     app.file_lock = threading.Lock()
 
-    os.makedirs('status', exist_ok=True)
+    os.makedirs('logs', exist_ok=True)
+    os.makedirs('artifacts', exist_ok=True)
 
-    central_log_path = 'status/central.log'
+    central_log_path = 'logs/central.log'
     if os.path.exists(central_log_path):
         os.remove(central_log_path)
 
@@ -27,11 +28,6 @@ def create_app():
     logger.addHandler(file_handler)
     app.logger = logger
     
-    registry = CollectorRegistry()
-    app.prometheus_registry = registry
-    app.prometheus_gauges = {}
-    app.logger.warning('Prometheus registry and gauges ready')
-
     minio_client = Minio(
         endpoint = "127.0.0.1:9000", 
         access_key = 'minio', 
@@ -42,41 +38,66 @@ def create_app():
     app.logger.warning('Minion client ready')
 
     mlflow_cient = MlflowClient(
-        tracking_uri = "http://127.0.0.1:9000"
+        tracking_uri = "http://127.0.0.1:5000"
     )
     app.mlflow_client = mlflow_cient
     app.logger.warning('MLflow client ready')
 
-    from functions.initilization import initilize_minio
+    registry = CollectorRegistry()
+    app.prometheus_registry = registry
+    app.prometheus_metrics = {
+        'central-global': None,
+        'central-global-names': None,
+        'central-resources': None,
+        'central-resources-names': None
+    }
+    app.logger.warning('Prometheus registry and metrics ready')
+
+    from functions.initilization import initilize_minio, initilize_prometheus_gauges
     initilize_minio(
         logger = app.logger,
         minio_client = minio_client
     )
+    initilize_prometheus_gauges(
+        prometheus_registry = app.prometheus_registry,
+        prometheus_metrics = app.prometheus_metrics
+    )
 
-    #scheduler = BackgroundScheduler(daemon = True)
-    #from functions.pipeline import data_pipeline
-    #from functions.pipeline import model_pipeline
+    scheduler = BackgroundScheduler(daemon = True)
+    from functions.management.pipeline import processing_pipeline
+    from functions.management.pipeline import model_pipeline
     #from functions.pipeline import update_pipeline
     #from functions.pipeline import aggregation_pipeline
     
     given_args = [
         app.file_lock,
-        app.logger
+        app.logger,
+        app.minio_client,
+        app.prometheus_registry,
+        app.prometheus_metrics
     ] 
     # Works 30 sec
-    #scheduler.add_job(
-    #    func = data_pipeline,
-    #    trigger = "interval",
-    #    seconds = 30,
-    #    args = given_args 
-    #)
+    scheduler.add_job(
+        func = processing_pipeline,
+        trigger = "interval",
+        seconds = 30,
+        args = given_args 
+    )
+    given_args = [
+        app.file_lock,
+        app.logger,
+        app.minio_client,
+        app.mlflow_client,
+        app.prometheus_registry,
+        app.prometheus_metrics,
+    ] 
     # Works 60 sec
-    #scheduler.add_job(
-    #    func = model_pipeline,
-    #    trigger = "interval",
-    #    seconds = 60,
-    #    args = given_args 
-    #)
+    scheduler.add_job(
+        func = model_pipeline,
+        trigger = "interval",
+        seconds = 60,
+        args = given_args 
+    )
     # Works 20 sec
     #scheduler.add_job(
     #    func = update_pipeline,
@@ -91,10 +112,8 @@ def create_app():
     #    seconds = 40,
     #    args = given_args 
     #)
-    #scheduler.start()
-    #app.logger.info('Scheduler ready')
-
-    
+    scheduler.start()
+    app.logger.info('Scheduler ready')
 
     from routes.general import general
     from routes.model import model
