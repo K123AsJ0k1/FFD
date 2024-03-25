@@ -37,6 +37,10 @@ def create_app():
     app.minio_client = minio_client
     app.logger.warning('Minion client ready')
 
+    os.environ['MLFLOW_S3_ENDPOINT_URL'] = 'http://127.0.0.1:9000'
+    os.environ['AWS_ACCESS_KEY_ID'] = 'minio'
+    os.environ['AWS_SECRET_ACCESS_KEY'] = 'minio123'
+
     mlflow_cient = MlflowClient(
         tracking_uri = "http://127.0.0.1:5000"
     )

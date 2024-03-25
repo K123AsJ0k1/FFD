@@ -90,7 +90,6 @@ def store_metrics_and_resources(
             data = object_data,
             metadata = {}
         )
-
         #push_to_gateway('http:127.0.0.1:9091', job = 'central-', registry =  prometheus_registry) 
     
     return True
@@ -99,6 +98,8 @@ def store_worker(
     file_lock: any,
     logger: any,
     minio_client: any,
+    prometheus_registry: any,
+    prometheus_metrics: any,
     address: str,
     status: any
 ) -> any:
@@ -132,172 +133,102 @@ def store_worker(
     if workers_status is None:
         workers_status = {}
 
-    if status['id'] == 0:
-        # When worker isn't registered either due to being new or failure restart
-        duplicate_id = -1
-        used_keys = []
+    used_ids = []
         
-        for worker_key in workers_status.keys():
-            worker_metadata = workers_status[worker_key]
-            if worker_metadata['worker-address'] == status['worker-address']:
-                duplicate_id = int(worker_key)
-            used_keys.append(int(worker_key))
-            
-        set_of_used_keys = set(used_keys)
-        smallest_missing_id = 1
-        while smallest_missing_id in set_of_used_keys:
-            smallest_missing_id += 1
-
-        if -1 < duplicate_id:
-            del workers_status[str(duplicate_id)]
-            
-        old_worker_data_path = cycle_folder_path + '/worker-' + str(duplicate_id)
-        old_data_exists = check_object(
-            logger = logger,
-            minio_client = minio_client,
-            bucket_name = central_bucket,
-            object_path = old_worker_data_path
-        )
+    for worker_id in workers_status.keys():
+        worker_network_id = workers_status[worker_id]['network-id']
+        used_ids.append(int(worker_network_id))
         
-        if old_data_exists:
-            new_worker_data_path = cycle_folder_path + '/worker-' + str(smallest_missing_id) 
-            worker_data_object = get_object_data_and_metadata(
-                logger = logger,
-                minio_client = minio_client,
-                bucket_name = central_bucket,
-                object_path = old_worker_data_path
-            )
-        
-            create_or_update_object(
-                logger = logger,
-                minio_client = minio_client,
-                bucket_name = central_bucket,
-                object_path = new_worker_data_path,
-                data = worker_data_object['data'],
-                metadata = worker_data_object['metadat']
-            )
-            
-            delete_object(
-                logger = logger,
-                minio_client = minio_client,
-                bucket_name = central_bucket,
-                object_path = old_worker_data_path
-            )
+    set_of_used_ids = set(used_ids)
+    smallest_missing_id = 1
+    while smallest_missing_id in set_of_used_ids:
+        smallest_missing_id += 1
+    # We will assume that MinIO enables memory fault tolerance and logs critical isn't damaged
+    info = None
+    if not status['worker-id'] in workers_status:
+        # When new worker status is started due to experiments
+        given_network_id = str(smallest_missing_id)
+        given_worker_address = address
+        given_experiment = central_status['experiment']
+        given_cycle = central_status['cycle']
 
-        status['id'] = str(smallest_missing_id)
-        status['worker-address'] = address
-        status['cycle'] = central_status['cycle']
+        status['network-id'] = given_network_id
+        status['worker-address'] = given_worker_address
+        status['experiment'] = given_experiment
+        status['cycle'] = given_cycle
 
-        workers_status[str(smallest_missing_id)] = status
-
-        create_or_update_object(
-            logger = logger,
-            minio_client = minio_client,
-            bucket_name = central_bucket,
-            object_path = workers_status_path,
-            data = workers_status[str(smallest_missing_id)],
-            metadata = {}
-        )
-       
-        payload = {
+        workers_status[worker_id] = status
+        info = {
             'message': 'registered', 
-            'experiment': central_status['experiments']
+            'network-id': given_network_id,
+            'worker-address': given_worker_address,
+            'experiment': given_experiment,
+            'cycle': given_cycle
         }
 
-        time_end = time.time()
-        cpu_end = this_process.cpu_percent(interval=0.2)
-        mem_end = psutil.virtual_memory().used 
-        disk_end = psutil.disk_usage('.').used
-
-        time_diff = (time_end - time_start) 
-        cpu_diff = cpu_end - cpu_start 
-        mem_diff = (mem_end - mem_start) 
-        disk_diff = (disk_end - disk_start)
-
-        resource_metrics = {
-            'name': 'store-worker-' + str(smallest_missing_id),
-            'time-seconds': round(time_diff,5),
-            'cpu-percentage': cpu_diff,
-            'ram-bytes': round(mem_diff,5),
-            'disk-bytes': round(disk_diff,5)
-        }
-
-        store_metrics_and_resources(
-            file_lock = file_lock,
-            type = 'resources',
-            subject = 'central',
-            area = 'function',
-            metrics = resource_metrics
-        )
-        
-        return payload 
     else:
-        # New experiment has been started
-        action = ''
-        if not len(workers_status) == 0:
-            worker_metadata = workers_status[str(status['id'])]
-            if worker_metadata['worker-address'] == address:
-                # When worker is already registered and address has stayed the same
-                if not status is None:
-                    workers_status[str(status['id'])] = status
-                action = 'checked'
-            else:
-                # When worker id has stayed the same, but address has changed due to load balancing
-                if not status is None:
-                    status['worker-address'] = 'http://' + address + ':7500'
-                    workers_status[str(status['id'])] = status
-                action = 'rerouted'
-        else:
-            action = 'experiment'
-        
-        create_or_update_object(
-            logger = logger,
-            minio_client = minio_client,
-            bucket_name = central_bucket,
-            object_path = workers_status_path,
-            data = workers_status[str(smallest_missing_id)],
-            metadata = {}
-        )
-
-        payload = None
-        if not action == 'experiment':
-            payload = {
-                'message': action, 
-                'experiment': central_status['experiments']
+        worker_metadata = workers_status[status['worker-id']]
+        if worker_metadata['worker-address'] == address:
+            # When worker is already registered and address has stayed the same
+            workers_status[status['worker-id']] = status
+            info = {
+                'message': 'checked', 
+                'network-id': None,
+                'worker-address': None,
+                'experiment': None,
+                'cycle': None
             }
         else:
-            payload = {
-                'message': action, 
-                'experiment': central_status['experiments']
+            # When worker id has stayed the same, but address has changed due to load balancing
+            status['worker-address'] = address
+            workers_status[status['worker-id']] = status
+            info = {
+                'message': 'rerouted', 
+                'network-id': None,
+                'worker-address': address,
+                'experiment': None,
+                'cycle': None
             }
+    
+    create_or_update_object(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = workers_status_path,
+        data = workers_status,
+        metadata = {}
+    )
 
-        time_end = time.time()
-        cpu_end = this_process.cpu_percent(interval=0.2)
-        mem_end = psutil.virtual_memory().used 
-        disk_end = psutil.disk_usage('.').used
+    time_end = time.time()
+    cpu_end = this_process.cpu_percent(interval=0.2)
+    mem_end = psutil.virtual_memory().used 
+    disk_end = psutil.disk_usage('.').used
 
-        time_diff = (time_end - time_start) 
-        cpu_diff = cpu_end - cpu_start 
-        mem_diff = (mem_end - mem_start) 
-        disk_diff = (disk_end - disk_start)
+    time_diff = (time_end - time_start) 
+    cpu_diff = cpu_end - cpu_start 
+    mem_diff = (mem_end - mem_start) 
+    disk_diff = (disk_end - disk_start)
 
-        resource_metrics = {
-            'name': 'store-worker-' + str(status['id']),
-            'time-seconds': round(time_diff,5),
-            'cpu-percentage': cpu_diff,
-            'ram-bytes': round(mem_diff,5),
-            'disk-bytes': round(disk_diff,5)
-        }
+    resource_metrics = {
+        'name': 'store-worker-' + str(smallest_missing_id),
+        'time-seconds': round(time_diff,5),
+        'cpu-percentage': cpu_diff,
+        'ram-bytes': round(mem_diff,5),
+        'disk-bytes': round(disk_diff,5)
+    }
 
-        store_metrics_and_resources(
-            file_lock = file_lock,
-            type = 'resources',
-            subject = 'central',
-            area = 'function',
-            metrics = resource_metrics
-        )
-
-        return payload
+    store_metrics_and_resources(
+        file_lock = file_lock,
+        logger = logger,
+        minio_client = minio_client,
+        prometheus_registry = prometheus_registry,
+        prometheus_metrics = prometheus_metrics,
+        type = 'resources',
+        area = 'function',
+        metrics = resource_metrics
+    )
+    
+    return info 
 # Refactored and works
 def store_update( 
     file_lock: any,

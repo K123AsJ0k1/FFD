@@ -284,9 +284,9 @@ def initial_model_training(
         name = 'central-initial-training'
     )
     # Is needed to save artifacts
-    os.environ['MLFLOW_S3_ENDPOINT_URL'] = 'http://127.0.0.1:9000'
-    os.environ['AWS_ACCESS_KEY_ID'] = 'minio'
-    os.environ['AWS_SECRET_ACCESS_KEY'] = 'minio123'
+    #os.environ['MLFLOW_S3_ENDPOINT_URL'] = 'http://127.0.0.1:9000'
+    #os.environ['AWS_ACCESS_KEY_ID'] = 'minio'
+    #os.environ['AWS_SECRET_ACCESS_KEY'] = 'minio123'
     # This is for using the with instead of client
     #mlflow.set_tracking_uri('http://127.0.0.1:5000')
     #mlflow.set_experiment(experiment_id = central_status['experiment-id'])
