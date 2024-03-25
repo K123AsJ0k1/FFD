@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data import TensorDataset
 
 from functions.general import get_current_experiment_number, get_file_data
-from functions.storage import store_metrics_and_resources, store_file_data
+from functions.management.storage import store_metrics_and_resources, store_file_data
 # Refactored and works
 def preprocess_into_train_test_and_eval_tensors(
     file_lock: any,

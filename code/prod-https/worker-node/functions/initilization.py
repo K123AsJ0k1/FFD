@@ -1,199 +1,152 @@
+from functions.platforms.minio import get_object_list, create_or_update_object, check_object
+import psutil
+from datetime import datetime
 import os
-from functions.storage import store_file_data
+from prometheus_client import Gauge
 
 # Created and works
-def initilize_storage_templates(
-    file_lock: any
+def initilize_minio(
+    logger: any,
+    minio_client: any
 ):
-    # Types: 0 = int, [] = list, 0.0 = float and {} = dict 
-    model_parameters = {
-        'seed': 0,
-        'used-columns': [],
-        'input-size': 0,
-        'target-column': '',
-        'scaled-columns': [],
-        'learning-rate': 0.0,
-        'sample-rate': 0.0,
-        'optimizer': '',
-        'epochs': 0
-    }
-
-    worker_parameters = {
-        'sample-pool': 0,
-        'data-augmentation': {
-            'active': False,
-            'sample-pool': 0,
-            '1-0-ratio': 0.0
-        },
-        'eval-ratio': 0.0,
-        'train-ratio': 0.0
-    }
-    # key format: worker id
-    worker_status = {
-        'id': 0,
-        'central-address': '',
-        'worker-address': '',
-        'status': '',
-        'stored': False,
-        'preprocessed': False,
-        'trained': False,
-        'updated': False,
-        'complete': False,
-        'train-amount': 0,
-        'test-amount':0,
-        'eval-amount': 0,
-        'cycle': 1
-    }
-    # key format: worker id and cycle
-    local_metrics = {
-        '1':{
-            '1': {
-                'train-amount': 0,
-                'test-amount': 0,
-                'eval-amount': 0,
-                'true-positives': 0,
-                'false-positives': 0,
-                'true-negatives': 0,
-                'false-negatives': 0,
-                'recall': 0.0,
-                'selectivity': 0.0,
-                'precision': 0.0,
-                'miss-rate': 0.0,
-                'fall-out': 0.0,
-                'balanced-accuracy': 0.0,
-                'accuracy': 0.0
-            }
-        }
-    }
-    # key format: subject, cycle and id
-    worker_resources = {
-        'general': {
-            'physical-cpu-amount': 0,
-            'total-cpu-amount': 0,
-            'min-cpu-frequency-mhz': 0.0,
-            'max-cpu-frequency-mhz': 0.0,
-            'total-ram-amount-bytes': 0.0,
-            'available-ram-amount-bytes': 0.0,
-            'total-disk-amount-bytes': 0.0,
-            'available-disk-amount-bytes': 0.0,
-            'times': {
-                'experiment-date': '2024-9-28-14:43:23.042',
-                'experiment-time-start':0,
-                'experiment-time-end':0,
-                'experiment-total-seconds': 0,
-                '1': {
-                    'cycle-time-start':0,
-                    'cycle-time-end':0,
-                    'cycle-total-seconds':0
-                }
-            }
-        },
-        'function': {
-            '1': {
-                '1': { 
-                    'name': 'initial-model-training',           
-                    'time-seconds': 0.0,
-                    'cpu-percentage': 0.0,
-                    'ram-bytes': 0.0,
-                    'disk-bytes': 0.0
-                }
-            }
-        },
-        'network': {
-            '1': {
-                '1': {
-                    'name': 'sending-context',
-                    'status-code': 0,
-                    'processing-time-seconds': 0.0,
-                    'elapsed-time-seconds': 0.0,
-                    'cpu-percentage': 0.0,
-                    'ram-bytes': 0.0,
-                    'disk-bytes': 0.0
-                }
-            }
-        },
-        'training': {
-            '1': {
-                '1': {
-                    'name': 'model-training',
-                    'epochs': 0,
-                    'batches': 0,
-                    'average-batch-size': 0,
-                    'time-seconds': 0.0,
-                    'cpu-percentage': 0.0,
-                    'ram-bytes': 0.0,
-                    'disk-bytes': 0.0
-                },
-                '2': {
-                    'name': 'model-testing',
-                    'batches': 0,
-                    'average-batch-size': 0,
-                    'time-seconds': 0.0,
-                    'cpu-percentage': 0.0,
-                    'ram-bytes': 0.0,
-                    'disk-bytes': 0.0
-                },
-                '3': {
-                    'name': 'model-evaluation',
-                    'batches': 0,
-                    'average-batch-size': 0,
-                    'time-seconds': 0.0,
-                    'cpu-percentage': 0.0,
-                    'ram-bytes': 0.0,
-                    'disk-bytes': 0.0
-                }
-            }
-        },
-        'inference': {
-            '1': {
-                '1': {
-                    'name': 'model-prediction',
-                    'sample-amount': 0,
-                    'time-seconds': 0.0,
-                    'cpu-percentage': 0.0,
-                    'ram-bytes': 0.0,
-                    'disk-bytes': 0.0
-                }
-            }
-        }
-    }
-
-    paths = [
-        'parameters/templates/model.txt',
-        'parameters/templates/worker.txt',
-        'status/templates/worker.txt',
-        'metrics/templates/local.txt',
-        'resources/templates/worker.txt'
-    ]
-
+    worker_id = os.environ.get('WORKER_ID')
+    central_address = os.environ.get('CENTRAL_ADDRESS')
+    central_port = os.environ.get('CENTRAL_PORT')
+    worker_port = os.environ.get('WORKER_PORT')
     templates = {
-        'parameters': {
-            'model': model_parameters,
-            'worker': worker_parameters
-        },
         'status': {
-            'worker': worker_status
-        },
-        'metrics': {
-            'local': local_metrics
+            'worker-id': worker_id,
+            'network-id': 0,
+            'central-address': central_address,
+            'central-port': central_port,
+            'worker-address': '',
+            'worker-port': worker_port,
+            'status': 'waiting',
+            'experiment':1,
+            'stored': False,
+            'preprocessed': False,
+            'trained': False,
+            'updated': False,
+            'complete': False,
+            'train-amount': 0,
+            'test-amount':0,
+            'eval-amount': 0,
+            'cycle': 1
         },
         'resources': {
-            'worker': worker_resources
+            'activation-date': datetime.now().strftime('%Y-%m-%d-%H:%M:%S.%f'),
+            'physical-cpu-amount': psutil.cpu_count(logical=False),
+            'total-cpu-amount': psutil.cpu_count(logical=True),
+            'min-cpu-frequency-mhz': psutil.cpu_freq().min,
+            'max-cpu-frequency-mhz': psutil.cpu_freq().max,
+            'total-ram-amount-bytes': psutil.virtual_memory().total,
+            'available-ram-amount-bytes': psutil.virtual_memory().free,
+            'total-disk-amount-bytes': psutil.disk_usage('.').total,
+            'available-disk-amount-bytes': psutil.disk_usage('.').free
+        },
+        'templates/model-parameters': {
+            'seed': 0,
+            'used-columns': [],
+            'input-size': 0,
+            'target-column': '',
+            'scaled-columns': [],
+            'learning-rate': 0.0,
+            'sample-rate': 0.0,
+            'optimizer': '',
+            'epochs': 0
+        },
+        'templates/worker-parameters': {
+            'sample-pool': 0,
+            'data-augmentation': {
+                'active': False,
+                'sample-pool': 0,
+                '1-0-ratio': 0.0
+            },
+            'eval-ratio': 0.0,
+            'train-ratio': 0.0
         }
     }
 
-    os.environ['STATUS'] = 'initilizing'
-    for template_path in paths:
-        first_split = template_path.split('.')
-        second_split = first_split[0].split('/')
-        path_template = templates[second_split[0]][second_split[2]]
-        template_folder_path = second_split[0] + '/templates'
-        # This replaces 
-        store_file_data(
-            file_lock = file_lock,
-            replace = False,
-            file_folder_path = template_folder_path,
-            file_path = template_path,
-            data = path_template
-        ) 
-    os.environ['STATUS'] = 'initilized'
+    workers_bucket = 'workers'
+    for key in templates.keys():
+        given_object_path = worker_id + '/experiments/' + str(key)
+        
+        object_exists = check_object(
+            logger = logger,
+            minio_client = minio_client,
+            bucket_name = workers_bucket,
+            object_path = given_object_path
+        )
+        if not object_exists:
+            create_or_update_object(
+                logger = logger,
+                minio_client = minio_client,
+                bucket_name = workers_bucket,
+                object_path = given_object_path,
+                data = templates[key],
+                metadata = {}
+            )
+
+def initilize_prometheus_gauges(
+    prometheus_registry: any,
+    prometheus_metrics: any,
+):
+    # Worker model metrics
+    #metric_name = 'central_global'
+    prometheus_metrics['worker-local'] = Gauge(
+        name = 'W_M_M',
+        documentation = 'Worker local metrics',
+        labelnames = ['date','woid','neid','cead','woad','experiment','cycle','metric'],
+        registry = prometheus_registry
+    )
+    # Worker metric names
+    prometheus_metrics['worker-local-names'] = {
+        'train-amount': 'TrAm',
+        'test-amount': 'TeAm',
+        'eval-amount': 'EvAm',
+        'true-positives': 'TrPo',
+        'false-positives': 'FaPo',
+        'true-negatives': 'TrNe',
+        'false-negatives': 'FaNe',
+        'recall': 'ReMe',
+        'selectivity': 'SeMe',
+        'precision': 'PrMe',
+        'miss-rate': 'MiRaMe',
+        'fall-out': 'FaOuMe',
+        'balanced-accuracy': 'BaAcMe',
+        'accuracy': 'AcMe'
+    }
+    # Worker resource metrics
+    #metric_name = 'central-resources'
+    prometheus_metrics['worker-resources'] = Gauge(
+        name = 'W_R_M',
+        documentation = 'Central resource metrics',
+        labelnames = ['date','woid','neid','cead','woad','experiment','cycle','area','name','metric'],
+        registry = prometheus_registry
+    )
+    prometheus_metrics['worker-resources-names'] = {
+        'physical-cpu-amount': 'PyCPUAm',
+        'total-cpu-amount': 'ToCPUAm',
+        'min-cpu-frequency-mhz': 'MinCPUFrMhz',
+        'max-cpu-frequency-mhz': 'MaxCPUFrMhz',
+        'total-ram-amount-bytes': 'ToRAMAmBy',
+        'available-ram-amount-bytes': 'AvRAMAmByte',
+        'total-disk-amount-bytes': 'ToDiAmBy',
+        'available-disk-amount-bytes': 'ToDiAmByte',
+        'experiment-date': 'ExDa',
+        'experiment-time-start':'ExTiSt',
+        'experiment-time-end':'ExTiEn',
+        'experiment-total-seconds': 'ExToSec',
+        'cycle-time-start': 'CyTiSt',
+        'cycle-time-end': 'CyTiEn',
+        'cycle-total-seconds': 'CyToSec',
+        'time-seconds': 'TiSec',
+        'processing-time-seconds': 'PrTiSec',
+        'elapsed-time-seconds': 'ElTiSec',
+        'cpu-percentage': 'CPUPerc',
+        'ram-bytes': 'RAMByte',
+        'disk-bytes': 'DiByte',
+        'epochs': 'Epo',
+        'batches': 'Bat',
+        'average-batch-size': 'AvBatSi'
+    }
