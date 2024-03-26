@@ -149,7 +149,7 @@ def central_worker_data_split(
         'disk-bytes': round(disk_diff,5)
     }
 
-    status = store_metrics_and_resources(
+    store_metrics_and_resources(
         file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
@@ -161,12 +161,13 @@ def central_worker_data_split(
     )
 
     return True
-'''
-# Refactored and works
+# Refactored
 def split_data_between_workers(
     file_lock: any,
     logger: any,
-    minio_client: any
+    minio_client: any,
+    prometheus_registry: any,
+    prometheus_metrics: any
 ) -> bool:
     # For some reason this gets falses
     this_process = psutil.Process(os.getpid())
@@ -204,56 +205,64 @@ def split_data_between_workers(
     os.environ['STATUS'] = 'splitting data between workers'
     logger.info('Splitting data between workers')
     
-    worker_status_path = status_folder_path + '/workers.txt'
-
-    worker_status = get_file_data(
-        file_lock = file_lock,
-        file_path = worker_status_path
-    )
-
-    if worker_status is None:
-        return False
+    experiment_folder_path = experiments_folder + '/' + str(central_status['experiment'])
+    cycle_folder_path = experiment_folder_path + '/' + str(central_status['cycle'])
     
-    parameters_folder_path = 'parameters/experiment_' + str(current_experiment_number)
-    central_parameters_path = parameters_folder_path + '/central.txt'
-    worker_parameters_path = parameters_folder_path + '/worker.txt'
-
-    central_parameters = get_file_data(
-        file_lock = file_lock,
-        file_path = central_parameters_path
+    workers_status_path = cycle_folder_path + '/' + 'workers'
+    workers_status_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = workers_status_path
     )
 
-    if central_parameters is None:
+    if workers_status_object is None:
         return False
+    workers_status = workers_status_object['data']
     
-    worker_parameters = get_file_data(
-        file_lock = file_lock,
-        file_path = worker_parameters_path
-    )
+    parameters_folder_path = experiment_folder_path + '/parameters'
+    central_parameters_path = parameters_folder_path + '/central'
+    worker_parameters_path = parameters_folder_path + '/worker'
 
-    if worker_parameters is None:
-        return False
-    
-    data_folder_path = 'data/experiment_' + str(current_experiment_number)
-    worker_pool_path = data_folder_path + '/worker_pool.csv'
-    worker_pool_df = get_file_data(
-        file_lock = file_lock,
-        file_path = worker_pool_path
+    central_parameters_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = central_parameters_path
     )
+    central_parameters = central_parameters_object['data']
+
+    worker_parameters_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = worker_parameters_path
+    )
+    worker_parameters = worker_parameters_object['data']
 
     os.environ['STATUS'] = 'worker splitting'
     
     available_workers = []
-    for worker_key in worker_status.keys():
-        worker_metadata = worker_status[worker_key]
-        if not worker_metadata['stored'] and not worker_metadata['complete']: 
+    for worker_key in workers_status.keys():
+        worker_status = workers_status[worker_key]
+        if not worker_status['stored'] and not worker_status['complete']: 
             available_workers.append(worker_key)
     
     # Could be reconsidered
     if not central_parameters['min-update-amount'] <= len(available_workers):
         return False
-    # Might have concurrency issues
-    # Format for worker data is worker_(id)_(cycle)_(size).csv
+    
+    data_folder_path = experiment_folder_path + '/data'
+    worker_pool_path = data_folder_path + '/worker_pool'
+    worker_pool_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = worker_pool_path
+    )
+    data_columns = format_metadata_dict(worker_pool_object['metadata'])['columns']
+    worker_pool_df = pd.DataFrame(worker_pool_object['data'], columns = data_columns)
+
     if worker_parameters['data-augmentation']['active']:
         for worker_key in available_workers:
             worker_sample_df = data_augmented_sample(
@@ -261,37 +270,50 @@ def split_data_between_workers(
                 sample_pool = worker_parameters['data-augmentation']['sample-pool'],
                 ratio = worker_parameters['data-augmentation']['1-0-ratio']
             )
-            sample_size = worker_sample_df.shape[0]
-            data_path = data_folder_path + '/worker_' + worker_key + '_' + str(central_status['cycle']) + '_' + str(sample_size) + '.csv'
-            store_file_data(
-                file_lock = file_lock,
-                replace = False,
-                file_folder_path = data_folder_path,
-                file_path = data_path,
-                data = worker_sample_df
+            worker_sample_path = cycle_folder_path + '/data/' + worker_key 
+            object_data = worker_sample_df.values.tolist()
+            object_metadata = encode_metadata_lists_to_strings({
+                'columns': worker_sample_df.columns.tolist(),
+                'rows': str(worker_sample_df.shape[0])
+            })
+            create_or_update_object(
+                logger = logger,
+                minio_client = minio_client,
+                bucket_name = central_bucket,
+                object_path = worker_sample_path,
+                data = object_data,
+                metadata = object_metadata
             )
     else:
         worker_df = worker_pool_df.sample(frac = 1)
         worker_dfs = np.array_split(worker_df, len(available_workers))
         index = 0
         for worker_key in available_workers:
-            sample_size = worker_dfs[index].shape[0]
-            data_path = data_folder_path + '/worker_' + worker_key + '_' + str(central_status['cycle']) + '_' + str(sample_size) + '.csv'
-            store_file_data(
-                file_lock = file_lock,
-                replace = False,
-                file_folder_path = data_folder_path,
-                file_path = data_path,
-                data = worker_dfs[index]
+            worker_sample_df = worker_dfs[index]
+            worker_sample_path = cycle_folder_path + '/data/' + worker_key 
+            object_data = worker_sample_df.values.tolist()
+            object_metadata = encode_metadata_lists_to_strings({
+                'columns': worker_sample_df.columns.tolist(),
+                'rows': str(worker_sample_df.shape[0])
+            })
+            create_or_update_object(
+                logger = logger,
+                minio_client = minio_client,
+                bucket_name = central_bucket,
+                object_path = worker_sample_path,
+                data = object_data,
+                metadata = object_metadata
             )
             index = index + 1
+
     central_status['worker-split'] = True
-    store_file_data(
-        file_lock = file_lock,
-        replace = True,
-        file_folder_path = '',
-        file_path = central_status_path,
-        data = central_status
+    create_or_update_object(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = central_status_path,
+        data = central_status,
+        metadata = {}
     )
 
     os.environ['STATUS'] = 'worker data split'
@@ -315,13 +337,15 @@ def split_data_between_workers(
         'disk-bytes': round(disk_diff,5)
     }
 
-    status = store_metrics_and_resources(
+    store_metrics_and_resources(
         file_lock = file_lock,
+        logger = logger,
+        minio_client = minio_client,
+        prometheus_registry = prometheus_registry,
+        prometheus_metrics = prometheus_metrics,
         type = 'resources',
-        subject = 'central',
         area = 'function',
         metrics = resource_metrics
     )
 
     return True  
-'''

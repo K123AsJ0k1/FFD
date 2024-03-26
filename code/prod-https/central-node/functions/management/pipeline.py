@@ -5,6 +5,7 @@ from functions.processing.data import preprocess_into_train_test_and_evaluate_te
 from functions.training.model import initial_model_training
 from functions.platforms.mlflow import start_experiment
 from datetime import datetime
+import time
 # Refactored and works
 def start_pipeline(
     file_lock: any,
@@ -41,7 +42,7 @@ def start_pipeline(
     
     times = {
         'experiment-date': datetime.now().strftime('%Y-%m-%d-%H:%M:%S.%f'),
-        'experiment-time-start':0,
+        'experiment-time-start': time.time(),
         'experiment-time-end':0,
         'experiment-total-seconds': 0,
     }
@@ -125,7 +126,7 @@ def processing_pipeline(
         prometheus_metrics = task_prometheus_metrics
     )
     task_logger.info('Central pool preprocessing:' + str(status))
-# Refactor
+# Refactored and works
 def model_pipeline(
     task_file_lock: any,
     task_logger: any,
@@ -134,7 +135,7 @@ def model_pipeline(
     task_prometheus_registry: any,
     task_prometheus_metrics: any,
 ):  
-    # 
+    # Works
     status = initial_model_training(
         file_lock = task_file_lock,
         logger = task_logger,
@@ -144,7 +145,6 @@ def model_pipeline(
         prometheus_metrics = task_prometheus_metrics
     )
     task_logger.info('Initial model training:' + str(status))
-'''
 # Refactor
 def update_pipeline(
     task_file_lock: any,
@@ -162,6 +162,7 @@ def update_pipeline(
         logger = task_logger
     )
     task_logger.info('Worker context sending:' + str(status))
+'''
 # Refactor
 def aggregation_pipeline(
     task_file_lock: any,

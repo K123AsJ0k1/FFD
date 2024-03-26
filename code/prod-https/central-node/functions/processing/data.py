@@ -101,7 +101,6 @@ def preprocess_into_train_test_and_evaluate_tensors(
         bucket_name = central_bucket,
         object_path = central_pool_path
     )
-    central_parameters = central_parameters_object['data']
     data_columns = format_metadata_dict(central_pool_object['metadata'])['columns']
     central_data_df = pd.DataFrame(central_pool_object['data'], columns = data_columns)
 

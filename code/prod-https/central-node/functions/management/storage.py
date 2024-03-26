@@ -14,7 +14,7 @@ from collections import OrderedDict
 from prometheus_client import push_to_gateway
 
 from functions.platforms.minio import *
-# Refactored
+# Refactored and works
 def store_metrics_and_resources( 
    file_lock: any,
    logger: any,
@@ -211,7 +211,7 @@ def store_worker(
     disk_diff = (disk_end - disk_start)
 
     resource_metrics = {
-        'name': 'store-worker-' + str(smallest_missing_id),
+        'name': 'store-worker-' + status['worker-id'],
         'time-seconds': round(time_diff,5),
         'cpu-percentage': cpu_diff,
         'ram-bytes': round(mem_diff,5),
@@ -230,7 +230,7 @@ def store_worker(
     )
     
     return info 
-# Refactored and works
+# Refactor
 def store_update( 
     file_lock: any,
     id: str,

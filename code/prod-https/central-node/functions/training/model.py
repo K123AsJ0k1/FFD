@@ -436,7 +436,7 @@ def initial_model_training(
         mlflow_metrics['eval-' + str(key)] = value
 
     cycle_folder_path = experiments_folder + '/' + str(central_status['experiment']) + '/' + str(central_status['cycle'])
-    global_model_path = cycle_folder_path + '/global-init'
+    global_model_path = cycle_folder_path + '/global-model' 
     model_data = model.get_parameters(model)
     model_metadata = {
         'train-amount': str(len(train_tensor)),
@@ -451,7 +451,7 @@ def initial_model_training(
         data = model_data,
         metadata = model_metadata
     )
-    model_temp_path = artifact_folder + '/initial-model.pth'
+    model_temp_path = artifact_folder + '/global-model' + '.pth'
     torch.save(model_data, model_temp_path)
     mlflow_artifacts.append(model_temp_path)
 

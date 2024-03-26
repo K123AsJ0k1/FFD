@@ -3,14 +3,18 @@ import json
 import requests
 import psutil
 import time
+import pandas as pd
+from functions.general import format_metadata_dict, encode_metadata_lists_to_strings
+from functions.management.storage import store_metrics_and_resources
+from functions.platforms.minio import get_object_data_and_metadata, create_or_update_object
 
-from functions.general import get_current_experiment_number, get_wanted_model, get_file_data, get_files
-from functions.management.storage import store_metrics_and_resources, store_file_data
-
-# Refactored and works 
+# Refactor 
 def send_context_to_workers(
     file_lock: any,
-    logger: any
+    logger: any,
+    minio_client: any,
+    prometheus_registry: any,
+    prometheus_metrics: any
 ) -> bool:
     this_process = psutil.Process(os.getpid())
     func_mem_start = psutil.virtual_memory().used 
@@ -18,14 +22,16 @@ def send_context_to_workers(
     func_cpu_start = this_process.cpu_percent(interval=0.2)
     func_time_start = time.time()
 
-    current_experiment_number = get_current_experiment_number()
-    status_folder_path = 'status/experiment_' + str(current_experiment_number)
-    central_status_path = status_folder_path + '/central.txt'
-
-    central_status = get_file_data(
-        file_lock = file_lock,
-        file_path = central_status_path
+    experiments_folder = 'experiments'
+    central_bucket = 'central'
+    central_status_path = experiments_folder + '/status'
+    central_status_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = central_status_path
     )
+    central_status = central_status_object['data']
 
     if central_status is None:
         return False
@@ -45,47 +51,57 @@ def send_context_to_workers(
     os.environ['STATUS'] = 'sending context to workers'
     logger.info('Sending context to workers')
 
-    workers_status_path = status_folder_path + '/workers.txt'
-    workers_status = get_file_data(
-        file_lock = file_lock,
-        file_path = workers_status_path
+    experiment_folder_path = experiments_folder + '/' + str(central_status['experiment'])
+    cycle_folder_path = experiment_folder_path + '/' + str(central_status['cycle'])
+    workers_status_path = cycle_folder_path + '/' + 'workers'
+    workers_status_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = workers_status_path
     )
-
-    parameters_folder_path = 'parameters/experiment_' + str(current_experiment_number)
-    central_parameters_path = parameters_folder_path + '/central.txt'
-    model_parameters_path = parameters_folder_path + '/model.txt'
-    worker_parameters_path = parameters_folder_path + '/worker.txt'
-
-    central_parameters = get_file_data(
-        file_lock = file_lock,
-        file_path = central_parameters_path
-    )
-
-    if central_parameters is None:
+    if workers_status_object is None:
         return False
-
-    model_parameters = get_file_data(
-        file_lock = file_lock,
-        file_path = model_parameters_path
-    )
-
-    if model_parameters is None:
-        return False
-
-    worker_parameters = get_file_data(
-        file_lock = file_lock,
-        file_path = worker_parameters_path
-    )
-
-    if worker_parameters is None:
-        return False
+    workers_status = workers_status_object['data']
     
-    global_model = get_wanted_model(
-        file_lock = file_lock,
-        experiment = current_experiment_number,
-        subject = 'global',
-        cycle = central_status['cycle']-1
+    parameters_folder_path = experiment_folder_path + '/parameters'
+    central_parameters_path = parameters_folder_path + '/central'
+    model_parameters_path = parameters_folder_path + '/model'
+    worker_parameters_path = parameters_folder_path + '/worker'
+
+    central_parameters_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = central_parameters_path
     )
+    central_parameters = central_parameters_object['data']
+
+    model_parameters_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = model_parameters_path
+    )
+    model_parameters = model_parameters_object['data']
+
+    worker_parameters_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = worker_parameters_path
+    )
+    worker_parameters = worker_parameters_object['data']
+
+    global_model_path = cycle_folder_path + '/global-model'
+
+    global_model_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = global_model_path
+    )
+    global_model = global_model_object['data']
 
     formatted_global_model = {
         'weights': global_model['linear.weight'].numpy().tolist(),
@@ -98,8 +114,8 @@ def send_context_to_workers(
             break
 
         payload_status = {}
-        data_folder_path = 'data/experiment_' + str(current_experiment_number)
-        data_files = get_files(data_folder_path)
+        data_folder_path = cycle_folder_path + '/data'
+        #data_files = get_files(data_folder_path)
         for worker_key in workers_status.keys():
             this_process = psutil.Process(os.getpid())
             net_mem_start = psutil.virtual_memory().used 
@@ -107,60 +123,55 @@ def send_context_to_workers(
             net_cpu_start = this_process.cpu_percent(interval=0.2)
             net_time_start = time.time()
             
-            worker_metadata = workers_status[worker_key]
-            if worker_metadata['stored']:
+            worker_status = workers_status[worker_key]
+            if worker_status['stored']:
                 continue
 
-            worker_url = worker_metadata['worker-address'] + '/context'
-            payload = None
+            context = None
             if not central_status['complete']:
-                data_path = ''
-                for data_file in data_files:
-                    first_split = data_file.split('.')
-                    second_split = first_split[0].split('_')
-                    if second_split[0] == 'worker':
-                        if second_split[1] == worker_key and second_split[2] == str(central_status['cycle']):
-                            data_path = data_folder_path + '/' + data_file
-                
-                worker_df = get_file_data(
-                    file_lock = file_lock,
-                    file_path = data_path
+                worker_pool_path = data_folder_path + '/' + worker_key
+                worker_pool_object = get_object_data_and_metadata(
+                    logger = logger,
+                    minio_client = minio_client,
+                    bucket_name = central_bucket,
+                    object_path = worker_pool_path
                 )
-                worker_data_list = worker_df.values.tolist()
-                worker_data_columns = worker_df.columns.tolist()
-
-                parameters = {
-                    'id': worker_key,
-                    'worker-address': worker_metadata['worker-address'],
+                worker_data_list = worker_pool_object['data']
+                worker_data_columns = format_metadata_dict(worker_pool_object['metadata'])['columns']
+                
+                info = {
+                    'worker-id': worker_key,
+                    'experiment': central_status['experiment'],
                     'cycle': central_status['cycle'],
                     'model': model_parameters,
                     'worker': worker_parameters
                 }
                 
-                payload = {
-                    'parameters': parameters,
+                context = {
+                    'info': info,
                     'global-model': formatted_global_model,
                     'worker-data-list': worker_data_list,
                     'worker-data-columns': worker_data_columns
                 }
             else:
-                parameters = {
-                    'id': worker_key,
-                    'worker-address': worker_metadata['worker-address'],
+                info = {
+                    'worker-id': worker_key,
+                    'experiment': central_status['experiment'],
                     'cycle': central_status['cycle'],
                     'model': None,
                     'worker': None
                 }
 
-                payload = {
-                    'parameters': parameters,
+                context = {
+                    'info': info,
                     'global-model': formatted_global_model,
                     'worker-data-list': None,
                     'worker-data-columns': None
                 }
         
-            json_payload = json.dumps(payload) 
+            json_payload = json.dumps(context) 
             try:
+                worker_url = 'http://' + worker_status['worker-address'] + ':' + worker_status['worker-port'] + '/context'
                 response = requests.post(
                     url = worker_url, 
                     json = json_payload,
@@ -170,11 +181,11 @@ def send_context_to_workers(
                     }
                 )
 
-                sent_message = json.loads(response.text)
+                sent_message = json.loads(response.text)['message']
                 # Needs refactoring
                 payload_status[worker_key] = {
                     'response': response.status_code,
-                    'message': sent_message['message']
+                    'message': sent_message
                 }
 
                 net_time_end = time.time()
@@ -197,10 +208,13 @@ def send_context_to_workers(
                     'disk-bytes': net_disk_diff
                 }
 
-                status = store_metrics_and_resources(
+                store_metrics_and_resources(
                     file_lock = file_lock,
+                    logger = logger,
+                    minio_client = minio_client,
+                    prometheus_registry = prometheus_registry,
+                    prometheus_metrics = prometheus_metrics,
                     type = 'resources',
-                    subject = 'central',
                     area = 'network',
                     metrics = resource_metrics
                 )
@@ -211,8 +225,7 @@ def send_context_to_workers(
         for worker_key in payload_status.keys():
             worker_data = payload_status[worker_key]
             if worker_data['response'] == 200 :
-                # Check
-                if worker_data['message'] == 'stored' or worker_data['message'] == 'ongoing jobs':
+                if worker_data['message'] == 'stored' or worker_data['message'] == 'ongoing':
                     successes = successes + 1
                 continue
             successes = successes + 1 
@@ -226,31 +239,38 @@ def send_context_to_workers(
                 os.environ['STATUS'] = 'training complete'
 
     if central_status['complete']:
-        central_resources_path = 'resources/experiment_' + str(current_experiment_number) + '/central.txt'
-        central_resources = get_file_data(
-            file_lock = file_lock,
-            file_path = central_resources_path
+        times_path = experiment_folder_path + '/times'
+
+        times_object = get_object_data_and_metadata(
+            logger = logger,
+            minio_client = minio_client,
+            bucket_name = central_bucket,
+            object_path = times_path
         )
-        # Potential info loss
-        experiment_start = central_resources['general']['times']['experiment-time-start']
+        times = times_object['data']
+
+        experiment_start = times['experiment-time-start']
         experiment_end = time.time()
         experiment_total = experiment_end - experiment_start
-        central_resources['general']['times']['experiment-time-end'] = experiment_end
-        central_resources['general']['times']['experiment-total-seconds'] = experiment_total
-        store_file_data(
-            file_lock = file_lock,
-            replace = True,
-            file_folder_path = '',
-            file_path = central_resources_path,
-            data = central_resources
+        times['experiment-time-end'] = experiment_end
+        times['experiment-total-seconds'] = experiment_total
+
+        create_or_update_object(
+            logger = logger,
+            minio_client = minio_client,
+            bucket_name = central_bucket,
+            object_path = times_path,
+            data = times,
+            metadata = {}
         )
-            
-    store_file_data(
-        file_lock = file_lock,
-        replace = True,
-        file_folder_path = '',
-        file_path = central_status_path,
-        data = central_status
+       
+    create_or_update_object(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = central_status_path,
+        data = central_status,
+        metadata = {}
     )
 
     os.environ['STATUS'] = 'context sent to workers'
@@ -274,10 +294,13 @@ def send_context_to_workers(
         'disk-bytes': func_disk_diff
     }
 
-    status = store_metrics_and_resources(
+    store_metrics_and_resources(
         file_lock = file_lock,
+        logger = logger,
+        minio_client = minio_client,
+        prometheus_registry = prometheus_registry,
+        prometheus_metrics = prometheus_metrics,
         type = 'resources',
-        subject = 'central',
         area = 'function',
         metrics = resource_metrics
     )
