@@ -12,6 +12,7 @@ def worker_status():
 
     payload = store_worker(
         file_lock = current_app.file_lock,
+        logger = current_app.logger,
         minio_client = current_app.minio_client,
         prometheus_registry = current_app.prometheus_registry,
         prometheus_metrics = current_app.prometheus_metrics,

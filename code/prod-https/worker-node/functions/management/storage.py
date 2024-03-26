@@ -9,60 +9,7 @@ import time
 
 from collections import OrderedDict
 
-from functions.general import get_current_experiment_number, get_file_data
-
-def store_file_data(
-    file_lock: any,
-    replace: bool,
-    file_folder_path: str,
-    file_path: str,
-    data: any
-):  
-    storage_folder_path = 'storage'
-    perform = True
-    if replace:
-        perform = True
-    used_folder_path = storage_folder_path + '/' + file_folder_path
-    used_file_path = storage_folder_path + '/' + file_path
-    relative_path = Path(used_file_path)
-    if not replace and relative_path.exists():
-        perform = False
-    
-    if perform:
-        with file_lock:
-            if not file_folder_path == '':
-                os.makedirs(used_folder_path, exist_ok=True)
-            if '.txt' in used_file_path:
-                with open(used_file_path, 'w') as f:
-                    json.dump(data , f, indent=4) 
-            if '.csv' in used_file_path:
-                data.to_csv(used_file_path, index = False)
-            if '.pt' in used_file_path:
-                torch.save(data, used_file_path)
-# Created and works
-def store_central_address(
-    file_lock: str,
-    central_address: str
-) -> bool:
-    worker_status_path = 'status/templates/worker.txt'
-    worker_status = get_file_data(
-        file_lock = file_lock,
-        file_path = worker_status_path
-    )
-
-    if worker_status is None:
-        return False
-    
-    worker_status['central-address'] = central_address
-    store_file_data(
-        file_lock = file_lock,
-        replace = True,
-        file_folder_path = '',
-        file_path = worker_status_path,
-        data = worker_status 
-    )
-
-    return True
+from functions.platforms.minio import get_object_data_and_metadata, create_or_update_object
 # Refactored and works
 def store_training_context(
     file_lock: any,
@@ -196,6 +143,94 @@ def store_training_context(
     return {'message': 'stored'}
 # Refactored and works
 def store_metrics_and_resources( 
+   file_lock: any,
+   logger: any,
+   minio_client: any,
+   prometheus_registry: any,
+   prometheus_metrics: any,
+   type: str,
+   area: str,
+   metrics: any
+) -> bool:
+    workers_bucket = 'workers'
+    worker_experiment_folder = os.environ.get('WORKER_ID') + '/experiments'
+    worker_status_path = worker_experiment_folder + '/status'
+    central_status_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = workers_bucket,
+        object_path = worker_status_path
+    )
+    worker_status = central_status_object['data']
+
+    cycle_folder_path = worker_experiment_folder + '/' + str(worker_status['experiment']) + '/' + str(worker_status['cycle'])
+    object_path = None
+    object_data = None
+    if type == 'metrics' or type == 'resources':
+        if type == 'metrics':
+            object_path = cycle_folder_path + '/metrics'
+            for key,value in metrics.items():
+                if key == 'name':
+                    continue
+                metric_name = prometheus_metrics['worker-local-names'][key]
+                prometheus_metrics['worker-local'].labels(
+                    date = datetime.now().strftime('%Y-%m-%d-%H:%M:%S.%f'),
+                    woid = worker_status['worker-id'],
+                    neid = worker_status['network-id'],
+                    cead = worker_status['central-address'],
+                    woad = worker_status['worker-address'],
+                    experiment = worker_status['experiment'], 
+                    cycle = worker_status['cycle'],
+                    metric = metric_name,
+                ).set(value)
+        if type == 'resources':
+            object_path = cycle_folder_path + '/resources/' + area
+            action_name = metrics['name']
+            for key,value in metrics.items():
+                if key == 'name':
+                    continue
+                metric_name = prometheus_metrics['worker-resources-names'][key]
+                prometheus_metrics['worker-resources'].labels(
+                    date = datetime.now().strftime('%Y-%m-%d-%H:%M:%S.%f'),
+                    woid = worker_status['worker-id'],
+                    neid = worker_status['network-id'],
+                    cead = worker_status['central-address'],
+                    woad = worker_status['worker-address'],
+                    experiment = worker_status['experiment'], 
+                    cycle = worker_status['cycle'],
+                    area = area,
+                    name = action_name,
+                    metric = metric_name,
+                ).set(value)
+            
+        wanted_object = get_object_data_and_metadata(
+            logger = logger,
+            minio_client = minio_client,
+            bucket_name = workers_bucket,
+            object_path = object_path
+        )
+        if wanted_object is None:
+            object_data = {}
+        else:
+            object_data = wanted_object['data']
+
+        new_key = len(object_data) + 1
+        object_data[str(new_key)] = metrics
+    
+        create_or_update_object(
+            logger = logger,
+            minio_client = minio_client,
+            bucket_name = workers_bucket,
+            object_path = object_path,
+            data = object_data,
+            metadata = {}
+        )
+        #push_to_gateway('http:127.0.0.1:9091', job = 'central-', registry =  prometheus_registry) 
+    
+    return True
+'''
+# Refactored and works
+def store_metrics_and_resources( 
     file_lock: any,
     type: str,
     subject: str,
@@ -259,3 +294,4 @@ def store_metrics_and_resources(
     ) 
     
     return True
+'''

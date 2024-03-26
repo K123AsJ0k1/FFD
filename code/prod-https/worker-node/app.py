@@ -28,7 +28,7 @@ def create_app():
             critical_variables = json.load(f)
         os.environ['WORKER_ID'] = critical_variables['worker-id']
         os.environ['CENTRAL_ADDRESS'] = critical_variables['central-address']
-        os.environ['CENTRAL_PORT'] = critical_variables['central-address']
+        os.environ['CENTRAL_PORT'] = critical_variables['central-port']
         os.environ['WORKER_PORT'] = critical_variables['worker-port']
     else:
         # Refactor to handle given envs
@@ -42,10 +42,9 @@ def create_app():
             json.dump(critical_variables, f, indent=4)
         os.environ['WORKER_ID'] = critical_variables['worker-id']
         os.environ['CENTRAL_ADDRESS'] = critical_variables['central-address']
-        os.environ['CENTRAL_PORT'] = critical_variables['central-address']
+        os.environ['CENTRAL_PORT'] = critical_variables['central-port']
         os.environ['WORKER_PORT'] = critical_variables['worker-port']
-    #print(os.environ.get('WORKER_ID'))
-    #print(os.environ.get('CENTRAL_ADDRESS'))
+    
     logger = logging.getLogger('worker-logger')
     logger.setLevel(logging.INFO)
     file_handler = logging.FileHandler(worker_log_path)
@@ -91,16 +90,16 @@ def create_app():
         prometheus_registry = app.prometheus_registry,
         prometheus_metrics = app.prometheus_metrics
     )
-    '''
+    
     scheduler = BackgroundScheduler(daemon = True)
     from functions.management.pipeline import status_pipeline
-    from functions.management.pipeline import update_pipeline
-    from functions.management.pipeline import data_pipeline
-    from functions.management.pipeline import model_pipeline
-
+    
     given_args = [
         app.file_lock,
-        app.logger
+        app.logger,
+        app.minio_client,
+        app.prometheus_registry,
+        app.prometheus_metrics
     ]
     scheduler.add_job(
         func = status_pipeline,
@@ -108,6 +107,7 @@ def create_app():
         seconds = 10,
         args = given_args
     )
+    '''
     scheduler.add_job(
         func = data_pipeline,
         trigger = "interval",
@@ -126,9 +126,10 @@ def create_app():
         seconds = 40,
         args = given_args
     )
+    '''
     scheduler.start()
     app.logger.info('Scheduler ready')
-    '''
+    
     from routes.general import general
     from routes.model import model
     from routes.orchestration import orchestration

@@ -3,12 +3,18 @@ from functions.training.update import send_info_to_central
 # Refactor
 def status_pipeline(
     task_file_lock: any,
-    task_logger: any
+    task_logger: any,
+    task_minio_client: any,
+    task_prometheus_registry: any,
+    task_prometheus_metrics: any
 ):
     # 
     status = send_info_to_central(
         file_lock = task_file_lock,
-        logger = task_logger
+        logger = task_logger,
+        minio_client = task_minio_client,
+        prometheus_registry = task_prometheus_registry,
+        prometheus_metrics = task_prometheus_metrics
     )
     task_logger.info('Status sending:' + str(status))
 '''

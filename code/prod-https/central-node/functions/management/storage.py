@@ -93,7 +93,7 @@ def store_metrics_and_resources(
         #push_to_gateway('http:127.0.0.1:9091', job = 'central-', registry =  prometheus_registry) 
     
     return True
-# refactored
+# refactored and works
 def store_worker(
     file_lock: any,
     logger: any,
@@ -120,7 +120,7 @@ def store_worker(
     )
     central_status = central_status_object['data']
 
-    cycle_folder_path = experiments_folder + '/' + str(central_status['experiments']) + '/' + str(central_status['cycle'])
+    cycle_folder_path = experiments_folder + '/' + str(central_status['experiment']) + '/' + str(central_status['cycle'])
     workers_status_path = cycle_folder_path + '/' + 'workers'
     workers_status_object = get_object_data_and_metadata(
         logger = logger,
@@ -128,10 +128,11 @@ def store_worker(
         bucket_name = central_bucket,
         object_path = workers_status_path
     )
-    workers_status = workers_status_object['data']
-
-    if workers_status is None:
+    workers_status = None
+    if workers_status_object is None:
         workers_status = {}
+    else:
+        workers_status = workers_status_object['data']
 
     used_ids = []
         
@@ -156,8 +157,8 @@ def store_worker(
         status['worker-address'] = given_worker_address
         status['experiment'] = given_experiment
         status['cycle'] = given_cycle
-
-        workers_status[worker_id] = status
+        # Might be anti pattern
+        workers_status[status['worker-id']] = status
         info = {
             'message': 'registered', 
             'network-id': given_network_id,

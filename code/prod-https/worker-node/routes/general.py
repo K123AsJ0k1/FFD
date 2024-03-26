@@ -1,6 +1,5 @@
 from flask import Blueprint, current_app, request, jsonify, render_template
 import json
-from functions.general import get_metrics_resources_and_status, get_worker_logs, get_directory_and_file_sizes
 from prometheus_client import generate_latest
 
 general = Blueprint('general', __name__)

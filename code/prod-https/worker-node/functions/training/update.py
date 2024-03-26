@@ -5,10 +5,9 @@ import psutil
 import time
 from datetime import datetime
 
-from functions.general import get_current_experiment_number, get_file_data, get_wanted_model
-from functions.management.storage import store_metrics_and_resources, store_file_data
-from functions.platforms.minio import get_object_data_and_metadata
-# Refactor
+from functions.management.storage import store_metrics_and_resources
+from functions.platforms.minio import get_object_data_and_metadata, create_or_update_object
+# Refactored and works
 def send_info_to_central(
     file_lock: any,
     logger: any,
@@ -25,13 +24,15 @@ def send_info_to_central(
     workers_bucket = 'workers'
     worker_experiment_folder = os.environ.get('WORKER_ID') + '/experiments'
     worker_status_path = worker_experiment_folder + '/status'
-    central_status_object = get_object_data_and_metadata(
+    
+    worker_status_object = get_object_data_and_metadata(
         logger = logger,
         minio_client = minio_client,
         bucket_name = workers_bucket,
         object_path = worker_status_path
     )
-    worker_status = central_status_object['data']
+    
+    worker_status = worker_status_object['data']
 
     if worker_status is None:
         return False
@@ -43,32 +44,41 @@ def send_info_to_central(
         info = {
             'status': worker_status
         }
-
-        address = 'http://' + worker_status['central-address'] + '/status'
+        central_url = 'http://' + worker_status['central-address'] + ':' + worker_status['central-port'] + '/status'
         payload = json.dumps(info) 
-
+        
         response = requests.post(
-            url = address,
+            url = central_url,
             json = payload,
             headers = {
                'Content-type':'application/json', 
                'Accept':'application/json'
             }
         )
-
+        
         if response.status_code == 200:
             sent_payload = json.loads(response.text)
-            
             message = sent_payload['message']
-            logger.info('Central message: ' + message)
-            # Worker is either new or it has failure restated
-            if message == 'registered' or message == 'experiment':
-                #worker_status = sent_payload['status']
-                current_experiment_number = sent_payload['experiment_id']
+            
+            if message == 'registered' or message == 'rerouted':
+                # Worker is either new or new experiment has been started
+                if message == 'registered':
+                    worker_status['experiment'] = sent_payload['experiment']
+                    worker_status['network-id'] = sent_payload['network-id']
+                    worker_status['worker-address'] = sent_payload['worker-address']
+                    worker_status['cycle'] = sent_payload['cycle']
+                # Worker id is known, but address has changed
+                if message == 'rerouted':
+                    worker_status['worker-address'] = sent_payload['worker-address']
 
-            # Worker address has changed
-            if message == 'rerouted':
-                worker_status['id'] = sent_payload['status']['id']
+                create_or_update_object(
+                    logger = logger,
+                    minio_client = minio_client,
+                    bucket_name = workers_bucket,
+                    object_path = worker_status_path,
+                    data = worker_status,
+                    metadata = {}
+                )
 
         time_end = time.time()
         cpu_end = this_process.cpu_percent(interval=0.2)
@@ -89,15 +99,18 @@ def send_info_to_central(
             'ram-bytes': mem_diff,
             'disk-bytes': disk_diff
         }
-        '''
+        
         status = store_metrics_and_resources(
             file_lock = file_lock,
+            logger = logger,
+            minio_client = minio_client,
+            prometheus_registry = prometheus_registry,
+            prometheus_metrics = prometheus_metrics,
             type = 'resources',
-            subject = 'worker',
             area = 'network',
             metrics = resource_metrics
         )
-        '''
+        
         return True, response.status_code
     except Exception as e:
         logger.error('Sending info to central error:' +  str(e)) 

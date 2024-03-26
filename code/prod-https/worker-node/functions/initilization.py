@@ -141,6 +141,7 @@ def initilize_prometheus_gauges(
         'cycle-time-end': 'CyTiEn',
         'cycle-total-seconds': 'CyToSec',
         'time-seconds': 'TiSec',
+        'status-code': 'StCo',
         'processing-time-seconds': 'PrTiSec',
         'elapsed-time-seconds': 'ElTiSec',
         'cpu-percentage': 'CPUPerc',
