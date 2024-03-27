@@ -23,6 +23,7 @@ def initilize_minio(
             'worker-port': worker_port,
             'status': 'waiting',
             'experiment':1,
+            'experiment-id': '',
             'stored': False,
             'preprocessed': False,
             'trained': False,
@@ -92,7 +93,6 @@ def initilize_prometheus_gauges(
     prometheus_metrics: any,
 ):
     # Worker model metrics
-    #metric_name = 'central_global'
     prometheus_metrics['worker-local'] = Gauge(
         name = 'W_M_M',
         documentation = 'Worker local metrics',
@@ -117,7 +117,6 @@ def initilize_prometheus_gauges(
         'accuracy': 'AcMe'
     }
     # Worker resource metrics
-    #metric_name = 'central-resources'
     prometheus_metrics['worker-resources'] = Gauge(
         name = 'W_R_M',
         documentation = 'Central resource metrics',

@@ -9,23 +9,32 @@ import time
 
 from collections import OrderedDict
 
-from functions.platforms.minio import get_object_data_and_metadata, create_or_update_object
-# Refactored and works
+from functions.platforms.minio import get_object_data_and_metadata, create_or_update_object, check_object
+from functions.general import encode_metadata_lists_to_strings
+from functions.platforms.mlflow import start_experiment
+# Refactor
 def store_training_context(
     file_lock: any,
-    parameters: any,
+    logger: any,
+    minio_client: any,
+    mlflow_client: any,
+    prometheus_registry: any,
+    prometheus_metrics: any,
+    info: any,
     global_model: any,
     df_data: list,
     df_columns: list
 ) -> any:
-    # Separate training artifacts will have the following folder format of experiment_(int)
-    current_experiment_number = get_current_experiment_number()
-    worker_status_path = 'status/experiment_' + str(current_experiment_number) + '/worker.txt'
-    
-    worker_status = get_file_data(
-        file_lock = file_lock,
-        file_path = worker_status_path
+    workers_bucket = 'workers'
+    worker_experiments_folder = os.environ.get('WORKER_ID') + '/experiments'
+    worker_status_path = worker_experiments_folder + '/status'
+    worker_status_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = workers_bucket,
+        object_path = worker_status_path
     )
+    worker_status = worker_status_object['data']
 
     if worker_status is None:
         return {'message': 'no status'}
@@ -33,109 +42,162 @@ def store_training_context(
     if worker_status['complete']:
         return {'message': 'complete'}
     
-    if not parameters['id'] == worker_status['id']:
-        return {'message': 'wrong id'}
+    if not info['worker-id'] == worker_status['worker-id']:
+        return {'message': 'incorrect'}
     
     if worker_status['stored'] and not worker_status['updated']:
-        return {'message': 'ongoing jobs'}
+        return {'message': 'ongoing'}
     
-    if parameters['model'] == None:
+    os.environ['STATUS'] = 'storing'
+
+    experiment_folder_path = worker_experiments_folder + '/' + str(info['experiment'])
+    cycle_folder_path = experiment_folder_path + '/' + str(info['cycle'])
+    parameters_folder_path = experiment_folder_path + '/parameters'
+    times_path = experiment_folder_path + '/times'
+    global_model_path = cycle_folder_path + '/global-model'
+    if info['model'] == None:
         worker_status['complete'] = True
-        worker_status['cycle'] = parameters['cycle']
+        worker_status['cycle'] = info['cycle']
+
+        times_object = get_object_data_and_metadata(
+            logger = logger,
+            minio_client = minio_client,
+            bucket_name = workers_bucket,
+            object_path = times_path
+        )
+        times = times_object['data']
+
+        experiment_start = times['experiment-time-start']
+        experiment_end = time.time()
+        experiment_total = experiment_end - experiment_start
+        times['experiment-time-end'] = experiment_end
+        times['experiment-total-seconds'] = experiment_total
+        create_or_update_object(
+            logger = logger,
+            minio_client = minio_client,
+            bucket_name = workers_bucket,
+            object_path = times_path,
+            data = times,
+            metadata = {}
+        )
     else:
-        parameters_folder_path = 'parameters/experiment_' + str(current_experiment_number)
-    
-        model_parameters_path = parameters_folder_path + '/model.txt'
-        worker_parameters_path = parameters_folder_path + '/worker.txt'
+        object_exists = check_object(
+            logger = logger,
+            minio_client = minio_client,
+            bucket_name = workers_bucket,
+            object_path = times_path
+        )
+        if len(object_exists) == 0:
+            times = {
+                'cycle': str(info['cycle']),
+                'experiment-date': datetime.now().strftime('%Y-%m-%d-%H:%M:%S.%f'),
+                'experiment-time-start': time.time(),
+                'experiment-time-end':0,
+                'experiment-total-seconds': 0,
+            }
+            create_or_update_object(
+                logger = logger,
+                minio_client = minio_client,
+                bucket_name = workers_bucket,
+                object_path = times_path,
+                data = times,
+                metadata = {}
+            )
+            worker_experiment_name = 'worker-' + str(os.environ.get('WORKER_ID')) + '-' + str(info['experiment'])
+            experiment_id = start_experiment(
+                logger = logger,
+                mlflow_client = mlflow_client,
+                experiment_name = worker_experiment_name,
+                experiment_tags = {}
+            )
+            worker_status['experiment-id'] = experiment_id
 
-        store_file_data(
-            file_lock = file_lock,
-            replace = True,
-            file_folder_path = parameters_folder_path,
-            file_path = model_parameters_path,
-            data = parameters['model']
+        model_parameters_path = parameters_folder_path + '/model'
+        object_exists = check_object(
+            logger = logger,
+            minio_client = minio_client,
+            bucket_name = workers_bucket,
+            object_path = model_parameters_path
         )
 
-        store_file_data(
-            file_lock = file_lock,
-            replace = True,
-            file_folder_path = parameters_folder_path,
-            file_path = worker_parameters_path,
-            data = parameters['worker']
+        if len(object_exists) == 0:
+            create_or_update_object(
+                logger = logger,
+                minio_client = minio_client,
+                bucket_name = workers_bucket,
+                object_path = model_parameters_path,
+                data = info['model'],
+                metadata = {}
+            )
+
+        worker_parameters_path = parameters_folder_path + '/worker'
+        object_exists = check_object(
+            logger = logger,
+            minio_client = minio_client,
+            bucket_name = workers_bucket,
+            object_path = worker_parameters_path
         )
+
+        if len(object_exists) == 0:
+            create_or_update_object(
+                logger = logger,
+                minio_client = minio_client,
+                bucket_name = workers_bucket,
+                object_path = worker_parameters_path,
+                data = info['worker'],
+                metadata = {}
+            )
+
+        data_path = cycle_folder_path + '/worker-sample'
+        object_exists = check_object(
+            logger = logger,
+            minio_client = minio_client,
+            bucket_name = workers_bucket,
+            object_path = data_path 
+        )
+
+        if len(object_exists) == 0:
+            metadata = encode_metadata_lists_to_strings({'columns': df_columns})
+            create_or_update_object(
+                logger = logger,
+                minio_client = minio_client,
+                bucket_name = workers_bucket,
+                object_path = data_path,
+                data = df_data,
+                metadata = metadata
+            )
 
         worker_status['preprocessed'] = False
         worker_status['trained'] = False
         worker_status['updated'] = False
         worker_status['complete'] = False
-        worker_status['cycle'] = parameters['cycle']
-
-    os.environ['STATUS'] = 'storing'
-    
-    model_folder_path = 'models/experiment_' + str(current_experiment_number)
-    global_model_path = model_folder_path + '/global_' + str(worker_status['cycle']-1) + '.pth'
+        worker_status['cycle'] = info['cycle']
     
     weights = global_model['weights']
     bias = global_model['bias']
-    
+
     formated_parameters = OrderedDict([
         ('linear.weight', torch.tensor(weights,dtype=torch.float32)),
         ('linear.bias', torch.tensor(bias,dtype=torch.float32))
     ])
-    
-    store_file_data(
-        file_lock = file_lock,
-        replace = False,
-        file_folder_path = model_folder_path,
-        file_path = global_model_path,
-        data = formated_parameters
-    )
 
-    if not df_data == None:
-        data_folder_path = 'data/experiment_' + str(current_experiment_number)
-        data_path = data_folder_path + '/sample_' + str(worker_status['cycle']) + '.csv'
-        worker_df = pd.DataFrame(df_data, columns = df_columns)
-        store_file_data(
-            file_lock = file_lock,
-            replace = False,
-            file_folder_path = data_folder_path,
-            file_path = data_path,
-            data = worker_df
-        )
-        worker_status['preprocessed'] = False
-
-    worker_resources_path = 'resources/experiment_' + str(current_experiment_number) + '/worker.txt'
-    worker_resources = get_file_data(
-        file_lock = file_lock,
-        file_path = worker_resources_path
-    )
-    
-    if worker_status['complete']:
-        experiment_start = worker_resources['general']['times']['experiment-time-start']
-        experiment_end = time.time()
-        experiment_total = experiment_end - experiment_start
-        worker_resources['general']['times']['experiment-time-end'] = experiment_end
-        worker_resources['general']['times']['experiment-total-seconds'] = experiment_total
-    else:
-        if str(worker_status['cycle']) == '1':
-            worker_resources['general']['times']['experiment-date'] = datetime.now().strftime('%Y-%m-%d-%H:%M:%S.%f')
-            worker_resources['general']['times']['experiment-time-start'] = time.time()
-
-    store_file_data(
-        file_lock = file_lock,
-        replace = True,
-        file_folder_path = '',
-        file_path = worker_resources_path,
-        data = worker_resources
+    create_or_update_object(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = workers_bucket,
+        object_path = global_model_path,
+        data = formated_parameters,
+        metadata = {}
     )
 
     worker_status['stored'] = True
-    store_file_data(
-        file_lock = file_lock,
-        replace = True,
-        file_folder_path = '',
-        file_path = worker_status_path,
-        data = worker_status
+    create_or_update_object(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = workers_bucket,
+        object_path = worker_status_path,
+        data = worker_status,
+        metadata = {}
     )
 
     os.environ['STATUS'] = 'stored'

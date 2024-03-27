@@ -1,6 +1,11 @@
-from functions.training.update import send_info_to_central
+from functions.training.update import send_info_to_central, send_update_to_central
+from functions.processing.data import preprocess_into_train_test_and_eval_tensors
+from functions.platforms.minio import get_object_data_and_metadata, create_or_update_object
+from functions.training.model import local_model_training
 
-# Refactor
+import time
+import os
+# Refactored
 def status_pipeline(
     task_file_lock: any,
     task_logger: any,
@@ -8,7 +13,7 @@ def status_pipeline(
     task_prometheus_registry: any,
     task_prometheus_metrics: any
 ):
-    # 
+    # Works
     status = send_info_to_central(
         file_lock = task_file_lock,
         logger = task_logger,
@@ -17,50 +22,64 @@ def status_pipeline(
         prometheus_metrics = task_prometheus_metrics
     )
     task_logger.info('Status sending:' + str(status))
-'''
-# Refactored and works
+# Refactoroed
 def data_pipeline(
     task_file_lock: any,
-    task_logger: any
+    task_logger: any,
+    task_minio_client: any,
+    task_prometheus_registry: any,
+    task_prometheus_metrics: any
 ):
     cycle_start = time.time()
     # Check
     status = preprocess_into_train_test_and_eval_tensors(
         file_lock = task_file_lock,
-        logger = task_logger
+        logger = task_logger,
+        minio_client = task_minio_client,
+        prometheus_registry = task_prometheus_registry,
+        prometheus_metrics = task_prometheus_metrics
     )
 
     if status:
-        current_experiment_number = get_current_experiment_number()
-        worker_status_path = 'status/experiment_' + str(current_experiment_number) + '/worker.txt'
-    
-        worker_status = get_file_data(
-            file_lock = task_file_lock,
-            file_path = worker_status_path
+        workers_bucket = 'workers'
+        worker_experiments_folder = os.environ.get('WORKER_ID') + '/experiments'
+        worker_status_path = worker_experiments_folder + '/status'
+        worker_status_object = get_object_data_and_metadata(
+            logger = task_logger,
+            minio_client = task_minio_client,
+            bucket_name = workers_bucket,
+            object_path = worker_status_path
         )
+        worker_status = worker_status_object['data']
 
-        worker_resources_path = 'resources/experiment_' + str(current_experiment_number) + '/worker.txt'
-        worker_resources = get_file_data(
-            file_lock = task_file_lock,
-            file_path = worker_resources_path
+        experiment_folder_path = worker_experiments_folder + '/' + str(worker_status['experiment'])
+        times_path = experiment_folder_path + '/times'
+
+        times_object = get_object_data_and_metadata(
+            logger = task_logger,
+            minio_client = task_minio_client,
+            bucket_name = workers_bucket,
+            object_path = times_path
         )
+        times = times_object['times']
 
-        worker_resources['general']['times'][str(worker_status['cycle'])] = {
+        times[str(worker_status['cycle'])] = {
             'cycle-time-start':cycle_start,
             'cycle-time-end': 0,
             'cycle-total-seconds': 0
         }
 
-        store_file_data(
-            file_lock = task_file_lock,
-            replace = True,
-            file_folder_path = '',
-            file_path = worker_resources_path,
-            data = worker_resources
+        create_or_update_object(
+            logger = task_logger,
+            minio_client = task_minio_client,
+            bucket_name = workers_bucket,
+            object_path = times_path,
+            data = times,
+            metadata = {}
         )
 
     task_logger.info('Data preprocessing:' + str(status))
-# Refactored and works
+# Refactored
 def model_pipeline(
     task_file_lock: any,
     task_logger: any
@@ -82,4 +101,3 @@ def update_pipeline(
         logger = task_logger
     )
     task_logger.info('Update sending:' + str(status))
-'''

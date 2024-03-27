@@ -22,16 +22,14 @@ def send_info_to_central(
     time_start = time.time()
 
     workers_bucket = 'workers'
-    worker_experiment_folder = os.environ.get('WORKER_ID') + '/experiments'
-    worker_status_path = worker_experiment_folder + '/status'
-    
+    worker_experiments_folder = os.environ.get('WORKER_ID') + '/experiments'
+    worker_status_path = worker_experiments_folder + '/status'
     worker_status_object = get_object_data_and_metadata(
         logger = logger,
         minio_client = minio_client,
         bucket_name = workers_bucket,
         object_path = worker_status_path
     )
-    
     worker_status = worker_status_object['data']
 
     if worker_status is None:
@@ -100,7 +98,7 @@ def send_info_to_central(
             'disk-bytes': disk_diff
         }
         
-        status = store_metrics_and_resources(
+        store_metrics_and_resources(
             file_lock = file_lock,
             logger = logger,
             minio_client = minio_client,
@@ -115,10 +113,13 @@ def send_info_to_central(
     except Exception as e:
         logger.error('Sending info to central error:' +  str(e)) 
         return False, None
-# Refactored and works
+# Refactored
 def send_update_to_central(
     file_lock: any,
-    logger: any
+    logger: any,
+    minio_client: any,
+    prometheus_registry: any,
+    prometheus_metrics: any
 ) -> bool:  
     this_process = psutil.Process(os.getpid())
     mem_start = psutil.virtual_memory().used 
@@ -126,13 +127,16 @@ def send_update_to_central(
     cpu_start = this_process.cpu_percent(interval=0.2)
     time_start = time.time()
 
-    current_experiment_number = get_current_experiment_number()
-
-    worker_status_path = 'status/experiment_' + str(current_experiment_number) + '/worker.txt'
-    worker_status = get_file_data(
-        file_lock = file_lock,
-        file_path = worker_status_path
+    workers_bucket = 'workers'
+    worker_experiments_folder = os.environ.get('WORKER_ID') + '/experiments'
+    worker_status_path = worker_experiments_folder + '/status'
+    worker_status_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = workers_bucket,
+        object_path = worker_status_path
     )
+    worker_status = worker_status_object['data']
 
     if worker_status is None:
         return False
@@ -149,12 +153,17 @@ def send_update_to_central(
     os.environ['STATUS'] = 'sending update to central'
     logger.info('Sending update to central')
 
-    local_model = get_wanted_model(
-        file_lock = file_lock,
-        experiment = current_experiment_number,
-        subject = 'local',
-        cycle = worker_status['cycle']
+    experiment_folder_path = worker_experiments_folder + '/' + str(worker_status['experiment'])
+    cycle_folder_path = experiment_folder_path + '/' + str(worker_status['cycle'])
+
+    local_model_path = cycle_folder_path + '/local-model'
+    local_model_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = workers_bucket,
+        object_path = local_model_path
     )
+    local_model = local_model_object['data']
 
     formatted_local_model = {
       'weights': local_model['linear.weight'].numpy().tolist(),
@@ -162,20 +171,22 @@ def send_update_to_central(
     }
 
     update = {
-        'worker-id': str(worker_status['id']),
-        'local-model': formatted_local_model,
-        'cycle': worker_status['cycle']
+        'worker-id': str(worker_status['worker-id']),
+        'experiment': str(worker_status['cycle']),
+        'cycle': str(worker_status['cycle']),
+        'local-model': formatted_local_model
     }
-    
-    central_url = worker_status['central-address'] + '/update'
+
     payload = json.dumps(update)
-    # If an error happens in central, update might not be received
+    central_url = 'http://' + worker_status['central-address'] + ':' + worker_status['central-port'] + '/update'
     success = False
-    for i in range(0,10):
+    for i in range(0,50):
         if success:
             break
-
+        
+        status_code = None
         try:
+            central_url = 'http://' + worker_status['central-address'] + ':' + worker_status['central-port'] + '/update'
             response = requests.post(
                 url = central_url, 
                 json = payload,
@@ -184,72 +195,48 @@ def send_update_to_central(
                     'Accept':'application/json'
                 }
             )
-            if response.status_code == 200:
-                success = True
+            status_code = response.status_code
+        except Exception as e:
+            logger.error('Status sending error:' + str(e))
 
-                worker_resources_path = 'resources/experiment_' + str(current_experiment_number) + '/worker.txt'
-                worker_resources = get_file_data(
-                    file_lock = file_lock,
-                    file_path = worker_resources_path
-                )
-                # Potential info loss
-                cycle_start = worker_resources['general']['times'][str(worker_status['cycle'])]['cycle-time-start']
-                cycle_end = time.time()
-                cycle_total = cycle_end-cycle_start
-                worker_resources['general']['times'][str(worker_status['cycle'])]['cycle-time-end'] = cycle_end
-                worker_resources['general']['times'][str(worker_status['cycle'])]['cycle-total-seconds'] = cycle_total
-                store_file_data(
-                    file_lock = file_lock,
-                    replace = True,
-                    file_folder_path = '',
-                    file_path = worker_resources_path,
-                    data = worker_resources
-                )
+        if status_code == 200:
+            times_path = experiment_folder_path + '/times'
+            times_object = get_object_data_and_metadata(
+                logger = logger,
+                minio_client = minio_client,
+                bucket_name = workers_bucket,
+                object_path = times_path
+            )
+            times = times_object['data']
 
-                worker_status['updated'] = True
-                worker_status['stored'] = False
-                store_file_data(
-                    file_lock = file_lock,
-                    replace = True,
-                    file_folder_path = '',
-                    file_path = worker_status_path,
-                    data = worker_status
-                )
+            cycle_start = times[str(worker_status['cycle'])]['cycle-time-start']
+            cycle_end = time.time()
+            cycle_total = cycle_end-cycle_start
+            times[str(worker_status['cycle'])]['cycle-time-end'] = cycle_end
+            times[str(worker_status['cycle'])]['cycle-total-seconds'] = cycle_total
 
-                os.environ['STATUS'] = 'update sent to central'
-                logger.info('Update sent to central')
-
-                time_end = time.time()
-                cpu_end = this_process.cpu_percent(interval=0.2)
-                mem_end = psutil.virtual_memory().used 
-                disk_end = psutil.disk_usage('.').used
-
-                time_diff = (time_end - time_start) 
-                cpu_diff = cpu_end - cpu_start 
-                mem_diff = (mem_end - mem_start) 
-                disk_diff = (disk_end - disk_start) 
-
-                resource_metrics = {
-                    'name': 'sending-update-to-central',
-                    'status-code': response.status_code,
-                    'processing-time-seconds': time_diff,
-                    'elapsed-time-seconds': response.elapsed.total_seconds(),
-                    'cpu-percentage': cpu_diff,
-                    'ram-bytes': mem_diff,
-                    'disk-bytes': disk_diff
-                }
-
-                status = store_metrics_and_resources(
-                    file_lock = file_lock,
-                    type = 'resources',
-                    subject = 'worker',
-                    area = 'network',
-                    metrics = resource_metrics
-                )
-                return True
+            create_or_update_object(
+                logger = logger,
+                minio_client = minio_client,
+                bucket_name = workers_bucket,
+                object_path = times_path,
+                data = times,
+                metadata = {}
+            )
             
-            os.environ['STATUS'] = 'update not sent to central'
-            logger.info('Update not sent to central')
+            worker_status['updated'] = True
+            worker_status['stored'] = False
+            create_or_update_object(
+                logger = logger,
+                minio_client = minio_client,
+                bucket_name = workers_bucket,
+                object_path = worker_status_path,
+                data = worker_status,
+                metadata = {}
+            )
+
+            os.environ['STATUS'] = 'update sent to central'
+            logger.info('Update sent to central')
 
             time_end = time.time()
             cpu_end = this_process.cpu_percent(interval=0.2)
@@ -259,7 +246,7 @@ def send_update_to_central(
             time_diff = (time_end - time_start) 
             cpu_diff = cpu_end - cpu_start 
             mem_diff = (mem_end - mem_start) 
-            disk_diff = (disk_end - disk_start)
+            disk_diff = (disk_end - disk_start) 
 
             resource_metrics = {
                 'name': 'sending-update-to-central',
@@ -271,14 +258,50 @@ def send_update_to_central(
                 'disk-bytes': disk_diff
             }
 
-            status = store_metrics_and_resources(
+            store_metrics_and_resources(
                 file_lock = file_lock,
+                logger = logger,
+                minio_client = minio_client,
+                prometheus_registry = prometheus_registry,
+                prometheus_metrics = prometheus_metrics,
                 type = 'resources',
-                subject = 'worker',
                 area = 'network',
                 metrics = resource_metrics
             )
-            return False
-        except Exception as e:
-            logger.error('Status sending error:' + str(e))
-            return False
+            success = True
+            continue 
+        
+        os.environ['STATUS'] = 'update not sent to central'
+        logger.info('Update not sent to central')
+
+        time_end = time.time()
+        cpu_end = this_process.cpu_percent(interval=0.2)
+        mem_end = psutil.virtual_memory().used 
+        disk_end = psutil.disk_usage('.').used
+
+        time_diff = (time_end - time_start) 
+        cpu_diff = cpu_end - cpu_start 
+        mem_diff = (mem_end - mem_start) 
+        disk_diff = (disk_end - disk_start)
+
+        resource_metrics = {
+            'name': 'sending-update-to-central',
+            'status-code': response.status_code,
+            'processing-time-seconds': time_diff,
+            'elapsed-time-seconds': response.elapsed.total_seconds(),
+            'cpu-percentage': cpu_diff,
+            'ram-bytes': mem_diff,
+            'disk-bytes': disk_diff
+        }
+
+        store_metrics_and_resources(
+            file_lock = file_lock,
+            logger = logger,
+            minio_client = minio_client,
+            prometheus_registry = prometheus_registry,
+            prometheus_metrics = prometheus_metrics,
+            type = 'resources',
+            area = 'network',
+            metrics = resource_metrics
+        )
+    return True

@@ -3,15 +3,21 @@ import torch
 import os
 import time 
 import psutil
+import pandas as pd
  
 from sklearn.model_selection import train_test_split
 from torch.utils.data import TensorDataset
 
 from functions.management.storage import store_metrics_and_resources
+from functions.platforms.minio import get_object_data_and_metadata, create_or_update_object
+from functions.general import format_metadata_dict
 # Refactored and works
 def preprocess_into_train_test_and_eval_tensors(
     file_lock: any,
-    logger: any
+    logger: any,
+    minio_client: any,
+    prometheus_registry: any,
+    prometheus_metrics: any
 ) -> bool:
     this_process = psutil.Process(os.getpid())
     mem_start = psutil.virtual_memory().used 
@@ -19,13 +25,16 @@ def preprocess_into_train_test_and_eval_tensors(
     cpu_start = this_process.cpu_percent(interval=0.2)
     time_start = time.time()
 
-    current_experiment_number = get_current_experiment_number()
-    worker_status_path = 'status/experiment_' + str(current_experiment_number) + '/worker.txt'
-    
-    worker_status = get_file_data(
-        file_lock = file_lock,
-        file_path = worker_status_path
+    workers_bucket = 'workers'
+    worker_experiments_folder = os.environ.get('WORKER_ID') + '/experiments'
+    worker_status_path = worker_experiments_folder + '/status'
+    worker_status_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = workers_bucket,
+        object_path = worker_status_path
     )
+    worker_status = worker_status_object['data']
 
     if worker_status is None:
         return False
@@ -41,32 +50,37 @@ def preprocess_into_train_test_and_eval_tensors(
 
     os.environ['STATUS'] = 'preprocessing into tensors'
     logger.info('Preprocessing into tensors')
+    experiment_folder_path = worker_experiments_folder + '/' + str(worker_status['experiment'])
+    cycle_folder_path = experiment_folder_path + '/' + str(worker_status['cycle'])
     
-    parameter_folder_path = 'parameters/experiment_' + str(current_experiment_number)
-    model_parameters_path = parameter_folder_path + '/model.txt'
-    worker_parameters_path = parameter_folder_path + '/worker.txt'
-
-    model_parameters = get_file_data(
-        file_lock = file_lock,
-        file_path = model_parameters_path
+    parameters_folder_path = experiment_folder_path + '/parameters'
+    model_parameters_path = parameters_folder_path + '/model'
+    model_parameters_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = workers_bucket,
+        object_path = model_parameters_path
     )
+    model_parameters = model_parameters_object['data']
 
-    if model_parameters is None:
-        return False
-
-    worker_parameters = get_file_data(
-        file_lock = file_lock,
-        file_path = worker_parameters_path
+    worker_parameters_path = parameters_folder_path + '/worker'
+    worker_parameters_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = workers_bucket,
+        object_path = worker_parameters_path
     )
-
-    if worker_parameters is None:
-        return False
-
-    worker_data_path = 'data/experiment_' + str(current_experiment_number) + '/sample_' + str(worker_status['cycle']) + '.csv'
-    sample_df = get_file_data(
-        file_lock = file_lock,
-        file_path = worker_data_path
+    worker_parameters = worker_parameters_object['data']
+    sample_df_path = cycle_folder_path + 'worker-sample'
+    sample_df_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = workers_bucket,
+        object_path = sample_df_path
     )
+    data_columns = format_metadata_dict(sample_df_object['metadata'])['columns']
+    source_df = pd.DataFrame(sample_df_object['data'], columns = data_columns)
+    sample_df = source_df.drop('step', axis = 1)
 
     preprocessed_df = sample_df[model_parameters['used-columns']]
     for column in model_parameters['scaled-columns']:
@@ -112,30 +126,36 @@ def preprocess_into_train_test_and_eval_tensors(
         torch.tensor(y_eval, dtype=torch.float32)
     )
 
-    tensor_folder_path = 'tensors/experiment_' + str(current_experiment_number)
-    train_tensor_path = tensor_folder_path + '/train_' + str(worker_status['cycle']) + '.pt'
-    store_file_data(
-        file_lock = file_lock,
-        replace = False,
-        file_folder_path = tensor_folder_path,
-        file_path = train_tensor_path,
-        data = train_tensor
+    tensor_folder_path = cycle_folder_path + '/tensors'
+    
+    train_tensor_path = tensor_folder_path + '/train'
+    create_or_update_object(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = workers_bucket,
+        object_path = train_tensor_path,
+        data = train_tensor,
+        metadata = {}
     )
-    test_tensor_path = tensor_folder_path + '/test_' + str(worker_status['cycle']) + '.pt'
-    store_file_data(
-        file_lock = file_lock,
-        replace = False,
-        file_folder_path = tensor_folder_path,
-        file_path = test_tensor_path,
-        data = test_tensor
+    
+    test_tensor_path = tensor_folder_path + '/test'
+    create_or_update_object(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = workers_bucket,
+        object_path = test_tensor_path,
+        data = test_tensor,
+        metadata = {}
     )
-    eval_tensor_path = tensor_folder_path + '/eval_' + str(worker_status['cycle']) + '.pt'
-    store_file_data(
-        file_lock = file_lock,
-        replace = False,
-        file_folder_path = tensor_folder_path,
-        file_path = eval_tensor_path,
-        data = eval_tensor
+
+    eval_tensor_path = tensor_folder_path + '/eval' 
+    create_or_update_object(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = workers_bucket,
+        object_path = eval_tensor_path,
+        data = eval_tensor,
+        metadata = {}
     )
     
     worker_status['preprocessed'] = True
@@ -143,12 +163,13 @@ def preprocess_into_train_test_and_eval_tensors(
     worker_status['test-amount'] = X_test.shape[0]
     worker_status['eval-amount'] = X_eval.shape[0]
     
-    store_file_data(
-        file_lock = file_lock,
-        replace = True,
-        file_folder_path = '',
-        file_path = worker_status_path,
-        data = worker_status
+    create_or_update_object(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = workers_bucket,
+        object_path = worker_status_path,
+        data = worker_status,
+        metadata = {}
     )
     
     os.environ['STATUS'] = 'tensors created'
@@ -172,10 +193,13 @@ def preprocess_into_train_test_and_eval_tensors(
         'disk-bytes': round(disk_diff,5)
     }
 
-    status = store_metrics_and_resources(
+    store_metrics_and_resources(
         file_lock = file_lock,
+        logger = logger,
+        minio_client = minio_client,
+        prometheus_registry = prometheus_registry,
+        prometheus_metrics = prometheus_metrics,
         type = 'resources',
-        subject = 'worker',
         area = 'function',
         metrics = resource_metrics
     )

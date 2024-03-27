@@ -2,6 +2,7 @@ from flask import Blueprint, current_app, request
 import json
 
 orchestration = Blueprint('orchestration', __name__)
+'''
 # Created and works
 @orchestration.route('/point', methods=["POST"]) 
 def set_point_to_central():
@@ -15,3 +16,4 @@ def set_point_to_central():
     )
 
     return 'Ok', 200
+'''
