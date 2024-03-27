@@ -63,6 +63,40 @@ def get_central_logs():
     with open(central_logs_path, 'r') as f:
         logs = f.readlines()
     return logs
+# Created into one for all getter
+def get_central_status(
+    logger: any,
+    minio_client: any
+):
+    experiments_folder = 'experiments'
+    central_bucket = 'central'
+    central_status_path = experiments_folder + '/status'
+    central_status_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = central_status_path
+    )
+    central_status = central_status_object['data']
+    return central_status
+# Refactor into one for all setter
+def set_central_status(
+    logger: any,
+    minio_client: any,
+    central_status: any
+):
+    experiments_folder = 'experiments'
+    central_bucket = 'central'
+    central_status_path = experiments_folder + '/status'
+    create_or_update_object(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = central_status_path,
+        data = central_status,
+        metadata = {}
+    )
+'''
 # Refactored and works, but could utilize the above or below function
 def get_newest_model_updates(
     file_lock:any,
@@ -93,3 +127,4 @@ def get_newest_model_updates(
                 })
                 collective_sample_size = collective_sample_size + sample_size
     return updates, collective_sample_size
+'''

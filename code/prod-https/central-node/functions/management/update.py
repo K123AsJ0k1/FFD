@@ -8,7 +8,7 @@ from functions.general import format_metadata_dict, encode_metadata_lists_to_str
 from functions.management.storage import store_metrics_and_resources
 from functions.platforms.minio import get_object_data_and_metadata, create_or_update_object
 
-# Refactor 
+# Refactored
 def send_context_to_workers(
     file_lock: any,
     logger: any,
@@ -115,7 +115,7 @@ def send_context_to_workers(
 
         payload_status = {}
         data_folder_path = cycle_folder_path + '/data'
-        #data_files = get_files(data_folder_path)
+        
         for worker_key in workers_status.keys():
             this_process = psutil.Process(os.getpid())
             net_mem_start = psutil.virtual_memory().used 
@@ -182,7 +182,6 @@ def send_context_to_workers(
                 )
 
                 sent_message = json.loads(response.text)['message']
-                # Needs refactoring
                 payload_status[worker_key] = {
                     'response': response.status_code,
                     'message': sent_message

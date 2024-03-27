@@ -514,7 +514,7 @@ def initial_model_training(
     )
     return True
 
-# Refactored
+# Refactor
 def model_inference(
     file_lock: any,
     experiment: int,
