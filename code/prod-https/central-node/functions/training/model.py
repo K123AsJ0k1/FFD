@@ -292,8 +292,8 @@ def initial_model_training(
     #mlflow.set_experiment(experiment_id = central_status['experiment-id'])
 
     experiment_folder = experiments_folder + '/' + str(central_status['experiment'])
-    parameter_folder_path = experiment_folder + '/parameters'
-    model_parameters_path = parameter_folder_path + '/model' 
+    parameters_folder_path = experiment_folder + '/parameters'
+    model_parameters_path = parameters_folder_path + '/model' 
     model_parameters_object = get_object_data_and_metadata(
         logger = logger,
         minio_client = minio_client,
@@ -513,7 +513,6 @@ def initial_model_training(
         metrics = resource_metrics
     )
     return True
-
 # Refactor
 def model_inference(
     file_lock: any,

@@ -151,13 +151,13 @@ def update_pipeline(
     task_file_lock: any,
     task_logger: any
 ):
-    # 
+    # Check
     status = split_data_between_workers(
         file_lock = task_file_lock,
         logger = task_logger
     )
     task_logger.info('Worker data split:' + str(status))
-    # 
+    # Check
     status = send_context_to_workers(
         file_lock = task_file_lock,
         logger = task_logger

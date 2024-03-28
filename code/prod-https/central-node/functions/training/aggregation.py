@@ -5,9 +5,47 @@ from collections import OrderedDict
 import time
 import psutil
 
-from functions.training.model import FederatedLogisticRegression, evaluate
-from functions.general import get_current_experiment_number, get_newest_model_updates, get_file_data, get_wanted_model
-from functions.management.storage import store_metrics_and_resources, store_file_data
+from functions.management.storage import store_metrics_and_resources
+from functions.platforms.minio import get_object_data_and_metadata, create_or_update_object, get_object_list
+from functions.training.model import FederatedLogisticRegression, test
+from torch.utils.data import DataLoader
+from functions.platforms.mlflow import update_run, end_run
+
+# Created
+def get_model_updates(
+    logger: any,
+    minio_client: any,
+    current_experiment: int,
+    current_cycle: int
+) -> any:
+    experiments_folder = 'experiments'
+    central_bucket = 'central'
+    experiment_folder_path = experiments_folder + '/' + str(current_experiment)
+    cycle_folder_path = experiment_folder_path + '/' + str(current_cycle)
+    local_models_folder = cycle_folder_path + '/local-models'
+    local_model_names = get_object_list(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        path_prefix = local_models_folder
+    )
+    updates = []
+    for local_model_path in local_model_names.keys():
+        local_model_object = get_object_data_and_metadata(
+            logger = logger,
+            minio_client = minio_client,
+            bucket_name = central_bucket,
+            object_path = local_model_path
+        )
+        local_model_parameters = local_model_object['data']
+        local_model_metadata = local_model_object['metadata']
+        train_amount = local_model_metadata['train-amount']
+        updates.append({
+            'parameters': local_model_parameters,
+            'train-amount': train_amount,
+        })
+        collective_sample_size = collective_sample_size + train_amount
+    return updates, collective_sample_size
 # Refactored and works
 def model_fed_avg(
     updates: any,
@@ -17,7 +55,7 @@ def model_fed_avg(
     biases = []
     for update in updates:
         parameters = update['parameters']
-        worker_sample_size = update['samples']
+        worker_sample_size = update['train-amount']
         
         worker_weights = np.array(parameters['linear.weight'].tolist()[0])
         worker_bias = np.array(parameters['linear.bias'].tolist()[0])
@@ -36,10 +74,13 @@ def model_fed_avg(
         ('linear.bias', torch.tensor(FedAvg_bias,dtype=torch.float32))
     ])
     return updated_global_model
-# Refactored and works
+# Refactored
 def update_global_model(
     file_lock: any,
-    logger: any
+    logger: any,
+    minio_client: any,
+    prometheus_registry: any,
+    prometheus_metrics: any
 ) -> bool:
     this_process = psutil.Process(os.getpid())
     mem_start = psutil.virtual_memory().used 
@@ -47,12 +88,16 @@ def update_global_model(
     cpu_start = this_process.cpu_percent(interval=0.2)
     time_start = time.time()
 
-    current_experiment_number = get_current_experiment_number()
-    central_status_path = 'status/experiment_' + str(current_experiment_number) + '/central.txt'
-    central_status = get_file_data(
-        file_lock = file_lock,
-        file_path = central_status_path
+    experiments_folder = 'experiments'
+    central_bucket = 'central'
+    central_status_path = experiments_folder + '/status'
+    central_status_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = central_status_path
     )
+    central_status = central_status_object['data']
 
     if central_status is None:
         return False
@@ -71,47 +116,60 @@ def update_global_model(
     
     os.environ['STATUS'] = 'updating global model'
     logger.info('Updating global model')
+
+    experiment_folder_path = experiments_folder + '/' + str(central_status['experiment'])
     
-    central_parameters_path = 'parameters/experiment_' + str(current_experiment_number) + '/central.txt'
+    parameters_folder_path = experiment_folder_path + '/parameters'
+    central_parameters_path = parameters_folder_path + '/central'
     
-    central_parameters = get_file_data(
-        file_lock = file_lock,
-        file_path = central_parameters_path
+    central_parameters_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = central_parameters_path
     )
-
-    if central_parameters is None:
-        return False
-
-    available_updates, collective_sample_size = get_newest_model_updates(
-        file_lock = file_lock,
-        current_cycle = central_status['cycle']
+    central_parameters = central_parameters_object['data']
+    
+    available_updates, collective_sample_size = get_model_updates(
+        logger = logger,
+        minio_client = minio_client,
+        current_experiment = str(central_status['experiment']),
+        current_cycle = str(central_status['cycle'])
     )
     # Could be reconsidered
     if not central_parameters['min-update-amount'] <= len(available_updates):
         return False
     
-    new_global_model = model_fed_avg(
+    new_global_model_path = experiment_folder_path + '/' + str(central_status['cycle'] + 1) + '/global-model'
+    model_parameters = model_fed_avg(
         updates = available_updates,
         total_sample_size = collective_sample_size 
     )
-    update_model_path = 'models/experiment_' + str(current_experiment_number) + '/global_' + str(central_status['cycle']) + '_' + str(len(available_updates)) + '_' + str(collective_sample_size) + '.pth'
+    model_metadata = {
+        'update-amount': str(len(available_updates)),
+        'train-amount': str(collective_sample_size),
+        'test-amount': str(0),
+        'eval-amount': str(0)
+    }
     
-    store_file_data(
-        file_lock = file_lock,
-        replace = False,
-        file_folder_path = '',
-        file_path = update_model_path,
-        data = new_global_model
+    create_or_update_object(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = new_global_model_path,
+        data = model_parameters,
+        metadata = model_metadata
     )
     
     central_status['collective-amount'] = collective_sample_size
     central_status['updated'] = True
-    store_file_data(
-        file_lock = file_lock,
-        replace = True,
-        file_folder_path = '',
-        file_path = central_status_path,
-        data = central_status
+    create_or_update_object(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = central_status_path,
+        data = central_status,
+        metadata = {}
     )
 
     os.environ['STATUS'] = 'global model updated'
@@ -124,7 +182,7 @@ def update_global_model(
     
     time_diff = (time_end - time_start) 
     cpu_diff = cpu_end - cpu_start 
-    mem_diff = (mem_end - mem_start) # Bytes
+    mem_diff = (mem_end - mem_start)
     disk_diff = (disk_end - disk_start)
 
     resource_metrics = {
@@ -135,19 +193,26 @@ def update_global_model(
         'disk-bytes': round(disk_diff,5)
     }
 
-    status = store_metrics_and_resources(
+    store_metrics_and_resources(
         file_lock = file_lock,
+        logger = logger,
+        minio_client = minio_client,
+        prometheus_registry = prometheus_registry,
+        prometheus_metrics = prometheus_metrics,
         type = 'resources',
-        subject = 'central',
         area = 'function',
         metrics = resource_metrics
     )
 
     return True
-# Refactored and works
+# Refactored
 def evalute_global_model(
     file_lock: any,
-    logger: any
+    logger: any,
+    minio_client: any,
+    mlflow_client: any,
+    prometheus_registry: any,
+    prometheus_metrics: any
 ):
     this_process = psutil.Process(os.getpid())
     mem_start = psutil.virtual_memory().used 
@@ -155,13 +220,16 @@ def evalute_global_model(
     cpu_start = this_process.cpu_percent(interval=0.2)
     time_start = time.time()
 
-    current_experiment_number = get_current_experiment_number()
-    central_status_path = 'status/experiment_' + str(current_experiment_number) + '/central.txt'
-    
-    central_status = get_file_data(
-        file_lock = file_lock,
-        file_path = central_status_path
+    experiments_folder = 'experiments'
+    central_bucket = 'central'
+    central_status_path = experiments_folder + '/status'
+    central_status_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = central_status_path
     )
+    central_status = central_status_object['data']
 
     if central_status is None:
         return False
@@ -178,55 +246,88 @@ def evalute_global_model(
     os.environ['STATUS'] = 'evaluating global model'
     logger.info('Evaluating global model')
 
-    parameters_folder_path = 'parameters/experiment_' + str(current_experiment_number)
-    central_parameters_path = parameters_folder_path + '/central.txt'
-    model_parameters_path = parameters_folder_path + '/model.txt'
+    experiment_folder_path = experiments_folder + '/' + str(central_status['experiment'])
+    parameters_folder_path = experiment_folder_path + '/parameters'
+    central_parameters_path = parameters_folder_path + '/central'
 
-    central_parameters = get_file_data(
-        file_lock = file_lock,
-        file_path = central_parameters_path
+    artifact_folder = 'artifacts'
+    mlflow_parameters = {}
+    mlflow_metrics = {}
+    mlflow_artifacts = []
+
+    central_parameters_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = central_parameters_path
     )
-
-    if central_parameters is None:
-        return False
+    central_parameters = central_parameters_object['data']
     
-    model_parameters = get_file_data(
-        file_lock = file_lock,
-        file_path = model_parameters_path
+    model_parameters_path = parameters_folder_path + '/model' 
+    model_parameters_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = model_parameters_path
     )
+    model_parameters = model_parameters_object['data']
 
-    if model_parameters is None:
-        return False
+    global_model_path = experiment_folder_path + '/' + str(central_status['cycle'] + 1) + '/global-model'
+    global_model_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = global_model_path
+    )
+    global_model_parameters = global_model_object['data']
+    global_model_metadata = global_model_object['metadata']
+    model_temp_path = artifact_folder + '/global-model' + '.pth'
+    torch.save(global_model_parameters, model_temp_path)
+    mlflow_artifacts.append(model_temp_path)
+
+    model = FederatedLogisticRegression(dim = model_parameters['input-size'])
+    mlflow_parameters['updates'] = int(model_parameters['updates'])
+    mlflow_parameters['train-amount'] = int(model_parameters['train-amount'])
+    mlflow_parameters['test-amount'] = 0
+    mlflow_parameters['input-size'] = int(model_parameters['input-size'])
+    model.apply_parameters(model, global_model_parameters)
+
+    eval_tensor_path = experiment_folder_path + '/tensors/eval'
+    eval_tensor_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = eval_tensor_path
+    )
+    eval_tensor = eval_tensor_object['data']
+    eval_tensor_temp_path = artifact_folder + '/eval.pt'
+    mlflow_artifacts.append(eval_tensor_temp_path)
     
-    current_global_model_parameters = get_wanted_model(
-        file_lock = file_lock,
-        experiment = current_experiment_number,
-        subject = 'global',
-        cycle = central_status['cycle']
+    eval_batch_size = 64
+    eval_loader = DataLoader(
+        dataset = eval_tensor, 
+        batch_size = eval_batch_size
     )
-   
-    lr_model = FederatedLogisticRegression(dim = model_parameters['input-size'])
-    lr_model.apply_parameters(lr_model, current_global_model_parameters)
+    mlflow_parameters['eval-batch-size'] = eval_batch_size
 
-    evaluate(
+    eval_metrics = test(
         file_lock = file_lock,
-        train_amount = central_status['collective-amount'],
-        current_model = lr_model
+        logger = logger,
+        minio_client = minio_client,
+        prometheus_registry = prometheus_registry,
+        prometheus_metrics = prometheus_metrics,
+        model = model,
+        test_loader = eval_loader,
+        name = 'evaluation'
     )
 
-    global_metrics_path = 'metrics/experiment_' + str(current_experiment_number) + '/global.txt'
+    for key,value in eval_metrics.items():
+        mlflow_metrics['eval-' + str(key)] = value
     
-    global_metrics = get_file_data(
-        file_lock = file_lock,
-        file_path = global_metrics_path
-    )
-
-    evaluation_metrics = global_metrics[str(len(global_metrics))]
-
     succesful_metrics = 0
     thresholds = central_parameters['metric-thresholds']
     conditions = central_parameters['metric-conditions']
-    for key,value in evaluation_metrics.items():
+    for key,value in eval_metrics.items():
         if 'amount' in key:
             continue
         message = 'Metric ' + str(key)
@@ -242,6 +343,29 @@ def evalute_global_model(
             continue
         message = message + ' failed with ' + str(value) + str(conditions[key]) + str(thresholds[key])
         logger.info(message)
+
+    eval_metrics['train-amount'] = int(global_model_metadata['train-amount'])
+    eval_metrics['test-amount'] = 0
+    eval_metrics['eval-amount'] = len(eval_tensor)
+    store_metrics_and_resources(
+        file_lock = file_lock,
+        logger = logger,
+        minio_client = minio_client,
+        prometheus_registry = prometheus_registry,
+        prometheus_metrics = prometheus_metrics,
+        type = 'metrics',
+        area = '',
+        metrics = eval_metrics
+    )
+
+    update_run(
+        logger = logger,
+        mlflow_client = mlflow_client,
+        run_id = central_status['run-id'],
+        parameters = mlflow_parameters,
+        metrics = mlflow_metrics,
+        artifacts = mlflow_artifacts
+    )
  
     central_status['evaluated'] = True
     if central_parameters['min-metric-success'] <= succesful_metrics or central_status['cycle'] == central_parameters['max-cycles']:
@@ -260,41 +384,55 @@ def evalute_global_model(
         central_status['worker-updates'] = 0
         central_status['cycle'] = central_status['cycle'] + 1
 
-    central_resources_path = 'resources/experiment_' + str(current_experiment_number) + '/central.txt'
-    central_resources = get_file_data(
-        file_lock = file_lock,
-        file_path = central_resources_path
+    times_path = experiment_folder_path + '/times' 
+    
+    times_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = times_path 
     )
-    # Potential info loss
-    cycle_start = central_resources['general']['times'][str(central_status['cycle']-1)]['cycle-time-start']
+    times = times_object['data']
+
+    cycle_start = times[str(central_status['cycle']-1)]['cycle-time-start']
     cycle_end = time.time()
     cycle_total = cycle_end-cycle_start
-    central_resources['general']['times'][str(central_status['cycle']-1)]['cycle-time-end'] = cycle_end
-    central_resources['general']['times'][str(central_status['cycle']-1)]['cycle-total-seconds'] = cycle_total
+    times[str(central_status['cycle']-1)]['cycle-time-end'] = cycle_end
+    times[str(central_status['cycle']-1)]['cycle-total-seconds'] = cycle_total
     if not central_status['complete']:
-        central_resources['general']['times'][str(central_status['cycle'])] = {
+        times['times'][str(central_status['cycle'])] = {
             'cycle-time-start':time.time(),
             'cycle-time-end': 0,
             'cycle-total-seconds': 0
         }
-    store_file_data(
-        file_lock = file_lock,
-        replace = True,
-        file_folder_path = '',
-        file_path = central_resources_path,
-        data = central_resources
+
+    create_or_update_object(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = times_path,
+        data = times,
+        metadata = {}
     )
-        
-    store_file_data(
-        file_lock = file_lock,
-        replace = True,
-        file_folder_path = '',
-        file_path = central_status_path,
-        data = central_status
+
+    create_or_update_object(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = central_status_path,
+        data = central_status,
+        metadata = {}
     )
 
     os.environ['STATUS'] = 'global model evaluated'
     logger.info('Global model evaluated')
+
+    end_run(
+        logger = logger,
+        mlflow_client = mlflow_client,
+        run_id = central_status['run-id'],
+        status = 'FINISHED'
+    )
     
     time_end = time.time()
     cpu_end = this_process.cpu_percent(interval=0.2)
@@ -314,12 +452,15 @@ def evalute_global_model(
         'disk-bytes': round(disk_diff,5)
     }
 
-    status = store_metrics_and_resources(
+    store_metrics_and_resources(
         file_lock = file_lock,
+        logger = logger,
+        minio_client = minio_client,
+        prometheus_registry = prometheus_registry,
+        prometheus_metrics = prometheus_metrics,
         type = 'resources',
-        subject = 'central',
         area = 'function',
         metrics = resource_metrics
-    ) 
+    )
 
     return True

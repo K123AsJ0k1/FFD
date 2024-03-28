@@ -96,35 +96,3 @@ def set_central_status(
         data = central_status,
         metadata = {}
     )
-'''
-# Refactored and works, but could utilize the above or below function
-def get_newest_model_updates(
-    file_lock:any,
-    current_cycle: int
-) -> any:
-    current_experiment_number = get_current_experiment_number()
-    model_folder_path = 'models/experiment_' + str(current_experiment_number)
-    files = get_files(folder_path = model_folder_path)
-    updates = []
-    collective_sample_size = 0
-    for file in files:
-        if 'local' in file:
-            first_split = file.split('.')
-            second_split = first_split[0].split('_')
-            cycle = int(second_split[2])
-            sample_size = int(second_split[3])
-            if cycle == current_cycle:
-                local_model_path = model_folder_path + '/' + file
-
-                model_parameters = get_file_data(
-                    file_lock = file_lock,
-                    file_path = local_model_path
-                )
-
-                updates.append({
-                    'parameters': model_parameters,
-                    'samples': sample_size
-                })
-                collective_sample_size = collective_sample_size + sample_size
-    return updates, collective_sample_size
-'''

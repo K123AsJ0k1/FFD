@@ -230,11 +230,16 @@ def store_worker(
     )
     
     return info 
-# Refactor
+# Refactored
 def store_update( 
     file_lock: any,
-    id: str,
+    logger: any,
+    minio_client: any,
+    prometheus_registry: any,
+    prometheus_metrics: any,
+    worker_id: str,
     model: any,
+    experiment: int,
     cycle: int
 ) -> bool:
     this_process = psutil.Process(os.getpid())
@@ -243,14 +248,16 @@ def store_update(
     cpu_start = this_process.cpu_percent(interval=0.2)
     time_start = time.time()
 
-    current_experiment_number = get_current_experiment_number()
-    status_folder_path = 'status/experiment_' + str(current_experiment_number)
-
-    central_status_path = status_folder_path + '/central.txt'
-    central_status = get_file_data(
-        file_lock = file_lock,
-        file_path = central_status_path
+    experiments_folder = 'experiments'
+    central_bucket = 'central'
+    central_status_path = experiments_folder + '/status'
+    central_status_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = central_status_path
     )
+    central_status = central_status_object['data']
 
     if central_status is None:
         return False
@@ -267,50 +274,66 @@ def store_update(
     if not central_status['sent']:
         return False
     
-    workers_status_path = status_folder_path + '/workers.txt'
+    experiment_folder_path = experiments_folder + '/' + str(central_status['experiment'])
+    cycle_folder_path = experiment_folder_path + '/' + str(central_status['cycle'])
     
-    workers_status = get_file_data(
-        file_lock = file_lock,
-        file_path = workers_status_path
+    workers_status_path = cycle_folder_path + '/' + 'workers'
+    
+    workers_status_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = workers_status_path
     )
 
-    if workers_status is None:
+    if workers_status_object is None:
         return False
+    workers_status = workers_status_object['data']
 
+    local_models_folder_path = cycle_folder_path + '/local-models'
+    local_model_path = local_models_folder_path + '/' + str(worker_id)
     # Model format is local_(worker id)_(cycle)_(train_amount).pth
-    local_model_folder_path = 'models/experiment_' + str(current_experiment_number)
-    train_amount = workers_status[id]['train-amount']
-    local_model_path = local_model_folder_path + '/local_'  + str(id) + '_' + str(central_status['cycle']) + '_' + str(train_amount) + '.pth'
+    train_amount = workers_status[str(worker_id)]['train-amount']
+    test_amount = workers_status[str(worker_id)]['test-amount']
+    eval_amount = workers_status[str(worker_id)]['eval-amount']
     
-    formatted_model = OrderedDict([
+    model_data = OrderedDict([
         ('linear.weight', torch.tensor(model['weights'],dtype=torch.float32)),
         ('linear.bias', torch.tensor(model['bias'],dtype=torch.float32))
     ])
+    model_metadata = {
+        'train-amount': str(train_amount),
+        'test-amount':  str(test_amount),
+        'eval-amount':  str(eval_amount),
+    }
 
-    store_file_data(
-        file_lock = file_lock,
-        replace = False,
-        file_folder_path = local_model_folder_path,
-        file_path = local_model_path,
-        data = formatted_model
+    create_or_update_object(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = local_model_path,
+        data = model_data,
+        metadata = model_metadata
     )
     
     workers_status[id]['status'] = 'complete'
-    store_file_data(
-        file_lock = file_lock,
-        replace = True,
-        file_folder_path = '',
-        file_path = workers_status_path,
-        data =  workers_status
+    create_or_update_object(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = workers_status_path,
+        data = workers_status,
+        metadata = {}
     )
 
     central_status['worker-updates'] = central_status['worker-updates'] + 1
-    store_file_data(
-        file_lock = file_lock,
-        replace = True,
-        file_folder_path = '',
-        file_path = central_status_path,
-        data =  central_status
+    create_or_update_object(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = central_bucket,
+        object_path = central_status_path,
+        data = central_status,
+        metadata = {}
     )
 
     time_end = time.time()
@@ -331,10 +354,13 @@ def store_update(
         'disk-bytes': round(disk_diff,5)
     }
 
-    status = store_metrics_and_resources(
+    store_metrics_and_resources(
         file_lock = file_lock,
+        logger = logger,
+        minio_client = minio_client,
+        prometheus_registry = prometheus_registry,
+        prometheus_metrics = prometheus_metrics,
         type = 'resources',
-        subject = 'central',
         area = 'function',
         metrics = resource_metrics
     )

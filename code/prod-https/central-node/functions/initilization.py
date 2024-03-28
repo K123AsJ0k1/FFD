@@ -26,7 +26,8 @@ def initilize_minio(
             'eval-amount': 0,
             'collective-amount': 0,
             'worker-updates': 0,
-            'cycle': 1
+            'cycle': 1,
+            'run-id': 0
         },
         'resources': {
             'activation-date': datetime.now().strftime('%Y-%m-%d-%H:%M:%S.%f'),

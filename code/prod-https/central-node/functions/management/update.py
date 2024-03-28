@@ -7,12 +7,14 @@ import pandas as pd
 from functions.general import format_metadata_dict, encode_metadata_lists_to_strings
 from functions.management.storage import store_metrics_and_resources
 from functions.platforms.minio import get_object_data_and_metadata, create_or_update_object
+from functions.platforms.mlflow import start_run
 
 # Refactored
 def send_context_to_workers(
     file_lock: any,
     logger: any,
     minio_client: any,
+    mlflow_client: any,
     prometheus_registry: any,
     prometheus_metrics: any
 ) -> bool:
@@ -107,6 +109,17 @@ def send_context_to_workers(
         'weights': global_model['linear.weight'].numpy().tolist(),
         'bias': global_model['linear.bias'].numpy().tolist()
     }
+
+    if not central_status['complete']:
+        run_data = start_run(
+            logger = logger,
+            mlflow_client = mlflow_client,
+            experiment_id = central_status['experiment_id'],
+            tags = {},
+            name = 'federated-training-' + str(central_status['cycle'])
+        )
+        central_status['run-id'] = run_data['id']
+
     # Refactor to have failure fixing 
     success = False
     for i in range(0,10):
@@ -262,7 +275,7 @@ def send_context_to_workers(
             data = times,
             metadata = {}
         )
-       
+    
     create_or_update_object(
         logger = logger,
         minio_client = minio_client,
