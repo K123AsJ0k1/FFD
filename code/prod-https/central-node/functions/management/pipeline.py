@@ -5,8 +5,10 @@ from functions.processing.data import preprocess_into_train_test_and_evaluate_te
 from functions.training.model import initial_model_training
 from functions.platforms.mlflow import start_experiment
 from functions.management.update import send_context_to_workers
+from functions.training.aggregation import update_global_model, evalute_global_model
 from datetime import datetime
 import time
+import os
 # Refactored and works
 def start_pipeline(
     file_lock: any,
@@ -79,7 +81,11 @@ def start_pipeline(
             data = template_parameters,
             metadata = {}
         )
-    formatted_metadata = encode_metadata_lists_to_strings({'columns': df_columns})
+    formatted_metadata = encode_metadata_lists_to_strings({
+        'header': df_columns, 
+        'columns': len(df_columns), 
+        'rows': str(len(df_data))
+    })
     source_data_path = 'experiments/' + str(central_status['experiment']) + '/data/source'
     create_or_update_object(
         logger = logger,
@@ -109,6 +115,7 @@ def processing_pipeline(
     task_prometheus_registry: any,
     task_prometheus_metrics: any
 ):
+    cycle_start = time.time()
     # Works
     status = central_worker_data_split(
         file_lock = task_file_lock,
@@ -118,6 +125,45 @@ def processing_pipeline(
         prometheus_metrics = task_prometheus_metrics
     )
     task_logger.info('Central-worker data split:' + str(status))
+
+    if status:
+        experiments_folder = 'experiments'
+        central_bucket = 'central'
+
+        central_status_path = experiments_folder + '/status'
+        central_status_object = get_object_data_and_metadata(
+            logger = task_logger,
+            minio_client = task_minio_client,
+            bucket_name = central_bucket,
+            object_path = central_status_path
+        )
+        central_status = central_status_object['data']
+
+        experiment_folder_path = experiments_folder + '/' + str(central_status['experiment'])
+        times_path = experiment_folder_path + '/times'
+
+        times_object = get_object_data_and_metadata(
+            logger = task_logger,
+            minio_client = task_minio_client,
+            bucket_name = central_bucket,
+            object_path = times_path
+        )
+        times = times_object['data']
+
+        times[str(central_status['cycle'])] = {
+            'cycle-time-start':cycle_start,
+            'cycle-time-end': 0,
+            'cycle-total-seconds': 0
+        }
+
+        create_or_update_object(
+            logger = task_logger,
+            minio_client = task_minio_client,
+            bucket_name = central_bucket,
+            object_path = times_path,
+            data = times,
+            metadata = {}
+        )
     # Works
     status = preprocess_into_train_test_and_evaluate_tensors(
         file_lock = task_file_lock,
@@ -140,8 +186,8 @@ def model_pipeline(
     status = initial_model_training(
         file_lock = task_file_lock,
         logger = task_logger,
-        mlflow_client = task_mlflow_client,
         minio_client = task_minio_client,
+        mlflow_client = task_mlflow_client,
         prometheus_registry = task_prometheus_registry,
         prometheus_metrics = task_prometheus_metrics
     )
@@ -149,36 +195,58 @@ def model_pipeline(
 # Refactor
 def update_pipeline(
     task_file_lock: any,
-    task_logger: any
+    task_logger: any,
+    task_minio_client: any,
+    task_mlflow_client: any,
+    task_prometheus_registry: any,
+    task_prometheus_metrics: any,
 ):
     # Check
     status = split_data_between_workers(
         file_lock = task_file_lock,
-        logger = task_logger
+        logger = task_logger,
+        minio_client = task_minio_client,
+        prometheus_registry = task_prometheus_registry,
+        prometheus_metrics = task_prometheus_metrics
     )
     task_logger.info('Worker data split:' + str(status))
     # Check
     status = send_context_to_workers(
         file_lock = task_file_lock,
-        logger = task_logger
+        logger = task_logger,
+        minio_client = task_minio_client,
+        mlflow_client = task_mlflow_client,
+        prometheus_registry = task_prometheus_registry,
+        prometheus_metrics = task_prometheus_metrics
     )
     task_logger.info('Worker context sending:' + str(status))
-'''
+
 # Refactor
 def aggregation_pipeline(
     task_file_lock: any,
-    task_logger: any
+    task_logger: any,
+    task_minio_client: any,
+    task_mlflow_client: any,
+    task_prometheus_registry: any,
+    task_prometheus_metrics: any,
 ):
-    # 
+    # Check
     status = update_global_model(
         file_lock = task_file_lock,
-        logger = task_logger
+        logger = task_logger,
+        minio_client = task_minio_client,
+        prometheus_registry = task_prometheus_registry,
+        prometheus_metrics = task_prometheus_metrics
     )
     task_logger.info('Updating global model:' + str(status))
-    # 
+    # Check
     status = evalute_global_model(
         file_lock = task_file_lock,
-        logger = task_logger
+        logger = task_logger,
+        mlflow_client = task_mlflow_client,
+        minio_client = task_minio_client,
+        prometheus_registry = task_prometheus_registry,
+        prometheus_metrics = task_prometheus_metrics
     )
     task_logger.info('Global model evaluation:' + str(status))
-'''
+

@@ -258,21 +258,26 @@ def store_update(
         object_path = central_status_path
     )
     central_status = central_status_object['data']
-
+    #print('1')
     if central_status is None:
-        return False
-
-    if not central_status['cycle'] == cycle:
-        return False 
-
+        return {'message': 'no status'}
+    #print('2')
+    #print()
+    if not str(central_status['experiment']) == str(experiment):
+        return {'message': 'incorrect experiment'}
+    #print('3')
+    if not str(central_status['cycle']) == str(cycle):
+        return {'message': 'incorrect cycle'}
+    #print('4')
     if not central_status['start']:
-        return False
-
+        return {'message': 'no start'}
+    #print('5')
     if central_status['complete']:
-        return False
-
+        return {'message': 'already complete'}
+    #print('6')
     if not central_status['sent']:
-        return False
+        return {'message': 'not sent'}
+    #print('7')
     
     experiment_folder_path = experiments_folder + '/' + str(central_status['experiment'])
     cycle_folder_path = experiment_folder_path + '/' + str(central_status['cycle'])
@@ -315,8 +320,8 @@ def store_update(
         data = model_data,
         metadata = model_metadata
     )
-    
-    workers_status[id]['status'] = 'complete'
+    '''
+    workers_status[str(worker_id)]['status'] = 'complete'
     create_or_update_object(
         logger = logger,
         minio_client = minio_client,
@@ -325,6 +330,7 @@ def store_update(
         data = workers_status,
         metadata = {}
     )
+    '''
 
     central_status['worker-updates'] = central_status['worker-updates'] + 1
     create_or_update_object(
@@ -365,4 +371,4 @@ def store_update(
         metrics = resource_metrics
     )
     
-    return True
+    return {'message': 'stored'}

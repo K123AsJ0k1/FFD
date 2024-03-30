@@ -172,7 +172,7 @@ def send_update_to_central(
 
     update = {
         'worker-id': str(worker_status['worker-id']),
-        'experiment': str(worker_status['cycle']),
+        'experiment': str(worker_status['experiment']),
         'cycle': str(worker_status['cycle']),
         'local-model': formatted_local_model
     }
@@ -185,6 +185,7 @@ def send_update_to_central(
             break
         
         status_code = None
+        message = None
         try:
             central_url = 'http://' + worker_status['central-address'] + ':' + worker_status['central-port'] + '/update'
             response = requests.post(
@@ -196,10 +197,11 @@ def send_update_to_central(
                 }
             )
             status_code = response.status_code
+            message = json.loads(response.text)['message']
         except Exception as e:
             logger.error('Status sending error:' + str(e))
 
-        if status_code == 200:
+        if status_code == 200 and message == 'stored':
             times_path = experiment_folder_path + '/times'
             times_object = get_object_data_and_metadata(
                 logger = logger,

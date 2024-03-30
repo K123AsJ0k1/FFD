@@ -33,13 +33,19 @@ def set_worker_update():
     
     sent_worker_id = sent_payload['worker-id']
     sent_local_model = sent_payload['local-model']
+    sent_experiment = sent_payload['experiment']
     sent_cycle = sent_payload['cycle']
 
-    store_update(
+    payload = store_update(
         file_lock = current_app.file_lock,
-        id = sent_worker_id,
+        logger = current_app.logger,
+        minio_client = current_app.minio_client,
+        prometheus_registry = current_app.prometheus_registry,
+        prometheus_metrics = current_app.prometheus_metrics,
+        worker_id = sent_worker_id,
         model = sent_local_model,
+        experiment = sent_experiment,
         cycle = sent_cycle 
     ) 
         
-    return 'Ok', 200
+    return jsonify(payload)

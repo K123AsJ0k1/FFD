@@ -61,7 +61,7 @@ def data_pipeline(
             bucket_name = workers_bucket,
             object_path = times_path
         )
-        times = times_object['times']
+        times = times_object['data']
 
         times[str(worker_status['cycle'])] = {
             'cycle-time-start':cycle_start,
@@ -82,22 +82,36 @@ def data_pipeline(
 # Refactored
 def model_pipeline(
     task_file_lock: any,
-    task_logger: any
+    task_logger: any,
+    task_minio_client: any,
+    task_mlflow_client: any,
+    task_prometheus_registry: any,
+    task_prometheus_metrics: any
 ): 
     # Check
     status = local_model_training(
         file_lock = task_file_lock,
-        logger = task_logger
+        logger = task_logger,
+        minio_client = task_minio_client,
+        mlflow_client = task_mlflow_client,
+        prometheus_registry = task_prometheus_registry,
+        prometheus_metrics = task_prometheus_metrics
     )
     task_logger.info('Model training:' + str(status))
 # Refactored
 def update_pipeline(
     task_file_lock: any,
-    task_logger: any
+    task_logger: any,
+    task_minio_client: any,
+    task_prometheus_registry: any,
+    task_prometheus_metrics: any
 ):
     # Check
     status = send_update_to_central(
         file_lock = task_file_lock,
-        logger = task_logger
+        logger = task_logger,
+        minio_client = task_minio_client,
+        prometheus_registry = task_prometheus_registry,
+        prometheus_metrics = task_prometheus_metrics
     )
     task_logger.info('Update sending:' + str(status))

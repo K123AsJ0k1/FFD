@@ -114,7 +114,7 @@ def send_context_to_workers(
         run_data = start_run(
             logger = logger,
             mlflow_client = mlflow_client,
-            experiment_id = central_status['experiment_id'],
+            experiment_id = central_status['experiment-id'],
             tags = {},
             name = 'federated-training-' + str(central_status['cycle'])
         )
@@ -150,7 +150,7 @@ def send_context_to_workers(
                     object_path = worker_pool_path
                 )
                 worker_data_list = worker_pool_object['data']
-                worker_data_columns = format_metadata_dict(worker_pool_object['metadata'])['columns']
+                worker_data_columns = format_metadata_dict(worker_pool_object['metadata'])['header']
                 
                 info = {
                     'worker-id': worker_key,

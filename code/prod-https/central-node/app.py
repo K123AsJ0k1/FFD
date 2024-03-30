@@ -68,10 +68,7 @@ def create_app():
     )
 
     scheduler = BackgroundScheduler(daemon = True)
-    from functions.management.pipeline import processing_pipeline
-    from functions.management.pipeline import model_pipeline
-    #from functions.pipeline import update_pipeline
-    #from functions.pipeline import aggregation_pipeline
+    from functions.management.pipeline import processing_pipeline, model_pipeline, update_pipeline, aggregation_pipeline
     
     given_args = [
         app.file_lock,
@@ -103,19 +100,19 @@ def create_app():
         args = given_args 
     )
     # Works 20 sec
-    #scheduler.add_job(
-    #    func = update_pipeline,
-    #    trigger = "interval",
-    #    seconds = 20,
-    #    args = given_args 
-    #)
+    scheduler.add_job(
+        func = update_pipeline,
+        trigger = "interval",
+        seconds = 20,
+        args = given_args 
+    )
     # Works 40 sec
-    #scheduler.add_job(
-    #    func = aggregation_pipeline,
-    #    trigger = "interval",
-    #    seconds = 40,
-    #    args = given_args 
-    #)
+    scheduler.add_job(
+        func = aggregation_pipeline,
+        trigger = "interval",
+        seconds = 40,
+        args = given_args 
+    )
     scheduler.start()
     app.logger.info('Scheduler ready')
 

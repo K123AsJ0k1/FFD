@@ -65,10 +65,10 @@ def create_app():
     os.environ['MLFLOW_S3_ENDPOINT_URL'] = 'http://127.0.0.1:9000'
     os.environ['AWS_ACCESS_KEY_ID'] = 'minio'
     os.environ['AWS_SECRET_ACCESS_KEY'] = 'minio123'
-    mlflow_cient = MlflowClient(
-        tracking_uri = "http://127.0.0.1:9000"
+    mlflow_client = MlflowClient(
+        tracking_uri = "http://127.0.0.1:5000"
     )
-    app.mlflow_client = mlflow_cient
+    app.mlflow_client = mlflow_client
     app.logger.warning('MLflow client ready')
 
     registry = CollectorRegistry()
@@ -92,7 +92,7 @@ def create_app():
     )
     
     scheduler = BackgroundScheduler(daemon = True)
-    from functions.management.pipeline import status_pipeline
+    from functions.management.pipeline import status_pipeline, data_pipeline, model_pipeline, update_pipeline
     
     given_args = [
         app.file_lock,
@@ -107,26 +107,40 @@ def create_app():
         seconds = 10,
         args = given_args
     )
-    '''
     scheduler.add_job(
         func = data_pipeline,
         trigger = "interval",
         seconds = 30,
         args = given_args
     )
+    given_args = [
+        app.file_lock,
+        app.logger,
+        app.minio_client,
+        app.mlflow_client,
+        app.prometheus_registry,
+        app.prometheus_metrics
+    ]
     scheduler.add_job(
         func = model_pipeline,
         trigger = "interval",
         seconds = 60,
         args = given_args
     )
+    given_args = [
+        app.file_lock,
+        app.logger,
+        app.minio_client,
+        app.prometheus_registry,
+        app.prometheus_metrics
+    ]
     scheduler.add_job(
         func = update_pipeline,
         trigger = "interval",
         seconds = 40,
         args = given_args
     )
-    '''
+    
     scheduler.start()
     app.logger.info('Scheduler ready')
     

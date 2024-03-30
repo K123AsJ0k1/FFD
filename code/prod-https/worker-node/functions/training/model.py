@@ -226,7 +226,7 @@ def test(
         }
         
         return metrics
-# Refactored
+# Refactored and works
 def local_model_training(
     file_lock: any,
     logger: any,
@@ -271,17 +271,28 @@ def local_model_training(
     mlflow_parameters = {}
     mlflow_metrics = {}
     mlflow_artifacts = []
-    
+    run_name = 'local-training-' + str(worker_status['experiment']) + '-' + str(worker_status['cycle'])
     run_data = start_run(
         logger = logger,
         mlflow_client = mlflow_client,
         experiment_id = worker_status['experiment-id'],
         tags = {},
-        name = 'local-training-' + worker_status['experiment'] + '-' + str(worker_status['cycle'])
+        name = run_name
     )
     
     experiment_folder_path = worker_experiments_folder + '/' + str(worker_status['experiment'])
     cycle_folder_path = experiment_folder_path + '/' + str(worker_status['cycle'])
+
+    parameters_folder_path = experiment_folder_path + '/parameters'
+    model_parameters_path = parameters_folder_path + '/model'
+
+    model_parameters_object = get_object_data_and_metadata(
+        logger = logger,
+        minio_client = minio_client,
+        bucket_name = workers_bucket,
+        object_path = model_parameters_path
+    )
+    model_parameters = model_parameters_object['data']
     
     tensor_folder_path = cycle_folder_path + '/tensors'
     
@@ -343,17 +354,6 @@ def local_model_training(
         dataset = eval_tensor, 
         batch_size= eval_batch_size
     )
-
-    parameters_folder_path = experiment_folder_path + '/parameters'
-    model_parameters_path = parameters_folder_path + '/model'
-
-    model_parameters_object = get_object_data_and_metadata(
-        logger = logger,
-        minio_client = minio_client,
-        bucket_name = workers_bucket,
-        object_path = model_parameters_path
-    )
-    model_parameters = model_parameters_object['data']
 
     global_model_path = cycle_folder_path + '/global-model'
     global_model_object = get_object_data_and_metadata(

@@ -71,18 +71,18 @@ def preprocess_into_train_test_and_eval_tensors(
         object_path = worker_parameters_path
     )
     worker_parameters = worker_parameters_object['data']
-    sample_df_path = cycle_folder_path + 'worker-sample'
+    sample_df_path = cycle_folder_path + '/worker-sample'
     sample_df_object = get_object_data_and_metadata(
         logger = logger,
         minio_client = minio_client,
         bucket_name = workers_bucket,
         object_path = sample_df_path
     )
-    data_columns = format_metadata_dict(sample_df_object['metadata'])['columns']
-    source_df = pd.DataFrame(sample_df_object['data'], columns = data_columns)
-    sample_df = source_df.drop('step', axis = 1)
 
-    preprocessed_df = sample_df[model_parameters['used-columns']]
+    data_columns = format_metadata_dict(sample_df_object['metadata'])['header']
+    source_df = pd.DataFrame(sample_df_object['data'], columns = data_columns)
+   
+    preprocessed_df = source_df[model_parameters['used-columns']]
     for column in model_parameters['scaled-columns']:
         mean = preprocessed_df[column].mean()
         std_dev = preprocessed_df[column].std()

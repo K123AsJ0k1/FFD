@@ -85,7 +85,7 @@ def central_worker_data_split(
         bucket_name = central_bucket,
         object_path = source_data_path
     )
-    data_columns = format_metadata_dict(source_data_object['metadata'])['columns']
+    data_columns = format_metadata_dict(source_data_object['metadata'])['header']
     source_df = pd.DataFrame(source_data_object['data'], columns = data_columns)
     splitted_data_df = source_df.drop('step', axis = 1)
     
@@ -93,7 +93,11 @@ def central_worker_data_split(
     central_pool_path = data_folder_path + '/central-pool'
     
     object_data = central_data_pool.values.tolist()
-    object_metadata = encode_metadata_lists_to_strings({'columns': central_data_pool.columns.tolist()})
+    object_metadata = encode_metadata_lists_to_strings({
+        'header': central_data_pool.columns.tolist(),
+        'columns': str(len(central_data_pool.columns.tolist())),
+        'rows': str(len(object_data))
+    })
     create_or_update_object(
         logger = logger,
         minio_client = minio_client,
@@ -109,7 +113,11 @@ def central_worker_data_split(
     worker_pool_path = data_folder_path + '/worker-pool'
 
     object_data = worker_data_pool.values.tolist()
-    object_metadata = encode_metadata_lists_to_strings({'columns': worker_data_pool.columns.tolist()})
+    object_metadata = encode_metadata_lists_to_strings({
+        'header': worker_data_pool.columns.tolist(),
+        'columns': str(len(worker_data_pool.columns.tolist())),
+        'rows': str(len(object_data))
+    })
     create_or_update_object(
         logger = logger,
         minio_client = minio_client,
@@ -161,7 +169,7 @@ def central_worker_data_split(
     )
 
     return True
-# Refactored
+# Refactored and works
 def split_data_between_workers(
     file_lock: any,
     logger: any,
@@ -169,7 +177,6 @@ def split_data_between_workers(
     prometheus_registry: any,
     prometheus_metrics: any
 ) -> bool:
-    # For some reason this gets falses
     this_process = psutil.Process(os.getpid())
     mem_start = psutil.virtual_memory().used 
     disk_start = psutil.disk_usage('.').used
@@ -253,14 +260,14 @@ def split_data_between_workers(
         return False
     
     data_folder_path = experiment_folder_path + '/data'
-    worker_pool_path = data_folder_path + '/worker_pool'
+    worker_pool_path = data_folder_path + '/worker-pool'
     worker_pool_object = get_object_data_and_metadata(
         logger = logger,
         minio_client = minio_client,
         bucket_name = central_bucket,
         object_path = worker_pool_path
     )
-    data_columns = format_metadata_dict(worker_pool_object['metadata'])['columns']
+    data_columns = format_metadata_dict(worker_pool_object['metadata'])['header']
     worker_pool_df = pd.DataFrame(worker_pool_object['data'], columns = data_columns)
 
     if worker_parameters['data-augmentation']['active']:
@@ -273,7 +280,8 @@ def split_data_between_workers(
             worker_sample_path = cycle_folder_path + '/data/' + worker_key 
             object_data = worker_sample_df.values.tolist()
             object_metadata = encode_metadata_lists_to_strings({
-                'columns': worker_sample_df.columns.tolist(),
+                'header': worker_sample_df.columns.tolist(),
+                'columns': str(len(worker_sample_df.columns.tolist())),
                 'rows': str(worker_sample_df.shape[0])
             })
             create_or_update_object(
@@ -293,7 +301,8 @@ def split_data_between_workers(
             worker_sample_path = cycle_folder_path + '/data/' + worker_key 
             object_data = worker_sample_df.values.tolist()
             object_metadata = encode_metadata_lists_to_strings({
-                'columns': worker_sample_df.columns.tolist(),
+                'header': worker_sample_df.columns.tolist(),
+                'columns': str(len(worker_sample_df.columns.tolist())),
                 'rows': str(worker_sample_df.shape[0])
             })
             create_or_update_object(

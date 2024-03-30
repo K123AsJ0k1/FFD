@@ -234,8 +234,8 @@ def test(
 def initial_model_training(
     file_lock: any,
     logger: any,
-    mlflow_client: any,
     minio_client: any,
+    mlflow_client: any,
     prometheus_registry: any,
     prometheus_metrics: any
 ) -> bool:
@@ -283,10 +283,6 @@ def initial_model_training(
         tags = {},
         name = 'central-initial-training'
     )
-    # Is needed to save artifacts
-    #os.environ['MLFLOW_S3_ENDPOINT_URL'] = 'http://127.0.0.1:9000'
-    #os.environ['AWS_ACCESS_KEY_ID'] = 'minio'
-    #os.environ['AWS_SECRET_ACCESS_KEY'] = 'minio123'
     # This is for using the with instead of client
     #mlflow.set_tracking_uri('http://127.0.0.1:5000')
     #mlflow.set_experiment(experiment_id = central_status['experiment-id'])
@@ -439,6 +435,7 @@ def initial_model_training(
     global_model_path = cycle_folder_path + '/global-model' 
     model_data = model.get_parameters(model)
     model_metadata = {
+        'updates': 0,
         'train-amount': str(len(train_tensor)),
         'test-amount':  str(len(test_tensor)),
         'eval-amount':  str(len(eval_tensor)),

@@ -10,8 +10,9 @@ from functions.platforms.minio import get_object_data_and_metadata, create_or_up
 from functions.training.model import FederatedLogisticRegression, test
 from torch.utils.data import DataLoader
 from functions.platforms.mlflow import update_run, end_run
+from functions.general import format_metadata_dict
 
-# Created
+# Created and works
 def get_model_updates(
     logger: any,
     minio_client: any,
@@ -30,16 +31,20 @@ def get_model_updates(
         path_prefix = local_models_folder
     )
     updates = []
+    collective_sample_size = 0
     for local_model_path in local_model_names.keys():
+        #print(local_model_path)
+        pkl_removal = local_model_path[:-4]
+        #print(pkl_removal)
         local_model_object = get_object_data_and_metadata(
             logger = logger,
             minio_client = minio_client,
             bucket_name = central_bucket,
-            object_path = local_model_path
+            object_path = pkl_removal
         )
         local_model_parameters = local_model_object['data']
         local_model_metadata = local_model_object['metadata']
-        train_amount = local_model_metadata['train-amount']
+        train_amount = int(local_model_metadata['train-amount'])
         updates.append({
             'parameters': local_model_parameters,
             'train-amount': train_amount,
@@ -74,7 +79,7 @@ def model_fed_avg(
         ('linear.bias', torch.tensor(FedAvg_bias,dtype=torch.float32))
     ])
     return updated_global_model
-# Refactored
+# Refactored and works
 def update_global_model(
     file_lock: any,
     logger: any,
@@ -280,14 +285,14 @@ def evalute_global_model(
         object_path = global_model_path
     )
     global_model_parameters = global_model_object['data']
-    global_model_metadata = global_model_object['metadata']
+    global_model_metadata = format_metadata_dict(global_model_object['metadata'])
     model_temp_path = artifact_folder + '/global-model' + '.pth'
     torch.save(global_model_parameters, model_temp_path)
     mlflow_artifacts.append(model_temp_path)
 
     model = FederatedLogisticRegression(dim = model_parameters['input-size'])
-    mlflow_parameters['updates'] = int(model_parameters['updates'])
-    mlflow_parameters['train-amount'] = int(model_parameters['train-amount'])
+    mlflow_parameters['updates'] = int(global_model_metadata['update-amount'])
+    mlflow_parameters['train-amount'] = int(central_status['collective-amount'])
     mlflow_parameters['test-amount'] = 0
     mlflow_parameters['input-size'] = int(model_parameters['input-size'])
     model.apply_parameters(model, global_model_parameters)
@@ -369,13 +374,13 @@ def evalute_global_model(
  
     central_status['evaluated'] = True
     if central_parameters['min-metric-success'] <= succesful_metrics or central_status['cycle'] == central_parameters['max-cycles']:
-        message = 'Global model achieved ' + str(succesful_metrics) + '/' + str(central_parameters['min-metric-success']) + ' in ' + str(central_status['cycle']) + '/' + str(central_parameters['max-cycles'])
+        message = 'Global model achieved ' + str(succesful_metrics) + '/' + str(central_parameters['min-metric-success']) + ' of metrics in ' + str(central_status['cycle']) + '/' + str(central_parameters['max-cycles']) + ' of cycles'
         logger.info(message)
         central_status['complete'] = True
         central_status['sent'] = False
         central_status['cycle'] = central_status['cycle'] + 1
     else: 
-        message = 'Global model failed ' + str(succesful_metrics) + '/' + str(central_parameters['min-metric-success']) + ' in ' + str(central_status['cycle']) + '/' + str(central_parameters['max-cycles'])
+        message = 'Global model failed ' + str(succesful_metrics) + '/' + str(central_parameters['min-metric-success']) + ' of metrics in ' + str(central_status['cycle']) + '/' + str(central_parameters['max-cycles']) + ' of cycles'
         logger.info(message)
         central_status['worker-split'] = False
         central_status['sent'] = False
@@ -400,7 +405,7 @@ def evalute_global_model(
     times[str(central_status['cycle']-1)]['cycle-time-end'] = cycle_end
     times[str(central_status['cycle']-1)]['cycle-total-seconds'] = cycle_total
     if not central_status['complete']:
-        times['times'][str(central_status['cycle'])] = {
+        times[str(central_status['cycle'])] = {
             'cycle-time-start':time.time(),
             'cycle-time-end': 0,
             'cycle-total-seconds': 0

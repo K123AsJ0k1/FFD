@@ -11,8 +11,8 @@ from collections import OrderedDict
 
 from functions.platforms.minio import get_object_data_and_metadata, create_or_update_object, check_object
 from functions.general import encode_metadata_lists_to_strings
-from functions.platforms.mlflow import start_experiment
-# Refactor
+from functions.platforms.mlflow import start_experiment, check_experiment
+# Refactored and works
 def store_training_context(
     file_lock: any,
     logger: any,
@@ -87,7 +87,7 @@ def store_training_context(
             bucket_name = workers_bucket,
             object_path = times_path
         )
-        if len(object_exists) == 0:
+        if not object_exists:
             times = {
                 'cycle': str(info['cycle']),
                 'experiment-date': datetime.now().strftime('%Y-%m-%d-%H:%M:%S.%f'),
@@ -103,7 +103,14 @@ def store_training_context(
                 data = times,
                 metadata = {}
             )
-            worker_experiment_name = 'worker-' + str(os.environ.get('WORKER_ID')) + '-' + str(info['experiment'])
+
+        worker_experiment_name = 'worker-' + str(os.environ.get('WORKER_ID')) + '-' + str(info['experiment'])
+        experiment_dict = check_experiment(
+            logger = logger,
+            mlflow_client = mlflow_client,
+            experiment_name = worker_experiment_name
+        )
+        if experiment_dict is None:
             experiment_id = start_experiment(
                 logger = logger,
                 mlflow_client = mlflow_client,
@@ -120,7 +127,7 @@ def store_training_context(
             object_path = model_parameters_path
         )
 
-        if len(object_exists) == 0:
+        if not object_exists:
             create_or_update_object(
                 logger = logger,
                 minio_client = minio_client,
@@ -138,7 +145,7 @@ def store_training_context(
             object_path = worker_parameters_path
         )
 
-        if len(object_exists) == 0:
+        if not object_exists:
             create_or_update_object(
                 logger = logger,
                 minio_client = minio_client,
@@ -156,8 +163,12 @@ def store_training_context(
             object_path = data_path 
         )
 
-        if len(object_exists) == 0:
-            metadata = encode_metadata_lists_to_strings({'columns': df_columns})
+        if not object_exists:
+            metadata = encode_metadata_lists_to_strings({
+                'header': df_columns,
+                'columns': len(df_columns),
+                'rows': len(df_data)
+            })
             create_or_update_object(
                 logger = logger,
                 minio_client = minio_client,
@@ -290,70 +301,3 @@ def store_metrics_and_resources(
         #push_to_gateway('http:127.0.0.1:9091', job = 'central-', registry =  prometheus_registry) 
     
     return True
-'''
-# Refactored and works
-def store_metrics_and_resources( 
-    file_lock: any,
-    type: str,
-    subject: str,
-    area: str,
-    metrics: any
-) -> bool:
-    current_experiment_number = get_current_experiment_number()
-    stored_data = None
-    data_folder_path = None
-    data_file_path = None
-    if type == 'metrics':
-        if subject == 'local':
-            data_folder_path = 'metrics/experiment_' + str(current_experiment_number)
-            data_file_path = data_folder_path + '/local.txt'
-
-            stored_data = get_file_data(
-                file_lock = file_lock,
-                file_path = data_file_path
-            )
-
-            if stored_data is None:
-                stored_data = {}
-
-            new_key = len(stored_data) + 1
-            stored_data[str(new_key)] = metrics
-    if type == 'resources':
-        current_experiment_number = get_current_experiment_number()
-        worker_status_path = 'status/experiment_' + str(current_experiment_number) + '/worker.txt'
-        
-        worker_status = get_file_data(
-            file_lock = file_lock,
-            file_path = worker_status_path
-        )
-
-        if worker_status is None:
-            return False
-        
-        if subject == 'worker':
-            data_folder_path = 'resources/experiment_' + str(current_experiment_number)
-            data_file_path = data_folder_path + '/worker.txt'
-            
-            stored_data = get_file_data(
-                file_lock = file_lock,
-                file_path = data_file_path
-            )
-
-            if stored_data is None:
-                return False
-
-            if not str(worker_status['cycle']) in stored_data[area]:
-                stored_data[area][str(worker_status['cycle'])] = {}
-            new_key = len(stored_data[area][str(worker_status['cycle'])]) + 1
-            stored_data[area][str(worker_status['cycle'])][str(new_key)] = metrics
-    
-    store_file_data(
-        file_lock = file_lock,
-        replace = True,
-        file_folder_path = data_folder_path,
-        file_path = data_file_path,
-        data = stored_data
-    ) 
-    
-    return True
-'''
