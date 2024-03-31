@@ -7,16 +7,17 @@ import psutil
 import time
 import torch
 from datetime import datetime
+import time
 
 from pathlib import Path
 from collections import OrderedDict
 
 from prometheus_client import push_to_gateway
+from functions.general import get_experiments_objects, set_experiments_objects
 
 from functions.platforms.minio import *
-# Refactored and works
-def store_metrics_and_resources( 
-   file_lock: any,
+# Refactored
+def store_metrics_resources_and_times( 
    logger: any,
    minio_client: any,
    prometheus_registry: any,
@@ -25,77 +26,100 @@ def store_metrics_and_resources(
    area: str,
    metrics: any
 ) -> bool:
-    experiments_folder = 'experiments'
-    central_bucket = 'central'
-    central_status_path = experiments_folder + '/status'
-    central_status_object = get_object_data_and_metadata(
+    central_status, _ = get_experiments_objects(
         logger = logger,
         minio_client = minio_client,
-        bucket_name = central_bucket,
-        object_path = central_status_path
-    )
-    central_status = central_status_object['data']
-
-    cycle_folder_path = experiments_folder + '/' + str(central_status['experiment']) + '/' + str(central_status['cycle'])
-    object_path = None
-    object_data = None
-    if type == 'metrics' or type == 'resources':
+        object = 'status',
+        replacer = ''
+    )    
+    object_name = ''
+    replacer = ''
+    if type == 'metrics' or type == 'resources' or type == 'times':
         if type == 'metrics':
-            object_path = cycle_folder_path + '/metrics'
+            object_name = 'metrics'
+            source = metrics['name']
             for key,value in metrics.items():
                 if key == 'name':
                     continue
-                metric_name = prometheus_metrics['central-global-names'][key]
-                prometheus_metrics['central-global'].labels(
+                metric_name = prometheus_metrics['global-name'][key]
+                prometheus_metrics['global'].labels(
                     date = datetime.now().strftime('%Y-%m-%d-%H:%M:%S.%f'),
+                    time = time.time(),
+                    collector = 'central-main',
+                    name = central_status['experiment-name'],
                     experiment = central_status['experiment'], 
                     cycle = central_status['cycle'],
-                    metric = metric_name,
+                    source = source,
+                    metric = metric_name
                 ).set(value)
         if type == 'resources':
-            object_path = cycle_folder_path + '/resources/' + area
-            action_name = metrics['name']
+            object_name = 'resources'
+            replacer = metrics['name']
+            set_date = metrics['date']
+            set_time = metrics['time']
+            source = metrics['name']
+            for key,value in metrics.items():
+                if key == 'name' or key == 'date' or key == 'time':
+                    continue
+                metric_name = prometheus_metrics['resource-name'][key]
+                prometheus_metrics['resource'].labels(
+                    date = set_date,
+                    time = set_time,
+                    collector = 'central-main', 
+                    name = central_status['experiment-name'], 
+                    experiment = central_status['experiment'],
+                    cycle = central_status['cycle'],
+                    source = source,
+                    metric = metric_name
+                ).set(value)
+        if type == 'times':
+            object_name = 'action-times'
+            replacer = area
+            source = metrics['name']
             for key,value in metrics.items():
                 if key == 'name':
                     continue
-                metric_name = prometheus_metrics['central-resources-names'][key]
-                prometheus_metrics['central-resources'].labels(
+                metric_name = prometheus_metrics['time-name'][key]
+                prometheus_metrics['time'].labels(
                     date = datetime.now().strftime('%Y-%m-%d-%H:%M:%S.%f'),
+                    time = time.time(),
+                    collector = 'central-main',
+                    name = central_status['experiment-name'],
                     experiment = central_status['experiment'], 
                     cycle = central_status['cycle'],
                     area = area,
-                    name = action_name,
-                    metric = metric_name,
+                    source = source,
+                    metric = metric_name
                 ).set(value)
-            
-        wanted_object = get_object_data_and_metadata(
+
+        wanted_data, _ = get_experiments_objects(
             logger = logger,
             minio_client = minio_client,
-            bucket_name = central_bucket,
-            object_path = object_path
+            object = object_name,
+            replacer = replacer
         )
-        if wanted_object is None:
+        object_data = None
+        if wanted_data is None:
             object_data = {}
         else:
-            object_data = wanted_object['data']
+            object_data = wanted_data
 
         new_key = len(object_data) + 1
         object_data[str(new_key)] = metrics
-    
-        create_or_update_object(
+
+        set_experiments_objects(
             logger = logger,
             minio_client = minio_client,
-            bucket_name = central_bucket,
-            object_path = object_path,
-            data = object_data,
-            metadata = {}
+            object = object_name,
+            replacer = replacer,
+            overwrite = True,
+            object_data = object_data,
+            object_metadata = {}
         )
         #push_to_gateway('http:127.0.0.1:9091', job = 'central-', registry =  prometheus_registry) 
-    
     return True
 # refactored and works
 def store_worker(
-    file_lock: any,
     logger: any,
     minio_client: any,
     prometheus_registry: any,
@@ -103,37 +127,25 @@ def store_worker(
     address: str,
     status: any
 ) -> any:
-    this_process = psutil.Process(os.getpid())
-    mem_start = psutil.virtual_memory().used 
-    disk_start = psutil.disk_usage('.').used
-    cpu_start = this_process.cpu_percent(interval=0.2)
     time_start = time.time()
 
-    experiments_folder = 'experiments'
-    central_bucket = 'central'
-    central_status_path = experiments_folder + '/status'
-    central_status_object = get_object_data_and_metadata(
+    central_status, _ = get_experiments_objects(
         logger = logger,
         minio_client = minio_client,
-        bucket_name = central_bucket,
-        object_path = central_status_path
+        object = 'status',
+        replacer = ''
     )
-    central_status = central_status_object['data']
 
-    cycle_folder_path = experiments_folder + '/' + str(central_status['experiment']) + '/' + str(central_status['cycle'])
-    workers_status_path = cycle_folder_path + '/' + 'workers'
-    workers_status_object = get_object_data_and_metadata(
+    workers_status, _ = get_experiments_objects(
         logger = logger,
         minio_client = minio_client,
-        bucket_name = central_bucket,
-        object_path = workers_status_path
+        object = 'workers',
+        replacer = ''
     )
-    workers_status = None
-    if workers_status_object is None:
+
+    if workers_status is None:
         workers_status = {}
-    else:
-        workers_status = workers_status_object['data']
-
+    
     used_ids = []
         
     for worker_id in workers_status.keys():
@@ -191,40 +203,31 @@ def store_worker(
                 'cycle': None
             }
     
-    create_or_update_object(
+    set_experiments_objects(
         logger = logger,
         minio_client = minio_client,
-        bucket_name = central_bucket,
-        object_path = workers_status_path,
-        data = workers_status,
-        metadata = {}
+        object = 'workers',
+        replacer = '',
+        overwrite = True,
+        object_data = workers_status,
+        object_metadata = {}
     )
 
     time_end = time.time()
-    cpu_end = this_process.cpu_percent(interval=0.2)
-    mem_end = psutil.virtual_memory().used 
-    disk_end = psutil.disk_usage('.').used
-
     time_diff = (time_end - time_start) 
-    cpu_diff = cpu_end - cpu_start 
-    mem_diff = (mem_end - mem_start) 
-    disk_diff = (disk_end - disk_start)
-
     resource_metrics = {
         'name': 'store-worker-' + status['worker-id'],
-        'time-seconds': round(time_diff,5),
-        'cpu-percentage': cpu_diff,
-        'ram-bytes': round(mem_diff,5),
-        'disk-bytes': round(disk_diff,5)
+        'action-time-start': time_start,
+        'action-time-end': time_end,
+        'action-total-seconds': round(time_diff,5),
     }
 
-    store_metrics_and_resources(
-        file_lock = file_lock,
+    store_metrics_resources_and_times(
         logger = logger,
         minio_client = minio_client,
         prometheus_registry = prometheus_registry,
         prometheus_metrics = prometheus_metrics,
-        type = 'resources',
+        type = 'times',
         area = 'function',
         metrics = resource_metrics
     )
@@ -242,62 +245,43 @@ def store_update(
     experiment: int,
     cycle: int
 ) -> bool:
-    this_process = psutil.Process(os.getpid())
-    mem_start = psutil.virtual_memory().used 
-    disk_start = psutil.disk_usage('.').used
-    cpu_start = this_process.cpu_percent(interval=0.2)
     time_start = time.time()
 
-    experiments_folder = 'experiments'
-    central_bucket = 'central'
-    central_status_path = experiments_folder + '/status'
-    central_status_object = get_object_data_and_metadata(
+    central_status, _ = get_experiments_objects(
         logger = logger,
         minio_client = minio_client,
-        bucket_name = central_bucket,
-        object_path = central_status_path
+        object = 'status',
+        replacer = ''
     )
-    central_status = central_status_object['data']
-    #print('1')
+    
     if central_status is None:
         return {'message': 'no status'}
-    #print('2')
-    #print()
+    
     if not str(central_status['experiment']) == str(experiment):
         return {'message': 'incorrect experiment'}
-    #print('3')
+    
     if not str(central_status['cycle']) == str(cycle):
         return {'message': 'incorrect cycle'}
-    #print('4')
+    
     if not central_status['start']:
         return {'message': 'no start'}
-    #print('5')
+   
     if central_status['complete']:
         return {'message': 'already complete'}
-    #print('6')
+    
     if not central_status['sent']:
         return {'message': 'not sent'}
-    #print('7')
     
-    experiment_folder_path = experiments_folder + '/' + str(central_status['experiment'])
-    cycle_folder_path = experiment_folder_path + '/' + str(central_status['cycle'])
-    
-    workers_status_path = cycle_folder_path + '/' + 'workers'
-    
-    workers_status_object = get_object_data_and_metadata(
+    workers_status, _ = get_experiments_objects(
         logger = logger,
         minio_client = minio_client,
-        bucket_name = central_bucket,
-        object_path = workers_status_path
+        object = 'workers',
+        replacer = ''
     )
 
-    if workers_status_object is None:
+    if workers_status is None:
         return False
-    workers_status = workers_status_object['data']
-
-    local_models_folder_path = cycle_folder_path + '/local-models'
-    local_model_path = local_models_folder_path + '/' + str(worker_id)
-    # Model format is local_(worker id)_(cycle)_(train_amount).pth
+    
     train_amount = workers_status[str(worker_id)]['train-amount']
     test_amount = workers_status[str(worker_id)]['test-amount']
     eval_amount = workers_status[str(worker_id)]['eval-amount']
@@ -311,62 +295,43 @@ def store_update(
         'test-amount':  str(test_amount),
         'eval-amount':  str(eval_amount),
     }
-
-    create_or_update_object(
+    
+    set_experiments_objects(
         logger = logger,
         minio_client = minio_client,
-        bucket_name = central_bucket,
-        object_path = local_model_path,
-        data = model_data,
-        metadata = model_metadata
+        object = 'local-models',
+        replacer = str(worker_id),
+        overwrite = True,
+        object_data = model_data,
+        object_metadata = model_metadata
     )
-    '''
-    workers_status[str(worker_id)]['status'] = 'complete'
-    create_or_update_object(
-        logger = logger,
-        minio_client = minio_client,
-        bucket_name = central_bucket,
-        object_path = workers_status_path,
-        data = workers_status,
-        metadata = {}
-    )
-    '''
-
+    
     central_status['worker-updates'] = central_status['worker-updates'] + 1
-    create_or_update_object(
+    set_experiments_objects(
         logger = logger,
         minio_client = minio_client,
-        bucket_name = central_bucket,
-        object_path = central_status_path,
-        data = central_status,
-        metadata = {}
+        object = 'status',
+        replacer = '',
+        overwrite = True,
+        object_data = central_status,
+        object_metadata = {}
     )
 
     time_end = time.time()
-    cpu_end = this_process.cpu_percent(interval=0.2)
-    mem_end = psutil.virtual_memory().used 
-    disk_end = psutil.disk_usage('.').used
-
     time_diff = (time_end - time_start) 
-    cpu_diff = cpu_end - cpu_start 
-    mem_diff = (mem_end - mem_start) 
-    disk_diff = (disk_end - disk_start)
-
     resource_metrics = {
         'name': 'update-from-worker-' + str(id),
-        'time-seconds': round(time_diff,5),
-        'cpu-percentage': cpu_diff,
-        'ram-bytes': round(mem_diff,5),
-        'disk-bytes': round(disk_diff,5)
+        'action-time-start': time_start,
+        'action-time-end': time_end,
+        'action-total-seconds': round(time_diff,5),
     }
 
-    store_metrics_and_resources(
-        file_lock = file_lock,
+    store_metrics_resources_and_times(
         logger = logger,
         minio_client = minio_client,
         prometheus_registry = prometheus_registry,
         prometheus_metrics = prometheus_metrics,
-        type = 'resources',
+        type = 'times',
         area = 'function',
         metrics = resource_metrics
     )

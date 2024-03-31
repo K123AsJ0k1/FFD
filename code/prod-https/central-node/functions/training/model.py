@@ -9,9 +9,8 @@ import numpy as np
 from sklearn.metrics import confusion_matrix
 from torch.utils.data import DataLoader
 
-from functions.platforms.minio import get_object_data_and_metadata, create_or_update_object
-from functions.general import format_metadata_dict
-from functions.management.storage import store_metrics_and_resources
+from functions.general import get_experiments_objects, set_experiments_objects
+from functions.management.storage import store_metrics_resources_and_times
 from functions.platforms.mlflow import start_run, update_run, end_run
 
 import os
@@ -56,9 +55,8 @@ class FederatedLogisticRegression(nn.Module):
     @staticmethod
     def apply_parameters(model, parameters):
         model.load_state_dict(parameters)
-# Refactored and works
+# Refactored
 def train(
-    file_lock: any,
     logger: any,
     minio_client: any,
     prometheus_registry: any,
@@ -74,10 +72,6 @@ def train(
     optimizer = opt_func(model.parameters(), model_parameters['learning-rate'])
     model_type = type(model)
     
-    this_process = psutil.Process(os.getpid())
-    mem_start = psutil.virtual_memory().used 
-    disk_start = psutil.disk_usage('.').used
-    cpu_start = this_process.cpu_percent(interval=0.2)
     time_start = time.time()
     total_size = 0
     for epoch in range(model_parameters['epochs']):
@@ -94,28 +88,19 @@ def train(
         logger.info('Epoch ' + str(epoch + 1) + ', loss = ' + str(loss_value))
 
     time_end = time.time()
-    cpu_end = this_process.cpu_percent(interval=0.2)
-    mem_end = psutil.virtual_memory().used 
-    disk_end = psutil.disk_usage('.').used
-
     time_diff = (time_end - time_start) 
-    cpu_diff = cpu_end - cpu_start 
-    mem_diff = (mem_end - mem_start) 
-    disk_diff = (disk_end - disk_start) 
 
     resource_metrics = {
         'name': 'logistic-regression-training',
         'epochs': model_parameters['epochs'],
         'batches': len(train_loader),
         'average-batch-size': total_size / len(train_loader),
-        'time-seconds': round(time_diff,5),
-        'cpu-percentage': round(cpu_diff,5),
-        'ram-bytes': round(mem_diff,5),
-        'disk-bytes': round(disk_diff,5)
+        'action-time-start': time_start,
+        'action-time-end': time_end,
+        'action-total-seconds': round(time_diff,5)
     }
 
-    store_metrics_and_resources(
-        file_lock = file_lock,
+    store_metrics_resources_and_times(
         logger = logger,
         minio_client = minio_client,
         prometheus_registry = prometheus_registry,
@@ -124,9 +109,8 @@ def train(
         area = 'training',
         metrics = resource_metrics
     )
-# Refactored and works
+# Refactored
 def test(
-    file_lock: any,
     logger: any,
     minio_client: any,
     prometheus_registry: any,
@@ -138,10 +122,6 @@ def test(
     with torch.no_grad():
         total_confusion_matrix = [0,0,0,0]
         
-        this_process = psutil.Process(os.getpid())
-        mem_start = psutil.virtual_memory().used 
-        disk_start = psutil.disk_usage('.').used
-        cpu_start = this_process.cpu_percent(interval=0.2)
         time_start = time.time()
         
         total_size = 0
@@ -165,27 +145,17 @@ def test(
             total_confusion_matrix[3] += int(fn) # False negative
             
         time_end = time.time()
-        cpu_end = this_process.cpu_percent(interval=0.2)
-        mem_end = psutil.virtual_memory().used 
-        disk_end = psutil.disk_usage('.').used
-
         time_diff = (time_end - time_start) 
-        cpu_diff = cpu_end - cpu_start 
-        mem_diff = (mem_end - mem_start)
-        disk_diff = (disk_end - disk_start)
-
         resource_metrics = {
             'name': 'logistic-regression-' + name,
             'batches': len(test_loader),
             'average-batch-size': total_size / len(test_loader),
-            'time-seconds': round(time_diff,5),
-            'cpu-percentage': round(cpu_diff,5),
-            'ram-bytes': round(mem_diff,5),
-            'disk-bytes': round(disk_diff,5)
+            'action-time-start': time_start,
+            'action-time-end': time_end,
+            'action-total-seconds': round(time_diff,5)
         }
 
-        store_metrics_and_resources(
-            file_lock = file_lock,
+        store_metrics_resources_and_times(
             logger = logger,
             minio_client = minio_client,
             prometheus_registry = prometheus_registry,
@@ -230,31 +200,22 @@ def test(
         }
         
         return metrics
-# Refactored and works
+# Refactored
 def initial_model_training(
-    file_lock: any,
     logger: any,
     minio_client: any,
     mlflow_client: any,
     prometheus_registry: any,
     prometheus_metrics: any
 ) -> bool:
-    this_process = psutil.Process(os.getpid())
-    mem_start = psutil.virtual_memory().used 
-    disk_start = psutil.disk_usage('.').used
-    cpu_start = this_process.cpu_percent(interval=0.2)
     time_start = time.time()
 
-    experiments_folder = 'experiments'
-    central_bucket = 'central'
-    central_status_path = experiments_folder + '/status'
-    central_status_object = get_object_data_and_metadata(
+    central_status, _ = get_experiments_objects(
         logger = logger,
         minio_client = minio_client,
-        bucket_name = central_bucket,
-        object_path = central_status_path
+        object = 'status',
+        replacer = ''
     )
-    central_status = central_status_object['data']
 
     if central_status is None:
         return False
@@ -286,56 +247,52 @@ def initial_model_training(
     # This is for using the with instead of client
     #mlflow.set_tracking_uri('http://127.0.0.1:5000')
     #mlflow.set_experiment(experiment_id = central_status['experiment-id'])
-
-    experiment_folder = experiments_folder + '/' + str(central_status['experiment'])
-    parameters_folder_path = experiment_folder + '/parameters'
-    model_parameters_path = parameters_folder_path + '/model' 
-    model_parameters_object = get_object_data_and_metadata(
+    # add experiment and cycle to parameters
+    
+    model_parameters, _ = get_experiments_objects(
         logger = logger,
         minio_client = minio_client,
-        bucket_name = central_bucket,
-        object_path = model_parameters_path
+        object = 'parameters',
+        replacer = 'model'
     )
-    model_parameters = model_parameters_object['data']
     
     torch.manual_seed(model_parameters['seed'])
     model = FederatedLogisticRegression(dim = model_parameters['input-size'])
+    mlflow_parameters['experiment'] = central_status['experiment']
+    mlflow_parameters['cycle'] = central_status['cycle']
+    mlflow_parameters['updates'] = 0
+    mlflow_parameters['train-amount'] = len(train_tensor)
+    mlflow_parameters['test-amount'] = len(test_tensor)
+    mlflow_parameters['eval-amount'] = len(eval_tensor)
     mlflow_parameters['seed'] = model_parameters['seed']
     mlflow_parameters['input-size'] = model_parameters['input-size']
-    
-    tensors_folder_path = experiment_folder + '/tensors'
-    train_tensor_path = tensors_folder_path  + '/train'
-    train_tensor_object = get_object_data_and_metadata(
+
+    train_tensor, _ = get_experiments_objects(
         logger = logger,
         minio_client = minio_client,
-        bucket_name = central_bucket,
-        object_path = train_tensor_path
+        object = 'tensors',
+        replacer = 'train'
     )
-    train_tensor = train_tensor_object['data']
     train_tensor_temp_path = artifact_folder + '/train.pt'
     torch.save(train_tensor, train_tensor_temp_path)
     mlflow_artifacts.append(train_tensor_temp_path)
 
-    test_tensor_path = tensors_folder_path  + '/test'
-    test_tensor_object = get_object_data_and_metadata(
+    test_tensor, _ = get_experiments_objects(
         logger = logger,
         minio_client = minio_client,
-        bucket_name = central_bucket,
-        object_path = test_tensor_path
+        object = 'tensors',
+        replacer = 'eval'
     )
-    test_tensor = test_tensor_object['data']
     test_tensor_temp_path = artifact_folder + '/test.pt'
     torch.save(test_tensor, test_tensor_temp_path)
     mlflow_artifacts.append(test_tensor_temp_path)
 
-    eval_tensor_path = tensors_folder_path  + '/eval'
-    eval_tensor_object = get_object_data_and_metadata(
+    eval_tensor, _ = get_experiments_objects(
         logger = logger,
         minio_client = minio_client,
-        bucket_name = central_bucket,
-        object_path = eval_tensor_path
+        object = 'tensors',
+        replacer = 'eval'
     )
-    eval_tensor = eval_tensor_object['data']
     eval_tensor_temp_path = artifact_folder + '/eval.pt'
     torch.save(test_tensor, eval_tensor_temp_path)
     mlflow_artifacts.append(eval_tensor_temp_path)
@@ -364,7 +321,6 @@ def initial_model_training(
     )
 
     train(
-        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         prometheus_registry = prometheus_registry,
@@ -375,7 +331,6 @@ def initial_model_training(
     )
 
     test_metrics = test(
-        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         prometheus_registry = prometheus_registry,
@@ -385,12 +340,14 @@ def initial_model_training(
         name = 'testing'
     )
 
+    for key,value in test_metrics.items():
+        mlflow_metrics['test-' + str(key)] = value
+
     test_metrics['train-amount'] = len(train_tensor)
     test_metrics['test-amount'] = len(test_tensor)
     test_metrics['eval-amount'] = 0
 
-    store_metrics_and_resources(
-        file_lock = file_lock,
+    store_metrics_resources_and_times(
         logger = logger,
         minio_client = minio_client,
         prometheus_registry = prometheus_registry,
@@ -401,7 +358,6 @@ def initial_model_training(
     )
 
     eval_metrics = test(
-        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         prometheus_registry = prometheus_registry,
@@ -411,11 +367,13 @@ def initial_model_training(
         name = 'evaluation'
     )
 
+    for key,value in eval_metrics.items():
+        mlflow_metrics['eval-' + str(key)] = value
+
     eval_metrics['train-amount'] = len(train_tensor)
     eval_metrics['test-amount'] = 0
     eval_metrics['eval-amount'] = len(eval_tensor)
-    store_metrics_and_resources(
-        file_lock = file_lock,
+    store_metrics_resources_and_times(
         logger = logger,
         minio_client = minio_client,
         prometheus_registry = prometheus_registry,
@@ -425,14 +383,6 @@ def initial_model_training(
         metrics = eval_metrics
     )
 
-    for key,value in test_metrics.items():
-        mlflow_metrics['test-' + str(key)] = value
-
-    for key,value in eval_metrics.items():
-        mlflow_metrics['eval-' + str(key)] = value
-
-    cycle_folder_path = experiments_folder + '/' + str(central_status['experiment']) + '/' + str(central_status['cycle'])
-    global_model_path = cycle_folder_path + '/global-model' 
     model_data = model.get_parameters(model)
     model_metadata = {
         'updates': 0,
@@ -440,13 +390,14 @@ def initial_model_training(
         'test-amount':  str(len(test_tensor)),
         'eval-amount':  str(len(eval_tensor)),
     }
-    create_or_update_object(
+    set_experiments_objects(
         logger = logger,
         minio_client = minio_client,
-        bucket_name = central_bucket,
-        object_path = global_model_path,
-        data = model_data,
-        metadata = model_metadata
+        object = 'global-model',
+        replacer = '',
+        overwrite = True,
+        object_data = model_data,
+        object_metadata = model_metadata
     )
     model_temp_path = artifact_folder + '/global-model' + '.pth'
     torch.save(model_data, model_temp_path)
@@ -462,13 +413,14 @@ def initial_model_training(
     )
     
     central_status['trained'] = True
-    create_or_update_object(
+    set_experiments_objects(
         logger = logger,
         minio_client = minio_client,
-        bucket_name = central_bucket,
-        object_path = central_status_path,
-        data = central_status,
-        metadata = {}
+        object = 'status',
+        replacer = '',
+        overwrite = True,
+        object_data = central_status,
+        object_metadata = {}
     )
 
     os.environ['STATUS'] = 'initial model trained'
@@ -482,25 +434,16 @@ def initial_model_training(
     )
         
     time_end = time.time()
-    cpu_end = this_process.cpu_percent(interval=0.2)
-    mem_end = psutil.virtual_memory().used 
-    disk_end = psutil.disk_usage('.').used
-
     time_diff = (time_end - time_start) 
-    cpu_diff = cpu_end - cpu_start 
-    mem_diff = (mem_end - mem_start)
-    disk_diff = (disk_end - disk_start) 
-
+    
     resource_metrics = {
         'name': 'initial-model-training',
-        'time-seconds': time_diff,
-        'cpu-percentage': cpu_diff,
-        'ram-bytes': mem_diff,
-        'disk-bytes': disk_diff
+        'action-time-start': time_start,
+        'action-time-end': time_end,
+        'action-total-seconds': round(time_diff,5)
     }
 
-    store_metrics_and_resources(
-        file_lock = file_lock,
+    store_metrics_resources_and_times(
         logger = logger,
         minio_client = minio_client,
         prometheus_registry = prometheus_registry,

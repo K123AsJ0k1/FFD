@@ -49,15 +49,14 @@ def create_app():
 
     registry = CollectorRegistry()
     app.prometheus_registry = registry
-    app.prometheus_metrics = {
-        'central-global': None,
-        'central-global-names': None,
-        'central-resources': None,
-        'central-resources-names': None
-    }
+    app.prometheus_metrics = {}
     app.logger.warning('Prometheus registry and metrics ready')
 
-    from functions.initilization import initilize_minio, initilize_prometheus_gauges
+    from functions.initilization import initilize_envs, initilize_minio, initilize_prometheus_gauges
+    initilize_envs(
+        logger = app.logger,
+        minio_client = minio_client
+    )
     initilize_minio(
         logger = app.logger,
         minio_client = minio_client
@@ -66,17 +65,31 @@ def create_app():
         prometheus_registry = app.prometheus_registry,
         prometheus_metrics = app.prometheus_metrics
     )
-
+    
     scheduler = BackgroundScheduler(daemon = True)
-    from functions.management.pipeline import processing_pipeline, model_pipeline, update_pipeline, aggregation_pipeline
+    from functions.management.pipeline import system_monitoring, server_monitoring, processing_pipeline, model_pipeline, update_pipeline, aggregation_pipeline
     
     given_args = [
-        app.file_lock,
         app.logger,
         app.minio_client,
         app.prometheus_registry,
         app.prometheus_metrics
     ] 
+
+    scheduler.add_job(
+        func = server_monitoring,
+        trigger = "interval",
+        seconds = 5,
+        args = given_args 
+    )
+    
+    scheduler.add_job(
+        func = system_monitoring,
+        trigger = "interval",
+        seconds = 10,
+        args = given_args 
+    )
+
     # Works 30 sec
     scheduler.add_job(
         func = processing_pipeline,
@@ -84,6 +97,7 @@ def create_app():
         seconds = 30,
         args = given_args 
     )
+    '''
     given_args = [
         app.file_lock,
         app.logger,
@@ -113,8 +127,10 @@ def create_app():
         seconds = 40,
         args = given_args 
     )
+    '''
     scheduler.start()
     app.logger.info('Scheduler ready')
+    
 
     from routes.general import general
     from routes.model import model

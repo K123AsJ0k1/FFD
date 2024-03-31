@@ -5,7 +5,7 @@ import psutil
 import time
 import pandas as pd
 from functions.general import format_metadata_dict, encode_metadata_lists_to_strings
-from functions.management.storage import store_metrics_and_resources
+from functions.management.storage import store_metrics_resources_and_times
 from functions.platforms.minio import get_object_data_and_metadata, create_or_update_object
 from functions.platforms.mlflow import start_run
 
@@ -220,7 +220,7 @@ def send_context_to_workers(
                     'disk-bytes': net_disk_diff
                 }
 
-                store_metrics_and_resources(
+                store_metrics_resources_and_times(
                     file_lock = file_lock,
                     logger = logger,
                     minio_client = minio_client,
@@ -306,7 +306,7 @@ def send_context_to_workers(
         'disk-bytes': func_disk_diff
     }
 
-    store_metrics_and_resources(
+    store_metrics_resources_and_times(
         file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,

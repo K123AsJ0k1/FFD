@@ -2,14 +2,36 @@ from functions.platforms.minio import create_or_update_object, check_object
 import psutil
 from datetime import datetime
 from prometheus_client import Gauge
-
-# Refactored and works
-def initilize_minio(
+import os
+from functions.general import set_experiments_objects, get_experiments_objects
+from functions.platforms.prometheus import central_global_gauge, central_time_gauge, central_resource_gauge
+# Created
+def initilize_envs(
     logger: any,
     minio_client: any
 ):
+    central_status, _ = get_experiments_objects(
+        logger = logger,
+        minio_client = minio_client,
+        object = 'status',
+        replacer = ''
+    )
+    if not central_status is None:
+        os.environ['EXP_NAME'] = str(central_status['experiment-name'])
+        os.environ['EXP'] = str(central_status['experiment'])
+        os.environ['CYCLE'] = str(central_status['cycle'])
+    else:
+        os.environ['CYCLE'] = str(1)
+        os.environ['EXP'] = str(1)
+        os.environ['EXP_NAME'] = ''
+# Refactored and works        
+def initilize_minio(
+    logger: any,
+    minio_client: any
+):  
     templates = {
         'status': {
+            'experiment-name': '',
             'experiment': 1,
             'experiment-id': '',
             'start': False,
@@ -29,8 +51,12 @@ def initilize_minio(
             'cycle': 1,
             'run-id': 0
         },
-        'resources': {
+        'specifications': {
             'activation-date': datetime.now().strftime('%Y-%m-%d-%H:%M:%S.%f'),
+            'host-kernel-version': os.uname().release,
+            'host-system-name': os.uname().sysname,
+            'host-node-name': os.uname().nodename,
+            'host-machine': os.uname().machine,
             'physical-cpu-amount': psutil.cpu_count(logical=False),
             'total-cpu-amount': psutil.cpu_count(logical=True),
             'min-cpu-frequency-mhz': psutil.cpu_freq().min,
@@ -40,18 +66,7 @@ def initilize_minio(
             'total-disk-amount-bytes': psutil.disk_usage('.').total,
             'available-disk-amount-bytes': psutil.disk_usage('.').free
         },
-        'templates/model-parameters': {
-            'seed': 0,
-            'used-columns': [],
-            'input-size': 0,
-            'target-column': '',
-            'scaled-columns': [],
-            'learning-rate': 0.0,
-            'sample-rate': 0.0,
-            'optimizer': '',
-            'epochs': 0
-        },
-        'templates/central-parameters': {
+        'central-template': {
             'sample-pool': 0,
             'data-augmentation': {
                 'active': False,
@@ -90,7 +105,18 @@ def initilize_minio(
                 'accuracy': '>='
             }
         },
-        'templates/worker-parameters': {
+        'model-template': {
+            'seed': 0,
+            'used-columns': [],
+            'input-size': 0,
+            'target-column': '',
+            'scaled-columns': [],
+            'learning-rate': 0.0,
+            'sample-rate': 0.0,
+            'optimizer': '',
+            'epochs': 0
+        },
+        'worker-template': {
             'sample-pool': 0,
             'data-augmentation': {
                 'active': False,
@@ -102,85 +128,33 @@ def initilize_minio(
         }
     }
 
-    central_bucket = 'central'
     for key in templates.keys():
-        given_object_path = 'experiments/' + str(key)
-        
-        object_exists = check_object(
+        set_experiments_objects(
             logger = logger,
             minio_client = minio_client,
-            bucket_name = central_bucket,
-            object_path = given_object_path
-        )
-        if not object_exists:
-            create_or_update_object(
-                logger = logger,
-                minio_client = minio_client,
-                bucket_name = central_bucket,
-                object_path = given_object_path,
-                data = templates[key],
-                metadata = {}
-            )
+            object = key,
+            replacer = '',
+            overwrite = False,
+            object_data = templates[key],
+            object_metadata = {} 
+        )    
+# Created and works       
 def initilize_prometheus_gauges(
     prometheus_registry: any,
     prometheus_metrics: any,
 ):
-    # Global model metrics
-    #metric_name = 'central_global'
-    prometheus_metrics['central-global'] = Gauge(
-        name = 'C_M_M',
-        documentation = 'Central global metrics',
-        labelnames = ['date', 'experiment','cycle','metric'],
-        registry = prometheus_registry
-    )
-    # Global metric names
-    prometheus_metrics['central-global-names'] = {
-        'train-amount': 'TrAm',
-        'test-amount': 'TeAm',
-        'eval-amount': 'EvAm',
-        'true-positives': 'TrPo',
-        'false-positives': 'FaPo',
-        'true-negatives': 'TrNe',
-        'false-negatives': 'FaNe',
-        'recall': 'ReMe',
-        'selectivity': 'SeMe',
-        'precision': 'PrMe',
-        'miss-rate': 'MiRaMe',
-        'fall-out': 'FaOuMe',
-        'balanced-accuracy': 'BaAcMe',
-        'accuracy': 'AcMe'
-    }
-    # Global resource metrics
-    #metric_name = 'central-resources'
-    prometheus_metrics['central-resources'] = Gauge(
-        name = 'C_R_M',
-        documentation = 'Central resource metrics',
-        labelnames = ['date', 'experiment','cycle','area','name','metric'],
-        registry = prometheus_registry
-    )
-    prometheus_metrics['central-resources-names'] = {
-        'physical-cpu-amount': 'PyCPUAm',
-        'total-cpu-amount': 'ToCPUAm',
-        'min-cpu-frequency-mhz': 'MinCPUFrMhz',
-        'max-cpu-frequency-mhz': 'MaxCPUFrMhz',
-        'total-ram-amount-bytes': 'ToRAMAmBy',
-        'available-ram-amount-bytes': 'AvRAMAmByte',
-        'total-disk-amount-bytes': 'ToDiAmBy',
-        'available-disk-amount-bytes': 'ToDiAmByte',
-        'experiment-date': 'ExDa',
-        'experiment-time-start':'ExTiSt',
-        'experiment-time-end':'ExTiEn',
-        'experiment-total-seconds': 'ExToSec',
-        'cycle-time-start': 'CyTiSt',
-        'cycle-time-end': 'CyTiEn',
-        'cycle-total-seconds': 'CyToSec',
-        'time-seconds': 'TiSec',
-        'processing-time-seconds': 'PrTiSec',
-        'elapsed-time-seconds': 'ElTiSec',
-        'cpu-percentage': 'CPUPerc',
-        'ram-bytes': 'RAMByte',
-        'disk-bytes': 'DiByte',
-        'epochs': 'Epo',
-        'batches': 'Bat',
-        'average-batch-size': 'AvBatSi'
-    }
+    global_metrics, global_metrics_names = central_global_gauge(
+        prometheus_registry = prometheus_registry
+    ) 
+    prometheus_metrics['global'] = global_metrics
+    prometheus_metrics['global-name'] = global_metrics_names
+    resource_metrics, resource_metrics_names = central_resource_gauge(
+        prometheus_registry = prometheus_registry
+    ) 
+    prometheus_metrics['resource'] = resource_metrics
+    prometheus_metrics['resource-name'] = resource_metrics_names
+    time_metrics, time_metrics_names = central_time_gauge(
+        prometheus_registry = prometheus_registry
+    ) 
+    prometheus_metrics['time'] = time_metrics
+    prometheus_metrics['time-name'] = time_metrics_names

@@ -7,9 +7,8 @@ import psutil
 
 from sklearn.model_selection import train_test_split
 from torch.utils.data import TensorDataset
-from functions.platforms.minio import get_object_data_and_metadata, create_or_update_object
-from functions.general import format_metadata_dict
-from functions.management.storage import store_metrics_and_resources
+from functions.general import get_experiments_objects, set_experiments_objects
+from functions.management.storage import store_metrics_resources_and_times
 
 # Created and works
 def data_augmented_sample(
@@ -29,30 +28,21 @@ def data_augmented_sample(
     augmented_sample_df = pd.concat([frauds_df,non_fraud_df])
     randomized_sample_df = augmented_sample_df.sample(frac = 1, replace = False)
     return randomized_sample_df
-# Refactored and works 
+# Refactored and works
 def preprocess_into_train_test_and_evaluate_tensors(
-    file_lock: any,
     logger: any,
     minio_client: any,
     prometheus_registry: any,
     prometheus_metrics: any
 ) -> bool:
-    this_process = psutil.Process(os.getpid())
-    mem_start = psutil.virtual_memory().used 
-    disk_start = psutil.disk_usage('.').used
-    cpu_start = this_process.cpu_percent(interval=0.2)
     time_start = time.time()
 
-    experiments_folder = 'experiments'
-    central_bucket = 'central'
-    central_status_path = experiments_folder + '/status'
-    central_status_object = get_object_data_and_metadata(
+    central_status, _ = get_experiments_objects(
         logger = logger,
         minio_client = minio_client,
-        bucket_name = central_bucket,
-        object_path = central_status_path
+        object = 'status',
+        replacer = ''
     )
-    central_status = central_status_object['data']
 
     if central_status is None:
         return False
@@ -71,49 +61,39 @@ def preprocess_into_train_test_and_evaluate_tensors(
     
     os.environ['STATUS'] = 'preprocessing into tensors'
     logger.info('Preprocessing into tensors')
-
-    experiment_folder = experiments_folder + '/' + str(central_status['experiment'])
     
-    parameter_folder_path = experiment_folder + '/parameters'
-    central_parameters_path = parameter_folder_path + '/central'
-    central_parameters_object = get_object_data_and_metadata(
+    central_parameters, _ = get_experiments_objects(
         logger = logger,
         minio_client = minio_client,
-        bucket_name = central_bucket,
-        object_path = central_parameters_path
+        object = 'parameters',
+        replacer = 'central'
     )
-    central_parameters = central_parameters_object['data']
-
-    model_parameters_path = parameter_folder_path + '/model' 
-    model_parameters_object = get_object_data_and_metadata(
+    
+    model_parameters, _ = get_experiments_objects(
         logger = logger,
         minio_client = minio_client,
-        bucket_name = central_bucket,
-        object_path = model_parameters_path
+        object = 'parameters',
+        replacer = 'model'
     )
-    model_parameters = model_parameters_object['data']
-    data_folder = experiment_folder + '/data'
-
-    central_pool_path = data_folder + '/central-pool'
-    central_pool_object = get_object_data_and_metadata(
+    
+    central_pool, details = get_experiments_objects(
         logger = logger,
         minio_client = minio_client,
-        bucket_name = central_bucket,
-        object_path = central_pool_path
+        object = 'data',
+        replacer = 'central-pool'
     )
-    data_columns = format_metadata_dict(central_pool_object['metadata'])['header']
-    central_data_df = pd.DataFrame(central_pool_object['data'], columns = data_columns)
-
+    
+    central_df = pd.DataFrame(central_pool, columns = details['header'])
     preprocessed_df = None
     if central_parameters['data-augmentation']['active']:
         used_data_df = data_augmented_sample(
-            pool_df = central_data_df,
+            pool_df = central_df,
             sample_pool = central_parameters['data-augmentation']['sample-pool'],
             ratio = central_parameters['data-augmentation']['1-0-ratio']
         )
         preprocessed_df = used_data_df[model_parameters['used-columns']]
     else:
-        preprocessed_df = central_data_df[model_parameters['used-columns']]
+        preprocessed_df = central_df[model_parameters['used-columns']]
     
     for column in model_parameters['scaled-columns']:
         mean = preprocessed_df[column].mean()
@@ -157,78 +137,67 @@ def preprocess_into_train_test_and_evaluate_tensors(
         torch.tensor(X_eval), 
         torch.tensor(y_eval, dtype=torch.float32)
     )
-    # tensors have format train/test/eval_(cycle)
-    tensors_folder_path = experiment_folder + '/tensors'
-    train_tensor_path = tensors_folder_path  + '/train'
-    create_or_update_object(
+    
+    set_experiments_objects(
         logger = logger,
         minio_client = minio_client,
-        bucket_name = central_bucket,
-        object_path = train_tensor_path ,
-        data = train_tensor,
-        metadata = {}
+        object = 'tensors',
+        replacer = 'train',
+        overwrite = True,
+        object_data = train_tensor,
+        object_metadata = {}
     )
- 
-    test_tensor_path = tensors_folder_path  + '/test'
-    create_or_update_object(
+    set_experiments_objects(
         logger = logger,
         minio_client = minio_client,
-        bucket_name = central_bucket,
-        object_path = test_tensor_path ,
-        data = test_tensor,
-        metadata = {}
+        object = 'tensors',
+        replacer = 'test',
+        overwrite = True,
+        object_data = test_tensor,
+        object_metadata = {}
     )
-    eval_tensor_path = tensors_folder_path  + '/eval'
-    create_or_update_object(
+    set_experiments_objects(
         logger = logger,
         minio_client = minio_client,
-        bucket_name = central_bucket,
-        object_path = eval_tensor_path ,
-        data = eval_tensor,
-        metadata = {}
+        object = 'tensors',
+        replacer = 'eval',
+        overwrite = True,
+        object_data = eval_tensor,
+        object_metadata = {}
     )
-
+    
     central_status['preprocessed'] = True
     central_status['train-amount'] = X_train.shape[0]
     central_status['test-amount'] = X_test.shape[0]
     central_status['eval-amount'] = X_eval.shape[0]
-    create_or_update_object(
+    set_experiments_objects(
         logger = logger,
         minio_client = minio_client,
-        bucket_name = central_bucket,
-        object_path = central_status_path,
-        data = central_status,
-        metadata = {}
+        object = 'status',
+        replacer = '',
+        overwrite = True,
+        object_data = central_status,
+        object_metadata = {}
     )
     
     os.environ['STATUS'] = 'tensors created'
     logger.info('Tensors created')
 
     time_end = time.time()
-    cpu_end = this_process.cpu_percent(interval=0.2)
-    mem_end = psutil.virtual_memory().used 
-    disk_end = psutil.disk_usage('.').used
-    
     time_diff = (time_end - time_start) 
-    cpu_diff = cpu_end - cpu_start 
-    mem_diff = (mem_end - mem_start) 
-    disk_diff = (disk_end - disk_start)
-
     resource_metrics = {
         'name': 'preprocess-into-train-test-and-evalute-tensors',
-        'time-seconds': round(time_diff,5),
-        'cpu-percentage': cpu_diff,
-        'ram-bytes': round(mem_diff,5),
-        'disk-bytes': round(disk_diff,5)
+        'action-time-start': time_start,
+        'action-time-end': time_end,
+        'action-total-seconds': round(time_diff,5)
     }
 
-    store_metrics_and_resources(
-        file_lock = file_lock,
+    store_metrics_resources_and_times(
         logger = logger,
         minio_client = minio_client,
         prometheus_registry = prometheus_registry,
         prometheus_metrics = prometheus_metrics,
-        type = 'resources',
+        type = 'times',
         area = 'function',
         metrics = resource_metrics
     )

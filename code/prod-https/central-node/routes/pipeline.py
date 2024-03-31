@@ -15,7 +15,6 @@ def start_training():
     sent_columns = sent_payload['columns']
 
     status = start_pipeline(
-        file_lock = current_app.file_lock,
         logger = current_app.logger,
         mlflow_client = current_app.mlflow_client,
         minio_client = current_app.minio_client,
@@ -37,7 +36,6 @@ def set_worker_update():
     sent_cycle = sent_payload['cycle']
 
     payload = store_update(
-        file_lock = current_app.file_lock,
         logger = current_app.logger,
         minio_client = current_app.minio_client,
         prometheus_registry = current_app.prometheus_registry,
