@@ -6,15 +6,13 @@ import psutil
 import time
 import os
 import numpy as np
+
 from sklearn.metrics import confusion_matrix
 from torch.utils.data import DataLoader
 
 from functions.general import get_experiments_objects, set_experiments_objects
 from functions.management.storage import store_metrics_resources_and_times
 from functions.platforms.mlflow import start_run, update_run, end_run
-
-import os
-import mlflow
 
 # Refactored and works
 class FederatedLogisticRegression(nn.Module):
@@ -55,7 +53,7 @@ class FederatedLogisticRegression(nn.Module):
     @staticmethod
     def apply_parameters(model, parameters):
         model.load_state_dict(parameters)
-# Refactored
+# Refactored and works
 def train(
     logger: any,
     minio_client: any,
@@ -105,11 +103,11 @@ def train(
         minio_client = minio_client,
         prometheus_registry = prometheus_registry,
         prometheus_metrics = prometheus_metrics,
-        type = 'resources',
+        type = 'times',
         area = 'training',
         metrics = resource_metrics
     )
-# Refactored
+# Refactored and works
 def test(
     logger: any,
     minio_client: any,
@@ -160,7 +158,7 @@ def test(
             minio_client = minio_client,
             prometheus_registry = prometheus_registry,
             prometheus_metrics = prometheus_metrics,
-            type = 'resources',
+            type = 'times',
             area = 'training',
             metrics = resource_metrics
         )
@@ -186,6 +184,7 @@ def test(
             current_app.logger.warning(e)
         
         metrics = {
+            'name': 'logistic-regression-' + name,
             'true-positives': TP,
             'false-positives': FP,
             'true-negatives': TN,
@@ -200,7 +199,7 @@ def test(
         }
         
         return metrics
-# Refactored
+# Refactored and works
 def initial_model_training(
     logger: any,
     minio_client: any,
@@ -261,11 +260,9 @@ def initial_model_training(
     mlflow_parameters['experiment'] = central_status['experiment']
     mlflow_parameters['cycle'] = central_status['cycle']
     mlflow_parameters['updates'] = 0
-    mlflow_parameters['train-amount'] = len(train_tensor)
-    mlflow_parameters['test-amount'] = len(test_tensor)
-    mlflow_parameters['eval-amount'] = len(eval_tensor)
-    mlflow_parameters['seed'] = model_parameters['seed']
-    mlflow_parameters['input-size'] = model_parameters['input-size']
+
+    for key,value in model_parameters.items():
+        mlflow_parameters[key] = value
 
     train_tensor, _ = get_experiments_objects(
         logger = logger,
@@ -273,6 +270,7 @@ def initial_model_training(
         object = 'tensors',
         replacer = 'train'
     )
+    mlflow_parameters['train-amount'] = len(train_tensor)
     train_tensor_temp_path = artifact_folder + '/train.pt'
     torch.save(train_tensor, train_tensor_temp_path)
     mlflow_artifacts.append(train_tensor_temp_path)
@@ -283,6 +281,7 @@ def initial_model_training(
         object = 'tensors',
         replacer = 'eval'
     )
+    mlflow_parameters['test-amount'] = len(test_tensor)
     test_tensor_temp_path = artifact_folder + '/test.pt'
     torch.save(test_tensor, test_tensor_temp_path)
     mlflow_artifacts.append(test_tensor_temp_path)
@@ -293,10 +292,11 @@ def initial_model_training(
         object = 'tensors',
         replacer = 'eval'
     )
+    mlflow_parameters['eval-amount'] = len(eval_tensor)
     eval_tensor_temp_path = artifact_folder + '/eval.pt'
     torch.save(test_tensor, eval_tensor_temp_path)
     mlflow_artifacts.append(eval_tensor_temp_path)
-    
+
     generator = torch.Generator().manual_seed(model_parameters['seed'])
     train_batch_size = int(len(train_tensor) * model_parameters['sample-rate'])
     test_batch_size = 64
@@ -330,6 +330,7 @@ def initial_model_training(
         model_parameters = model_parameters
     )
 
+
     test_metrics = test(
         logger = logger,
         minio_client = minio_client,
@@ -341,7 +342,8 @@ def initial_model_training(
     )
 
     for key,value in test_metrics.items():
-        mlflow_metrics['test-' + str(key)] = value
+        if not key == 'name':
+            mlflow_metrics['test-' + str(key)] = value
 
     test_metrics['train-amount'] = len(train_tensor)
     test_metrics['test-amount'] = len(test_tensor)
@@ -368,7 +370,8 @@ def initial_model_training(
     )
 
     for key,value in eval_metrics.items():
-        mlflow_metrics['eval-' + str(key)] = value
+        if not key == 'name':
+            mlflow_metrics['eval-' + str(key)] = value
 
     eval_metrics['train-amount'] = len(train_tensor)
     eval_metrics['test-amount'] = 0
@@ -448,7 +451,7 @@ def initial_model_training(
         minio_client = minio_client,
         prometheus_registry = prometheus_registry,
         prometheus_metrics = prometheus_metrics,
-        type = 'resources',
+        type = 'times',
         area = 'function',
         metrics = resource_metrics
     )

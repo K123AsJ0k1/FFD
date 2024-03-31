@@ -72,6 +72,9 @@ def set_object_paths():
     experiment_name = os.environ.get('EXP_NAME')
     experiment = os.environ.get('EXP')
     cycle = os.environ.get('CYCLE')
+    next_cycle = ''
+    if not cycle is None:
+        next_cycle = int(cycle) + 1
     object_paths = {
         'status': experiments_folder + '/status',
         'specifications': experiments_folder + '/specifications',
@@ -83,7 +86,7 @@ def set_object_paths():
         'data': experiments_folder + '/' + str(experiment_name) + '/' + str(experiment) + '/data/replace',
         'tensors': experiments_folder + '/' + str(experiment_name) + '/tensors/replace' ,
         'global-model': experiments_folder + '/' + str(experiment_name) + '/' + str(experiment) + '/' + str(cycle) +'/global-model',
-        'updated-model': experiments_folder + '/' + str(experiment_name) + '/' + str(experiment) + '/' + str(cycle + 1) +'/global-model',
+        'updated-model': experiments_folder + '/' + str(experiment_name) + '/' + str(experiment) + '/' + str(next_cycle) +'/global-model',
         'metrics': experiments_folder + '/' + str(experiment_name) + '/' + str(experiment) + '/' + str(cycle) + '/metrics',
         'workers': experiments_folder + '/' + str(experiment_name) + '/' + str(experiment) + '/' + str(cycle) + '/workers',
         'data-worker': experiments_folder + '/' + str(experiment_name) + '/' + str(experiment) + '/' + str(cycle) + '/data/replace', # worker-id

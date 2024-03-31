@@ -187,7 +187,6 @@ def processing_pipeline(
             replacer = ''
         )
         
-
         times[str(central_status['cycle'])] = {
             'cycle-time-start':cycle_start,
             'cycle-time-end': 0,
@@ -219,7 +218,7 @@ def model_pipeline(
     task_prometheus_registry: any,
     task_prometheus_metrics: any,
 ):  
-    # Check
+    # Works
     status = initial_model_training(
         logger = task_logger,
         minio_client = task_minio_client,
@@ -253,7 +252,6 @@ def update_pipeline(
         prometheus_metrics = task_prometheus_metrics
     )
     task_logger.info('Worker context sending:' + str(status))
-
 # Refactor
 def aggregation_pipeline(
     task_logger: any,

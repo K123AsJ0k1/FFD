@@ -75,21 +75,20 @@ def create_app():
         app.prometheus_registry,
         app.prometheus_metrics
     ] 
-
+    # Works 5 sec
     scheduler.add_job(
         func = server_monitoring,
         trigger = "interval",
         seconds = 5,
         args = given_args 
     )
-    
+    # Works 10 sec
     scheduler.add_job(
         func = system_monitoring,
         trigger = "interval",
         seconds = 10,
         args = given_args 
     )
-
     # Works 30 sec
     scheduler.add_job(
         func = processing_pipeline,
@@ -97,9 +96,8 @@ def create_app():
         seconds = 30,
         args = given_args 
     )
-    '''
+
     given_args = [
-        app.file_lock,
         app.logger,
         app.minio_client,
         app.mlflow_client,
@@ -113,6 +111,7 @@ def create_app():
         seconds = 60,
         args = given_args 
     )
+    '''
     # Works 20 sec
     scheduler.add_job(
         func = update_pipeline,
