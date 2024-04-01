@@ -402,7 +402,7 @@ def evalute_global_model(
         object_data = central_status,
         object_metadata = {}
     )
-
+    
     os.environ['STATUS'] = 'global model evaluated'
     logger.info('Global model evaluated')
 
@@ -432,5 +432,5 @@ def evalute_global_model(
         area = 'function',
         metrics = resource_metrics
     )
-
+    os.environ['CYCLE'] = str(central_status['cycle'])
     return True

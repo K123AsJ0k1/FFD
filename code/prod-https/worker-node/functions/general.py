@@ -78,7 +78,7 @@ def set_object_paths():
         'experiment-times': worker_folder + '/' + experiments_folder + '/' + str(experiment_name) + '/' + str(experiment) + '/times',
         'parameters': worker_folder + '/' + experiments_folder + '/' + str(experiment_name) + '/' + str(experiment) + '/parameters/replace',
         'worker-sample': worker_folder + '/' + experiments_folder + '/' + str(experiment_name) + '/' + str(experiment) + '/worker-sample',
-        'tensors': worker_folder + '/' + experiments_folder + '/' + str(experiment_name) + '/tensors/replace' ,
+        'tensors': worker_folder + '/' + experiments_folder + '/' + str(experiment_name) + '/' + str(experiment) + '/tensors/replace',
         'model': worker_folder + '/' + experiments_folder + '/' + str(experiment_name) + '/' + str(experiment) + '/' + str(cycle) +'/replace',
         'metrics': worker_folder + '/' + experiments_folder + '/' + str(experiment_name) + '/' + str(experiment) + '/' + str(cycle) + '/metrics',
         'resources': worker_folder + '/' + experiments_folder + '/' + str(experiment_name) + '/' + str(experiment) + '/' + str(cycle) + '/resources/replace', # source

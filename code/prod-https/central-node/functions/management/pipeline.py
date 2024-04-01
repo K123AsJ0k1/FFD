@@ -35,6 +35,18 @@ def start_pipeline(
     if central_status['start'] and not central_status['complete']:
         return False
     
+    if central_status['start'] and central_status['complete']:
+        central_status['data-split'] = False
+        central_status['preprocessed'] = False
+        central_status['trained'] = False
+        central_status['worker-split'] = False
+        central_status['sent'] = False
+        central_status['updated'] = False
+        central_status['evaluated'] = False
+        central_status['complete'] = False
+        central_status['experiment'] = central_status['experiment'] + 1
+        central_status['cycle'] = 1
+
     # change to enable different experiment names that have different tries
     central_experiment_name = 'central-' + experiment['name']
     experiment_dict = check_experiment(

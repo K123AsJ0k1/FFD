@@ -157,11 +157,12 @@ def store_training_context(
             object_data = worker_sample,
             object_metadata = worker_sample_metadata
         )
-
+        '''
         worker_status['preprocessed'] = False
         worker_status['trained'] = False
         worker_status['updated'] = False
         worker_status['complete'] = False
+        '''
         worker_status['experiment-name'] = info['experiment-name']
         worker_status['experiment'] = info['experiment']
         worker_status['cycle'] = info['cycle']

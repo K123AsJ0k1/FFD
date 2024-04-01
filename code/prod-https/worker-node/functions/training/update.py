@@ -57,6 +57,11 @@ def send_info_to_central(
             if message == 'registered' or message == 'rerouted':
                 # Worker is either new or new experiment has been started
                 if message == 'registered':
+                    worker_status['stored'] = False
+                    worker_status['preprocessed'] = False
+                    worker_status['trained'] = False
+                    worker_status['updated'] = False
+                    worker_status['complete'] = False
                     worker_status['network-id'] = sent_payload['network-id']
                     worker_status['worker-address'] = sent_payload['worker-address']
                     worker_status['experiment-name'] = sent_payload['experiment-name']
@@ -210,20 +215,10 @@ def send_update_to_central(
                 object_data = experiment_times,
                 object_metadata = {}
             )
-            
+
             worker_status['updated'] = True
             worker_status['stored'] = False
-            set_experiments_objects(
-                file_lock = file_lock,
-                logger = logger,
-                minio_client = minio_client,
-                object = 'status',
-                replacer = '',
-                overwrite = True,
-                object_data = worker_status,
-                object_metadata = {}
-            )
-
+            
             os.environ['STATUS'] = 'update sent to central'
             logger.info('Update sent to central')
 
@@ -278,4 +273,16 @@ def send_update_to_central(
             area = 'network',
             metrics = resource_metrics
         )
+
+    set_experiments_objects(
+        file_lock = file_lock,
+        logger = logger,
+        minio_client = minio_client,
+        object = 'status',
+        replacer = '',
+        overwrite = True,
+        object_data = worker_status,
+        object_metadata = {}
+    )
+
     return True

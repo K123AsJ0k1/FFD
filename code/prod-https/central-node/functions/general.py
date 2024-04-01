@@ -81,7 +81,7 @@ def set_object_paths():
         'experiment-times': experiments_folder + '/' + str(experiment_name) + '/' + str(experiment) + '/times',
         'parameters': experiments_folder + '/' + str(experiment_name) + '/' + str(experiment) + '/parameters/replace',
         'data': experiments_folder + '/' + str(experiment_name) + '/' + str(experiment) + '/data/replace',
-        'tensors': experiments_folder + '/' + str(experiment_name) + '/tensors/replace' ,
+        'tensors': experiments_folder + '/' + str(experiment_name) + '/' + str(experiment) + '/tensors/replace' ,
         'global-model': experiments_folder + '/' + str(experiment_name) + '/' + str(experiment) + '/' + str(cycle) +'/global-model',
         'updated-model': experiments_folder + '/' + str(experiment_name) + '/' + str(experiment) + '/' + str(next_cycle) +'/global-model',
         'metrics': experiments_folder + '/' + str(experiment_name) + '/' + str(experiment) + '/' + str(cycle) + '/metrics',
