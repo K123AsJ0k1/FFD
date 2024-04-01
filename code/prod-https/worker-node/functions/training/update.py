@@ -3,40 +3,34 @@ import json
 import requests
 import psutil
 import time
-from datetime import datetime
 
-from functions.management.storage import store_metrics_and_resources
+from functions.management.storage import store_metrics_resources_and_times
 from functions.platforms.minio import get_object_data_and_metadata, create_or_update_object
-# Refactored and works
+from functions.general import get_experiments_objects, set_experiments_objects
+# Refactored
 def send_info_to_central(
-    file_lock: any,
     logger: any,
     minio_client: any,
     prometheus_registry: any,
     prometheus_metrics: any
 ) -> any:
-    this_process = psutil.Process(os.getpid())
-    mem_start = psutil.virtual_memory().used 
-    disk_start = psutil.disk_usage('.').used
-    cpu_start = this_process.cpu_percent(interval=0.2)
     time_start = time.time()
 
-    workers_bucket = 'workers'
-    worker_experiments_folder = os.environ.get('WORKER_ID') + '/experiments'
-    worker_status_path = worker_experiments_folder + '/status'
-    worker_status_object = get_object_data_and_metadata(
+    worker_status, _ = get_experiments_objects(
         logger = logger,
         minio_client = minio_client,
-        bucket_name = workers_bucket,
-        object_path = worker_status_path
+        object = 'status',
+        replacer = ''
     )
-    worker_status = worker_status_object['data']
 
     if worker_status is None:
-        return False
+        return False, None
 
     if worker_status['central-address'] == '':
-        return False
+        return False, None
+    
+    if worker_status['trained'] and not worker_status['updated']:
+        return False, None
     
     try:
         info = {
@@ -61,50 +55,46 @@ def send_info_to_central(
             if message == 'registered' or message == 'rerouted':
                 # Worker is either new or new experiment has been started
                 if message == 'registered':
-                    worker_status['experiment'] = sent_payload['experiment']
                     worker_status['network-id'] = sent_payload['network-id']
                     worker_status['worker-address'] = sent_payload['worker-address']
+                    worker_status['experiment-name'] = sent_payload['experiment-name']
+                    worker_status['experiment'] = sent_payload['experiment']
                     worker_status['cycle'] = sent_payload['cycle']
+                    os.environ['EXP_NAME'] = str(sent_payload['experiment-name'])
+                    os.environ['EXP'] = str(sent_payload['experiment'])
+                    os.environ['CYCLE'] = str(sent_payload['cycle'])
                 # Worker id is known, but address has changed
                 if message == 'rerouted':
                     worker_status['worker-address'] = sent_payload['worker-address']
-
-                create_or_update_object(
+                
+                set_experiments_objects(
                     logger = logger,
                     minio_client = minio_client,
-                    bucket_name = workers_bucket,
-                    object_path = worker_status_path,
-                    data = worker_status,
-                    metadata = {}
+                    object = 'status',
+                    replacer = '',
+                    overwrite = True,
+                    object_data = worker_status,
+                    object_metadata = {}
                 )
 
         time_end = time.time()
-        cpu_end = this_process.cpu_percent(interval=0.2)
-        mem_end = psutil.virtual_memory().used 
-        disk_end = psutil.disk_usage('.').used
-
         time_diff = (time_end - time_start) 
-        cpu_diff = cpu_end - cpu_start 
-        mem_diff = (mem_end - mem_start) 
-        disk_diff = (disk_end - disk_start) 
-
         resource_metrics = {
             'name': 'sending-info-to-central',
             'status-code': response.status_code,
             'processing-time-seconds': time_diff,
             'elapsed-time-seconds': response.elapsed.total_seconds(),
-            'cpu-percentage': cpu_diff,
-            'ram-bytes': mem_diff,
-            'disk-bytes': disk_diff
+            'action-time-start': time_start,
+            'action-time-end': time_end,
+            'action-total-seconds': round(time_diff,5)
         }
         
-        store_metrics_and_resources(
-            file_lock = file_lock,
+        store_metrics_resources_and_times(
             logger = logger,
             minio_client = minio_client,
             prometheus_registry = prometheus_registry,
             prometheus_metrics = prometheus_metrics,
-            type = 'resources',
+            type = 'times',
             area = 'network',
             metrics = resource_metrics
         )
@@ -115,28 +105,19 @@ def send_info_to_central(
         return False, None
 # Refactored
 def send_update_to_central(
-    file_lock: any,
     logger: any,
     minio_client: any,
     prometheus_registry: any,
     prometheus_metrics: any
 ) -> bool:  
-    this_process = psutil.Process(os.getpid())
-    mem_start = psutil.virtual_memory().used 
-    disk_start = psutil.disk_usage('.').used
-    cpu_start = this_process.cpu_percent(interval=0.2)
     time_start = time.time()
 
-    workers_bucket = 'workers'
-    worker_experiments_folder = os.environ.get('WORKER_ID') + '/experiments'
-    worker_status_path = worker_experiments_folder + '/status'
-    worker_status_object = get_object_data_and_metadata(
+    worker_status, _ = get_experiments_objects(
         logger = logger,
         minio_client = minio_client,
-        bucket_name = workers_bucket,
-        object_path = worker_status_path
+        object = 'status',
+        replacer = ''
     )
-    worker_status = worker_status_object['data']
 
     if worker_status is None:
         return False
@@ -152,18 +133,13 @@ def send_update_to_central(
 
     os.environ['STATUS'] = 'sending update to central'
     logger.info('Sending update to central')
-
-    experiment_folder_path = worker_experiments_folder + '/' + str(worker_status['experiment'])
-    cycle_folder_path = experiment_folder_path + '/' + str(worker_status['cycle'])
-
-    local_model_path = cycle_folder_path + '/local-model'
-    local_model_object = get_object_data_and_metadata(
+ 
+    local_model, local_model_details = get_experiments_objects(
         logger = logger,
         minio_client = minio_client,
-        bucket_name = workers_bucket,
-        object_path = local_model_path
+        object = 'model',
+        replacer = 'local-model'
     )
-    local_model = local_model_object['data']
 
     formatted_local_model = {
       'weights': local_model['linear.weight'].numpy().tolist(),
@@ -172,6 +148,7 @@ def send_update_to_central(
 
     update = {
         'worker-id': str(worker_status['worker-id']),
+        'experiment-name': str(worker_status['experiment-name']),
         'experiment': str(worker_status['experiment']),
         'cycle': str(worker_status['cycle']),
         'local-model': formatted_local_model
@@ -201,72 +178,64 @@ def send_update_to_central(
         except Exception as e:
             logger.error('Status sending error:' + str(e))
 
-        if status_code == 200 and message == 'stored':
-            times_path = experiment_folder_path + '/times'
-            times_object = get_object_data_and_metadata(
+        if status_code == 200 and (message == 'stored' or message == 'late'):
+            experiment_times, _ = get_experiments_objects(
                 logger = logger,
                 minio_client = minio_client,
-                bucket_name = workers_bucket,
-                object_path = times_path
+                object = 'experiment-times',
+                replacer = ''
             )
-            times = times_object['data']
 
-            cycle_start = times[str(worker_status['cycle'])]['cycle-time-start']
+            cycle_start = experiment_times[str(worker_status['cycle'])]['cycle-time-start']
             cycle_end = time.time()
             cycle_total = cycle_end-cycle_start
-            times[str(worker_status['cycle'])]['cycle-time-end'] = cycle_end
-            times[str(worker_status['cycle'])]['cycle-total-seconds'] = cycle_total
-
-            create_or_update_object(
+            experiment_times[str(worker_status['cycle'])]['cycle-time-end'] = cycle_end
+            experiment_times[str(worker_status['cycle'])]['cycle-total-seconds'] = cycle_total
+            
+            set_experiments_objects(
                 logger = logger,
                 minio_client = minio_client,
-                bucket_name = workers_bucket,
-                object_path = times_path,
-                data = times,
-                metadata = {}
+                object = 'experiment-times',
+                replacer = '',
+                overwrite = True,
+                object_data = experiment_times,
+                object_metadata = {}
             )
             
             worker_status['updated'] = True
             worker_status['stored'] = False
-            create_or_update_object(
+            set_experiments_objects(
                 logger = logger,
                 minio_client = minio_client,
-                bucket_name = workers_bucket,
-                object_path = worker_status_path,
-                data = worker_status,
-                metadata = {}
+                object = 'status',
+                replacer = '',
+                overwrite = True,
+                object_data = worker_status,
+                object_metadata = {}
             )
 
             os.environ['STATUS'] = 'update sent to central'
             logger.info('Update sent to central')
 
             time_end = time.time()
-            cpu_end = this_process.cpu_percent(interval=0.2)
-            mem_end = psutil.virtual_memory().used 
-            disk_end = psutil.disk_usage('.').used
-
             time_diff = (time_end - time_start) 
-            cpu_diff = cpu_end - cpu_start 
-            mem_diff = (mem_end - mem_start) 
-            disk_diff = (disk_end - disk_start) 
-
+        
             resource_metrics = {
                 'name': 'sending-update-to-central',
                 'status-code': response.status_code,
                 'processing-time-seconds': time_diff,
                 'elapsed-time-seconds': response.elapsed.total_seconds(),
-                'cpu-percentage': cpu_diff,
-                'ram-bytes': mem_diff,
-                'disk-bytes': disk_diff
+                'action-time-start': time_start,
+                'action-time-end': time_end,
+                'action-total-seconds': round(time_diff,5)
             }
 
-            store_metrics_and_resources(
-                file_lock = file_lock,
+            store_metrics_resources_and_times(
                 logger = logger,
                 minio_client = minio_client,
                 prometheus_registry = prometheus_registry,
                 prometheus_metrics = prometheus_metrics,
-                type = 'resources',
+                type = 'times',
                 area = 'network',
                 metrics = resource_metrics
             )
@@ -277,32 +246,23 @@ def send_update_to_central(
         logger.info('Update not sent to central')
 
         time_end = time.time()
-        cpu_end = this_process.cpu_percent(interval=0.2)
-        mem_end = psutil.virtual_memory().used 
-        disk_end = psutil.disk_usage('.').used
-
         time_diff = (time_end - time_start) 
-        cpu_diff = cpu_end - cpu_start 
-        mem_diff = (mem_end - mem_start) 
-        disk_diff = (disk_end - disk_start)
-
         resource_metrics = {
             'name': 'sending-update-to-central',
             'status-code': response.status_code,
             'processing-time-seconds': time_diff,
             'elapsed-time-seconds': response.elapsed.total_seconds(),
-            'cpu-percentage': cpu_diff,
-            'ram-bytes': mem_diff,
-            'disk-bytes': disk_diff
+            'action-time-start': time_start,
+            'action-time-end': time_end,
+            'action-total-seconds': round(time_diff,5)
         }
 
-        store_metrics_and_resources(
-            file_lock = file_lock,
+        store_metrics_resources_and_times(
             logger = logger,
             minio_client = minio_client,
             prometheus_registry = prometheus_registry,
             prometheus_metrics = prometheus_metrics,
-            type = 'resources',
+            type = 'times',
             area = 'network',
             metrics = resource_metrics
         )

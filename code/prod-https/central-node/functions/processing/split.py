@@ -133,7 +133,7 @@ def central_worker_data_split(
     )
 
     return True
-# Refactor
+# Refactored
 def split_data_between_workers(
     logger: any,
     minio_client: any,
@@ -174,42 +174,19 @@ def split_data_between_workers(
         replacer = ''
     )
 
-    '''
-    experiment_folder_path = experiments_folder + '/' + str(central_status['experiment'])
-    cycle_folder_path = experiment_folder_path + '/' + str(central_status['cycle'])
-    
-    workers_status_path = cycle_folder_path + '/' + 'workers'
-    workers_status_object = get_object_data_and_metadata(
+    central_parameters, _ = get_experiments_objects(
         logger = logger,
         minio_client = minio_client,
-        bucket_name = central_bucket,
-        object_path = workers_status_path
+        object = 'parameters',
+        replacer = 'central'
     )
 
-    if workers_status_object is None:
-        return False
-    workers_status = workers_status_object['data']
-    
-    parameters_folder_path = experiment_folder_path + '/parameters'
-    central_parameters_path = parameters_folder_path + '/central'
-    worker_parameters_path = parameters_folder_path + '/worker'
-
-    central_parameters_object = get_object_data_and_metadata(
+    worker_parameters, _ = get_experiments_objects(
         logger = logger,
         minio_client = minio_client,
-        bucket_name = central_bucket,
-        object_path = central_parameters_path
+        object = 'parameters',
+        replacer = 'worker'
     )
-    central_parameters = central_parameters_object['data']
-
-    worker_parameters_object = get_object_data_and_metadata(
-        logger = logger,
-        minio_client = minio_client,
-        bucket_name = central_bucket,
-        object_path = worker_parameters_path
-    )
-    worker_parameters = worker_parameters_object['data']
-    '''
 
     os.environ['STATUS'] = 'worker splitting'
     
@@ -223,100 +200,92 @@ def split_data_between_workers(
     if not central_parameters['min-update-amount'] <= len(available_workers):
         return False
     
-    data_folder_path = experiment_folder_path + '/data'
-    worker_pool_path = data_folder_path + '/worker-pool'
-    worker_pool_object = get_object_data_and_metadata(
+    workers_data, workers_data_details = get_experiments_objects(
         logger = logger,
         minio_client = minio_client,
-        bucket_name = central_bucket,
-        object_path = worker_pool_path
+        object = 'data',
+        replacer = 'workers-pool' 
     )
-    data_columns = format_metadata_dict(worker_pool_object['metadata'])['header']
-    worker_pool_df = pd.DataFrame(worker_pool_object['data'], columns = data_columns)
+
+    workers_pool_df = pd.DataFrame(workers_data, columns = workers_data_details['header'])
 
     if worker_parameters['data-augmentation']['active']:
         for worker_key in available_workers:
             worker_sample_df = data_augmented_sample(
-                pool_df = worker_pool_df,
+                pool_df = workers_pool_df,
                 sample_pool = worker_parameters['data-augmentation']['sample-pool'],
                 ratio = worker_parameters['data-augmentation']['1-0-ratio']
             )
-            worker_sample_path = cycle_folder_path + '/data/' + worker_key 
+            
             object_data = worker_sample_df.values.tolist()
-            object_metadata = encode_metadata_lists_to_strings({
+            object_metadata = {
                 'header': worker_sample_df.columns.tolist(),
                 'columns': str(len(worker_sample_df.columns.tolist())),
                 'rows': str(worker_sample_df.shape[0])
-            })
-            create_or_update_object(
+            }
+            set_experiments_objects(
                 logger = logger,
                 minio_client = minio_client,
-                bucket_name = central_bucket,
-                object_path = worker_sample_path,
-                data = object_data,
-                metadata = object_metadata
+                object = 'data-worker',
+                replacer = worker_key,
+                overwrite = True,
+                object_data = object_data,
+                object_metadata = object_metadata
             )
+            
     else:
-        worker_df = worker_pool_df.sample(frac = 1)
+        worker_df = workers_pool_df.sample(frac = 1)
         worker_dfs = np.array_split(worker_df, len(available_workers))
         index = 0
         for worker_key in available_workers:
             worker_sample_df = worker_dfs[index]
-            worker_sample_path = cycle_folder_path + '/data/' + worker_key 
+             
             object_data = worker_sample_df.values.tolist()
-            object_metadata = encode_metadata_lists_to_strings({
+            object_metadata = {
                 'header': worker_sample_df.columns.tolist(),
                 'columns': str(len(worker_sample_df.columns.tolist())),
                 'rows': str(worker_sample_df.shape[0])
-            })
-            create_or_update_object(
+            }
+            set_experiments_objects(
                 logger = logger,
                 minio_client = minio_client,
-                bucket_name = central_bucket,
-                object_path = worker_sample_path,
-                data = object_data,
-                metadata = object_metadata
+                object = 'data-worker',
+                replacer = worker_key,
+                overwrite = True,
+                object_data = object_data,
+                object_metadata = object_metadata
             )
             index = index + 1
 
     central_status['worker-split'] = True
-    create_or_update_object(
+    set_experiments_objects(
         logger = logger,
         minio_client = minio_client,
-        bucket_name = central_bucket,
-        object_path = central_status_path,
-        data = central_status,
-        metadata = {}
+        object = 'status',
+        replacer = '',
+        overwrite = True,
+        object_data = central_status,
+        object_metadata = {}
     )
 
     os.environ['STATUS'] = 'worker data split'
     logger.info('Worker data split')
 
     time_end = time.time()
-    cpu_end = this_process.cpu_percent(interval=0.2)
-    mem_end = psutil.virtual_memory().used 
-    disk_end = psutil.disk_usage('.').used
-
     time_diff = (time_end - time_start) 
-    cpu_diff = cpu_end - cpu_start 
-    mem_diff = (mem_end - mem_start) 
-    disk_diff = (disk_end - disk_start)
-
     resource_metrics = {
         'name': 'split-data-between-workers',
-        'time-seconds': round(time_diff,5),
-        'cpu-percentage': cpu_diff,
-        'ram-bytes': round(mem_diff,5),
-        'disk-bytes': round(disk_diff,5)
+        'action-time-start': time_start,
+        'action-time-end': time_end,
+        'action-total-seconds': round(time_diff,5)
     }
 
-    store_metrics_and_resources(
-        file_lock = file_lock,
+    store_metrics_resources_and_times(
         logger = logger,
         minio_client = minio_client,
         prometheus_registry = prometheus_registry,
         prometheus_metrics = prometheus_metrics,
-        type = 'resources',
+        type = 'times',
         area = 'function',
         metrics = resource_metrics
     )

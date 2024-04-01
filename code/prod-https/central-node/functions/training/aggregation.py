@@ -1,8 +1,9 @@
 import numpy as np
 import torch 
 import os 
-from collections import OrderedDict
 import time
+
+from collections import OrderedDict
 
 from functions.management.storage import store_metrics_resources_and_times
 from functions.platforms.minio import get_object_data_and_metadata, create_or_update_object, get_object_list
@@ -10,7 +11,6 @@ from functions.training.model import FederatedLogisticRegression, test
 from torch.utils.data import DataLoader
 from functions.platforms.mlflow import update_run, end_run
 from functions.general import get_experiments_objects, set_experiments_objects, set_object_paths
-
 # Refactored
 def get_model_updates(
     logger: any,
@@ -121,7 +121,6 @@ def update_global_model(
     if not central_parameters['min-update-amount'] <= len(available_updates):
         return False
     
-    #new_global_model_path = experiment_folder_path + '/' + str(central_status['cycle'] + 1) + '/global-model'
     model_data = model_fed_avg(
         updates = available_updates,
         total_sample_size = collective_sample_size 
@@ -180,7 +179,6 @@ def update_global_model(
     return True
 # Refactored
 def evalute_global_model(
-    file_lock: any,
     logger: any,
     minio_client: any,
     mlflow_client: any,
@@ -244,12 +242,16 @@ def evalute_global_model(
     model = FederatedLogisticRegression(dim = model_parameters['input-size'])
 
     mlflow_parameters['experiment'] = central_status['experiment']
-    mlflow_parameters['cycle'] = central_status['cycle']
-    mlflow_parameters['updates'] = int(global_model['update-amount'])
+    mlflow_parameters['cycle'] = central_status['cycle'] 
+    mlflow_parameters['updates'] = int(global_model_details['update-amount'])
+
+    for key,value in model_parameters.items():
+        mlflow_parameters[key] = value
+
     mlflow_parameters['train-amount'] = int(central_status['collective-amount'])
     mlflow_parameters['test-amount'] = 0
-    mlflow_parameters['seed'] = model_parameters['seed']
-    mlflow_parameters['input-size'] = int(model_parameters['input-size'])
+    mlflow_parameters['train-batch-size'] = 0
+    mlflow_parameters['test-batch-size'] = 0
     model.apply_parameters(model, global_model)
 
     eval_tensor, _ = get_experiments_objects(
@@ -280,13 +282,14 @@ def evalute_global_model(
     )
 
     for key,value in eval_metrics.items():
-        mlflow_metrics['eval-' + str(key)] = value
+        if not key == 'name':
+            mlflow_metrics['eval-' + str(key)] = value
     
     succesful_metrics = 0
     thresholds = central_parameters['metric-thresholds']
     conditions = central_parameters['metric-conditions']
     for key,value in eval_metrics.items():
-        if 'amount' in key:
+        if 'amount' in key or 'name' in key:
             continue
         message = 'Metric ' + str(key)
         if conditions[key] == '>=' and thresholds[key] <= value:
@@ -341,20 +344,20 @@ def evalute_global_model(
         central_status['worker-updates'] = 0
         central_status['cycle'] = central_status['cycle'] + 1
     
-    times, _ = get_experiments_objects(
+    experiment_times, _ = get_experiments_objects(
         logger = logger,
         minio_client = minio_client,
         object = 'experiment-times',
         replacer = ''
     )
 
-    cycle_start = times[str(central_status['cycle']-1)]['cycle-time-start']
+    cycle_start = experiment_times[str(central_status['cycle']-1)]['cycle-time-start']
     cycle_end = time.time()
     cycle_total = cycle_end-cycle_start
-    times[str(central_status['cycle']-1)]['cycle-time-end'] = cycle_end
-    times[str(central_status['cycle']-1)]['cycle-total-seconds'] = cycle_total
+    experiment_times[str(central_status['cycle']-1)]['cycle-time-end'] = cycle_end
+    experiment_times[str(central_status['cycle']-1)]['cycle-total-seconds'] = cycle_total
     if not central_status['complete']:
-        times[str(central_status['cycle'])] = {
+        experiment_times[str(central_status['cycle'])] = {
             'cycle-time-start':time.time(),
             'cycle-time-end': 0,
             'cycle-total-seconds': 0
@@ -366,7 +369,7 @@ def evalute_global_model(
         object = 'experiment-times',
         replacer = '',
         overwrite = True,
-        object_data = times,
+        object_data = experiment_times,
         object_metadata = {}
     )
 

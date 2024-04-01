@@ -1,12 +1,12 @@
 from prometheus_client import Gauge
 
-# Created and works
-def central_global_gauge(
-    prometheus_registry: any
-) -> any:
+# Created
+def worker_local_gauge(
+    prometheus_registry: any 
+):
     gauge = Gauge(
-        name = 'C_M_M',
-        documentation = 'Central global metrics',
+        name = 'W_L_M',
+        documentation = 'Worker local metrics',
         labelnames = [
             'date',
             'time',
@@ -36,12 +36,12 @@ def central_global_gauge(
         'accuracy': 'AcMe'
     }
     return gauge, names
-# Created and works
-def central_resource_gauge(
+# Created
+def worker_resources_gauge(
     prometheus_registry: any 
-) -> any:
+):
     gauge = Gauge(
-        name = 'C_R_M',
+        name = 'W_R_M',
         documentation = 'Central resource metrics',
         labelnames = [
             'date',
@@ -94,13 +94,13 @@ def central_resource_gauge(
         'disk-write-characters-bytes': 'DiWrChBy'
     }
     return gauge, names
-# Created and works
-def central_time_gauge(
-    prometheus_registry: any    
-) -> any:
+# Created
+def worker_time_gauge(
+    prometheus_registry: any 
+):
     gauge = Gauge(
-        name = 'C_T_M',
-        documentation = 'Central time metrics',
+        name = 'W_T_M',
+        documentation = 'Worker time metrics',
         labelnames = [
             'date', 
             'time',
@@ -114,6 +114,12 @@ def central_time_gauge(
         ],
         registry = prometheus_registry
     )
+    '''
+    woid = worker_status['worker-id'],
+    neid = worker_status['network-id'],
+    cead = worker_status['central-address'],
+    woad = worker_status['worker-address'],
+    '''
     names = {
         'experiment-date': 'ExDa',
         'experiment-time-start':'ExTiSt',

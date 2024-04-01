@@ -330,7 +330,6 @@ def initial_model_training(
         model_parameters = model_parameters
     )
 
-
     test_metrics = test(
         logger = logger,
         minio_client = minio_client,

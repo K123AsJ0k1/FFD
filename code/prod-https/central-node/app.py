@@ -111,7 +111,7 @@ def create_app():
         seconds = 60,
         args = given_args 
     )
-    '''
+    
     # Works 20 sec
     scheduler.add_job(
         func = update_pipeline,
@@ -126,7 +126,7 @@ def create_app():
         seconds = 40,
         args = given_args 
     )
-    '''
+    
     scheduler.start()
     app.logger.info('Scheduler ready')
     

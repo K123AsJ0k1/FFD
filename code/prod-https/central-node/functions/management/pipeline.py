@@ -180,14 +180,14 @@ def processing_pipeline(
             replacer = ''
         )
 
-        times, _ = get_experiments_objects(
+        experiment_times, _ = get_experiments_objects(
             logger = task_logger,
             minio_client = task_minio_client,
             object = 'experiment-times',
             replacer = ''
         )
         
-        times[str(central_status['cycle'])] = {
+        experiment_times[str(central_status['cycle'])] = {
             'cycle-time-start':cycle_start,
             'cycle-time-end': 0,
             'cycle-total-seconds': 0
@@ -199,7 +199,7 @@ def processing_pipeline(
             object = 'experiment-times',
             replacer = '',
             overwrite = True,
-            object_data = times,
+            object_data = experiment_times,
             object_metadata = {}
         )
     # Works

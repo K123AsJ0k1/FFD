@@ -1,14 +1,15 @@
-from flask import Flask, request
-from apscheduler.schedulers.background import BackgroundScheduler
-from minio import Minio
-from prometheus_client import CollectorRegistry
-from mlflow import MlflowClient
-import json
+from flask import Flask
 
+import json
 import threading
 import logging
 import os
 import uuid
+
+from apscheduler.schedulers.background import BackgroundScheduler
+from minio import Minio
+from prometheus_client import CollectorRegistry
+from mlflow import MlflowClient
 
 def create_app():
     app = Flask(__name__)
@@ -81,7 +82,11 @@ def create_app():
     }
     app.logger.warning('Prometheus registry and gauges ready')
 
-    from functions.initilization import initilize_minio, initilize_prometheus_gauges
+    from functions.initilization import initilize_envs, initilize_minio, initilize_prometheus_gauges
+    initilize_envs(
+        logger = app.logger,
+        minio_client = minio_client
+    )
     initilize_minio(
         logger = app.logger,
         minio_client = minio_client
@@ -92,15 +97,31 @@ def create_app():
     )
     
     scheduler = BackgroundScheduler(daemon = True)
-    from functions.management.pipeline import status_pipeline, data_pipeline, model_pipeline, update_pipeline
+    from functions.management.pipeline import system_monitoring, server_monitoring, status_pipeline, data_pipeline, model_pipeline, update_pipeline
     
     given_args = [
-        app.file_lock,
         app.logger,
         app.minio_client,
         app.prometheus_registry,
         app.prometheus_metrics
     ]
+
+    # Works 5 sec
+    scheduler.add_job(
+        func = server_monitoring,
+        trigger = "interval",
+        seconds = 5,
+        args = given_args 
+    )
+    '''
+    # Works 10 sec
+    scheduler.add_job(
+        func = system_monitoring,
+        trigger = "interval",
+        seconds = 10,
+        args = given_args 
+    )
+    '''
     scheduler.add_job(
         func = status_pipeline,
         trigger = "interval",
@@ -114,7 +135,6 @@ def create_app():
         args = given_args
     )
     given_args = [
-        app.file_lock,
         app.logger,
         app.minio_client,
         app.mlflow_client,
@@ -128,7 +148,6 @@ def create_app():
         args = given_args
     )
     given_args = [
-        app.file_lock,
         app.logger,
         app.minio_client,
         app.prometheus_registry,

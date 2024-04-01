@@ -32,93 +32,94 @@ def store_metrics_resources_and_times(
         object = 'status',
         replacer = ''
     )    
-    object_name = ''
-    replacer = ''
-    if type == 'metrics' or type == 'resources' or type == 'times':
-        if type == 'metrics':
-            object_name = 'metrics'
-            source = metrics['name']
-            for key,value in metrics.items():
-                if key == 'name':
-                    continue
-                metric_name = prometheus_metrics['global-name'][key]
-                prometheus_metrics['global'].labels(
-                    date = datetime.now().strftime('%Y-%m-%d-%H:%M:%S.%f'),
-                    time = time.time(),
-                    collector = 'central-main',
-                    name = central_status['experiment-name'],
-                    experiment = central_status['experiment'], 
-                    cycle = central_status['cycle'],
-                    source = source,
-                    metric = metric_name
-                ).set(value)
-        if type == 'resources':
-            object_name = 'resources'
-            replacer = metrics['name']
-            set_date = metrics['date']
-            set_time = metrics['time']
-            source = metrics['name']
-            for key,value in metrics.items():
-                if key == 'name' or key == 'date' or key == 'time':
-                    continue
-                metric_name = prometheus_metrics['resource-name'][key]
-                prometheus_metrics['resource'].labels(
-                    date = set_date,
-                    time = set_time,
-                    collector = 'central-main', 
-                    name = central_status['experiment-name'], 
-                    experiment = central_status['experiment'],
-                    cycle = central_status['cycle'],
-                    source = source,
-                    metric = metric_name
-                ).set(value)
-        if type == 'times':
-            object_name = 'action-times'
-            replacer = area
-            source = metrics['name']
-            for key,value in metrics.items():
-                if key == 'name':
-                    continue
-                metric_name = prometheus_metrics['time-name'][key]
-                prometheus_metrics['time'].labels(
-                    date = datetime.now().strftime('%Y-%m-%d-%H:%M:%S.%f'),
-                    time = time.time(),
-                    collector = 'central-main',
-                    name = central_status['experiment-name'],
-                    experiment = central_status['experiment'], 
-                    cycle = central_status['cycle'],
-                    area = area,
-                    source = source,
-                    metric = metric_name
-                ).set(value)
+    if not central_status is None:
+        object_name = ''
+        replacer = ''
+        if type == 'metrics' or type == 'resources' or type == 'times':
+            if type == 'metrics':
+                object_name = 'metrics'
+                source = metrics['name']
+                for key,value in metrics.items():
+                    if key == 'name':
+                        continue
+                    metric_name = prometheus_metrics['global-name'][key]
+                    prometheus_metrics['global'].labels(
+                        date = datetime.now().strftime('%Y-%m-%d-%H:%M:%S.%f'),
+                        time = time.time(),
+                        collector = 'central-main',
+                        name = central_status['experiment-name'],
+                        experiment = central_status['experiment'], 
+                        cycle = central_status['cycle'],
+                        source = source,
+                        metric = metric_name
+                    ).set(value)
+            if type == 'resources':
+                object_name = 'resources'
+                replacer = metrics['name']
+                set_date = metrics['date']
+                set_time = metrics['time']
+                source = metrics['name']
+                for key,value in metrics.items():
+                    if key == 'name' or key == 'date' or key == 'time':
+                        continue
+                    metric_name = prometheus_metrics['resource-name'][key]
+                    prometheus_metrics['resource'].labels(
+                        date = set_date,
+                        time = set_time,
+                        collector = 'central-main', 
+                        name = central_status['experiment-name'], 
+                        experiment = central_status['experiment'],
+                        cycle = central_status['cycle'],
+                        source = source,
+                        metric = metric_name
+                    ).set(value)
+            if type == 'times':
+                object_name = 'action-times'
+                replacer = area
+                source = metrics['name']
+                for key,value in metrics.items():
+                    if key == 'name':
+                        continue
+                    metric_name = prometheus_metrics['time-name'][key]
+                    prometheus_metrics['time'].labels(
+                        date = datetime.now().strftime('%Y-%m-%d-%H:%M:%S.%f'),
+                        time = time.time(),
+                        collector = 'central-main',
+                        name = central_status['experiment-name'],
+                        experiment = central_status['experiment'], 
+                        cycle = central_status['cycle'],
+                        area = area,
+                        source = source,
+                        metric = metric_name
+                    ).set(value)
+            if not central_status['experiment-name'] == '':
+                wanted_data, _ = get_experiments_objects(
+                    logger = logger,
+                    minio_client = minio_client,
+                    object = object_name,
+                    replacer = replacer
+                )
+                object_data = None
+                if wanted_data is None:
+                    object_data = {}
+                else:
+                    object_data = wanted_data
 
-        wanted_data, _ = get_experiments_objects(
-            logger = logger,
-            minio_client = minio_client,
-            object = object_name,
-            replacer = replacer
-        )
-        object_data = None
-        if wanted_data is None:
-            object_data = {}
-        else:
-            object_data = wanted_data
+                new_key = len(object_data) + 1
+                object_data[str(new_key)] = metrics
 
-        new_key = len(object_data) + 1
-        object_data[str(new_key)] = metrics
-
-        set_experiments_objects(
-            logger = logger,
-            minio_client = minio_client,
-            object = object_name,
-            replacer = replacer,
-            overwrite = True,
-            object_data = object_data,
-            object_metadata = {}
-        )
-        #push_to_gateway('http:127.0.0.1:9091', job = 'central-', registry =  prometheus_registry) 
+                set_experiments_objects(
+                    logger = logger,
+                    minio_client = minio_client,
+                    object = object_name,
+                    replacer = replacer,
+                    overwrite = True,
+                    object_data = object_data,
+                    object_metadata = {}
+                )
+                #push_to_gateway('http:127.0.0.1:9091', job = 'central-', registry =  prometheus_registry) 
     return True
-# refactored and works
+# refactored 
 def store_worker(
     logger: any,
     minio_client: any,
@@ -162,11 +163,13 @@ def store_worker(
         # When new worker status is started due to experiments
         given_network_id = str(smallest_missing_id)
         given_worker_address = address
+        given_experiment_name = central_status['experiment-name']
         given_experiment = central_status['experiment']
         given_cycle = central_status['cycle']
 
         status['network-id'] = given_network_id
         status['worker-address'] = given_worker_address
+        status['experiment-name'] = given_experiment_name
         status['experiment'] = given_experiment
         status['cycle'] = given_cycle
         # Might be anti pattern
@@ -175,6 +178,7 @@ def store_worker(
             'message': 'registered', 
             'network-id': given_network_id,
             'worker-address': given_worker_address,
+            'experiment-name': given_experiment_name,
             'experiment': given_experiment,
             'cycle': given_cycle
         }
@@ -188,6 +192,7 @@ def store_worker(
                 'message': 'checked', 
                 'network-id': None,
                 'worker-address': None,
+                'experiment-name': None,
                 'experiment': None,
                 'cycle': None
             }
@@ -199,6 +204,7 @@ def store_worker(
                 'message': 'rerouted', 
                 'network-id': None,
                 'worker-address': address,
+                'experiment-name': None,
                 'experiment': None,
                 'cycle': None
             }
@@ -235,13 +241,13 @@ def store_worker(
     return info 
 # Refactored
 def store_update( 
-    file_lock: any,
     logger: any,
     minio_client: any,
     prometheus_registry: any,
     prometheus_metrics: any,
     worker_id: str,
     model: any,
+    experiment_name: str,
     experiment: int,
     cycle: int
 ) -> bool:
@@ -257,11 +263,14 @@ def store_update(
     if central_status is None:
         return {'message': 'no status'}
     
-    if not str(central_status['experiment']) == str(experiment):
+    if not str(central_status['experiment-name']) == str(experiment_name):
         return {'message': 'incorrect experiment'}
     
+    if not str(central_status['experiment']) == str(experiment):
+        return {'message': 'incorrect experiment'}
+    # There are cases, where workers are not fast enough
     if not str(central_status['cycle']) == str(cycle):
-        return {'message': 'incorrect cycle'}
+        return {'message': 'late'}
     
     if not central_status['start']:
         return {'message': 'no start'}

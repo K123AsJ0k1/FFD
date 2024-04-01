@@ -3,7 +3,7 @@ import json
 from functions.management.storage import store_training_context
 
 pipeline = Blueprint('pipeline', __name__)
-
+'''
 # Refactored and works
 @pipeline.route('/context', methods=["POST"]) 
 def set_training_context():
@@ -28,3 +28,4 @@ def set_training_context():
     )
     
     return jsonify(payload)
+'''

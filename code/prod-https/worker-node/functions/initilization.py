@@ -4,6 +4,27 @@ from datetime import datetime
 import os
 from prometheus_client import Gauge
 
+from functions.general import set_experiments_objects, get_experiments_objects
+from functions.platforms.prometheus import worker_local_gauge, worker_resources_gauge, worker_time_gauge
+
+def initilize_envs(
+    logger: any,
+    minio_client: any
+):
+    worker_status, _ = get_experiments_objects(
+        logger = logger,
+        minio_client = minio_client,
+        object = 'status',
+        replacer = ''
+    )
+    if not worker_status is None:
+        os.environ['EXP_NAME'] = str(worker_status['experiment-name'])
+        os.environ['EXP'] = str(worker_status['experiment'])
+        os.environ['CYCLE'] = str(worker_status['cycle'])
+    else:
+        os.environ['CYCLE'] = str(1)
+        os.environ['EXP'] = str(1)
+        os.environ['EXP_NAME'] = ''
 # Created and works
 def initilize_minio(
     logger: any,
@@ -22,6 +43,7 @@ def initilize_minio(
             'worker-address': '',
             'worker-port': worker_port,
             'status': 'waiting',
+            'experiment-name': '',
             'experiment':1,
             'experiment-id': '',
             'stored': False,
@@ -34,8 +56,12 @@ def initilize_minio(
             'eval-amount': 0,
             'cycle': 1
         },
-        'resources': {
+        'specifications': {
             'activation-date': datetime.now().strftime('%Y-%m-%d-%H:%M:%S.%f'),
+            'host-kernel-version': os.uname().release,
+            'host-system-name': os.uname().sysname,
+            'host-node-name': os.uname().nodename,
+            'host-machine': os.uname().machine,
             'physical-cpu-amount': psutil.cpu_count(logical=False),
             'total-cpu-amount': psutil.cpu_count(logical=True),
             'min-cpu-frequency-mhz': psutil.cpu_freq().min,
@@ -45,7 +71,7 @@ def initilize_minio(
             'total-disk-amount-bytes': psutil.disk_usage('.').total,
             'available-disk-amount-bytes': psutil.disk_usage('.').free
         },
-        'templates/model-parameters': {
+        'model-template': {
             'seed': 0,
             'used-columns': [],
             'input-size': 0,
@@ -56,7 +82,7 @@ def initilize_minio(
             'optimizer': '',
             'epochs': 0
         },
-        'templates/worker-parameters': {
+        'worker-template': {
             'sample-pool': 0,
             'data-augmentation': {
                 'active': False,
@@ -68,85 +94,33 @@ def initilize_minio(
         }
     }
 
-    workers_bucket = 'workers'
     for key in templates.keys():
-        given_object_path = worker_id + '/experiments/' + str(key)
-        
-        object_exists = check_object(
+        set_experiments_objects(
             logger = logger,
             minio_client = minio_client,
-            bucket_name = workers_bucket,
-            object_path = given_object_path
-        )
-        if not object_exists:
-            create_or_update_object(
-                logger = logger,
-                minio_client = minio_client,
-                bucket_name = workers_bucket,
-                object_path = given_object_path,
-                data = templates[key],
-                metadata = {}
-            )
-
+            object = key,
+            replacer = '',
+            overwrite = False,
+            object_data = templates[key],
+            object_metadata = {} 
+        )  
+# Created
 def initilize_prometheus_gauges(
     prometheus_registry: any,
     prometheus_metrics: any,
 ):
-    # Worker model metrics
-    prometheus_metrics['worker-local'] = Gauge(
-        name = 'W_M_M',
-        documentation = 'Worker local metrics',
-        labelnames = ['date','woid','neid','cead','woad','experiment','cycle','metric'],
-        registry = prometheus_registry
-    )
-    # Worker metric names
-    prometheus_metrics['worker-local-names'] = {
-        'train-amount': 'TrAm',
-        'test-amount': 'TeAm',
-        'eval-amount': 'EvAm',
-        'true-positives': 'TrPo',
-        'false-positives': 'FaPo',
-        'true-negatives': 'TrNe',
-        'false-negatives': 'FaNe',
-        'recall': 'ReMe',
-        'selectivity': 'SeMe',
-        'precision': 'PrMe',
-        'miss-rate': 'MiRaMe',
-        'fall-out': 'FaOuMe',
-        'balanced-accuracy': 'BaAcMe',
-        'accuracy': 'AcMe'
-    }
-    # Worker resource metrics
-    prometheus_metrics['worker-resources'] = Gauge(
-        name = 'W_R_M',
-        documentation = 'Central resource metrics',
-        labelnames = ['date','woid','neid','cead','woad','experiment','cycle','area','name','metric'],
-        registry = prometheus_registry
-    )
-    prometheus_metrics['worker-resources-names'] = {
-        'physical-cpu-amount': 'PyCPUAm',
-        'total-cpu-amount': 'ToCPUAm',
-        'min-cpu-frequency-mhz': 'MinCPUFrMhz',
-        'max-cpu-frequency-mhz': 'MaxCPUFrMhz',
-        'total-ram-amount-bytes': 'ToRAMAmBy',
-        'available-ram-amount-bytes': 'AvRAMAmByte',
-        'total-disk-amount-bytes': 'ToDiAmBy',
-        'available-disk-amount-bytes': 'ToDiAmByte',
-        'experiment-date': 'ExDa',
-        'experiment-time-start':'ExTiSt',
-        'experiment-time-end':'ExTiEn',
-        'experiment-total-seconds': 'ExToSec',
-        'cycle-time-start': 'CyTiSt',
-        'cycle-time-end': 'CyTiEn',
-        'cycle-total-seconds': 'CyToSec',
-        'time-seconds': 'TiSec',
-        'status-code': 'StCo',
-        'processing-time-seconds': 'PrTiSec',
-        'elapsed-time-seconds': 'ElTiSec',
-        'cpu-percentage': 'CPUPerc',
-        'ram-bytes': 'RAMByte',
-        'disk-bytes': 'DiByte',
-        'epochs': 'Epo',
-        'batches': 'Bat',
-        'average-batch-size': 'AvBatSi'
-    }
+    local_metrics, local_metrics_names = worker_local_gauge(
+        prometheus_registry = prometheus_registry
+    ) 
+    prometheus_metrics['local'] = local_metrics
+    prometheus_metrics['local-name'] = local_metrics_names
+    resource_metrics, resource_metrics_names = worker_resources_gauge(
+        prometheus_registry = prometheus_registry
+    ) 
+    prometheus_metrics['resource'] = resource_metrics
+    prometheus_metrics['resource-name'] = resource_metrics_names
+    time_metrics, time_metrics_names = worker_time_gauge(
+        prometheus_registry = prometheus_registry
+    ) 
+    prometheus_metrics['time'] = time_metrics
+    prometheus_metrics['time-name'] = time_metrics_names
