@@ -7,6 +7,7 @@ from functions.management.storage import store_metrics_resources_and_times
 import time
 # Created and works
 def system_monitoring(
+    task_file_lock: any,
     task_logger: any,
     task_minio_client: any,
     task_prometheus_registry: any,
@@ -14,6 +15,7 @@ def system_monitoring(
 ):
     system_resources = get_system_resource_usage()
     store_metrics_resources_and_times(
+        file_lock = task_file_lock,
         logger = task_logger,
         minio_client = task_minio_client,
         prometheus_registry = task_prometheus_registry,
@@ -24,6 +26,7 @@ def system_monitoring(
     )
 # Created and works
 def server_monitoring(
+    task_file_lock: any,
     task_logger: any,
     task_minio_client: any,
     task_prometheus_registry: any,
@@ -31,6 +34,7 @@ def server_monitoring(
 ):
     server_resources = get_server_resource_usage()
     store_metrics_resources_and_times(
+        file_lock = task_file_lock,
         logger = task_logger,
         minio_client = task_minio_client,
         prometheus_registry = task_prometheus_registry,
@@ -41,6 +45,7 @@ def server_monitoring(
     )
 # Refactored
 def status_pipeline(
+    task_file_lock: any,
     task_logger: any,
     task_minio_client: any,
     task_prometheus_registry: any,
@@ -48,6 +53,7 @@ def status_pipeline(
 ):
     # Check
     status = send_info_to_central(
+        file_lock = task_file_lock,
         logger = task_logger,
         minio_client = task_minio_client,
         prometheus_registry = task_prometheus_registry,
@@ -56,6 +62,7 @@ def status_pipeline(
     task_logger.info('Status sending:' + str(status))
 # Refactoroed
 def data_pipeline(
+    task_file_lock: any,
     task_logger: any,
     task_minio_client: any,
     task_prometheus_registry: any,
@@ -64,6 +71,7 @@ def data_pipeline(
     cycle_start = time.time()
     # Check
     status = preprocess_into_train_test_and_eval_tensors(
+        file_lock = task_file_lock,
         logger = task_logger,
         minio_client = task_minio_client,
         prometheus_registry = task_prometheus_registry,
@@ -72,6 +80,7 @@ def data_pipeline(
 
     if status:
         worker_status, _ = get_experiments_objects(
+            file_lock = task_file_lock,
             logger = task_logger,
             minio_client = task_minio_client,
             object = 'status',
@@ -79,6 +88,7 @@ def data_pipeline(
         )
 
         experiment_times, _ = get_experiments_objects(
+            file_lock = task_file_lock,
             logger = task_logger,
             minio_client = task_minio_client,
             object = 'experiment-times',
@@ -92,6 +102,7 @@ def data_pipeline(
         }
 
         set_experiments_objects(
+            file_lock = task_file_lock,
             logger = task_logger,
             minio_client = task_minio_client,
             object = 'experiment-times',
@@ -104,6 +115,7 @@ def data_pipeline(
     task_logger.info('Data preprocessing:' + str(status))
 # Refactored
 def model_pipeline(
+    task_file_lock: any,
     task_logger: any,
     task_minio_client: any,
     task_mlflow_client: any,
@@ -112,6 +124,7 @@ def model_pipeline(
 ): 
     # Check
     status = local_model_training(
+        file_lock = task_file_lock,
         logger = task_logger,
         minio_client = task_minio_client,
         mlflow_client = task_mlflow_client,
@@ -121,6 +134,7 @@ def model_pipeline(
     task_logger.info('Model training:' + str(status))
 # Refactored
 def update_pipeline(
+    task_file_lock: any,
     task_logger: any,
     task_minio_client: any,
     task_prometheus_registry: any,
@@ -128,6 +142,7 @@ def update_pipeline(
 ):
     # Check
     status = send_update_to_central(
+        file_lock = task_file_lock,
         logger = task_logger,
         minio_client = task_minio_client,
         prometheus_registry = task_prometheus_registry,

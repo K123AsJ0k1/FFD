@@ -10,6 +10,7 @@ from functions.platforms.mlflow import start_run
 
 # Refactored
 def send_context_to_workers(
+    file_lock: any,
     logger: any,
     minio_client: any,
     mlflow_client: any,
@@ -19,6 +20,7 @@ def send_context_to_workers(
     time_start = time.time()
 
     central_status, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'status',
@@ -44,6 +46,7 @@ def send_context_to_workers(
     logger.info('Sending context to workers')
 
     workers_status, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'workers',
@@ -51,6 +54,7 @@ def send_context_to_workers(
     )
 
     central_parameters, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'parameters',
@@ -58,6 +62,7 @@ def send_context_to_workers(
     )
 
     model_parameters, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'parameters',
@@ -65,6 +70,7 @@ def send_context_to_workers(
     )
 
     worker_parameters, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'parameters',
@@ -72,6 +78,7 @@ def send_context_to_workers(
     )
     
     global_model, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'global-model',
@@ -84,12 +91,13 @@ def send_context_to_workers(
     }
 
     if not central_status['complete']:
+        run_name = 'federated-training-' + str(central_status['experiment']) + '-' + str(central_status['cycle'])
         run_data = start_run(
             logger = logger,
             mlflow_client = mlflow_client,
             experiment_id = central_status['experiment-id'],
             tags = {},
-            name = 'federated-training' 
+            name = run_name 
         )
         central_status['run-id'] = run_data['id']
 
@@ -110,6 +118,7 @@ def send_context_to_workers(
             context = None
             if not central_status['complete']:
                 worker_data, worker_data_details = get_experiments_objects(
+                    file_lock = file_lock,
                     logger = logger,
                     minio_client = minio_client,
                     object = 'data-worker',
@@ -182,6 +191,7 @@ def send_context_to_workers(
                 }
 
                 store_metrics_resources_and_times(
+                    file_lock = file_lock,
                     logger = logger,
                     minio_client = minio_client,
                     prometheus_registry = prometheus_registry,
@@ -212,6 +222,7 @@ def send_context_to_workers(
 
     if central_status['complete']:
         experiment_times, _ = get_experiments_objects(
+            file_lock = file_lock,
             logger = logger,
             minio_client = minio_client,
             object = 'experiment-times',
@@ -225,6 +236,7 @@ def send_context_to_workers(
         experiment_times['experiment-total-seconds'] = experiment_total
 
         set_experiments_objects(
+            file_lock = file_lock,
             logger = logger,
             minio_client = minio_client,
             object = 'experiment-times',
@@ -235,6 +247,7 @@ def send_context_to_workers(
         )
 
     set_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'status',
@@ -257,6 +270,7 @@ def send_context_to_workers(
     }
 
     store_metrics_resources_and_times(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         prometheus_registry = prometheus_registry,

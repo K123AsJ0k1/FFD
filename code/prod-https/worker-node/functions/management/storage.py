@@ -10,6 +10,7 @@ from functions.general import get_experiments_objects, set_experiments_objects
 from functions.platforms.mlflow import start_experiment, check_experiment
 # Refactored
 def store_training_context(
+    file_lock: any,
     logger: any,
     minio_client: any,
     mlflow_client: any,
@@ -21,6 +22,7 @@ def store_training_context(
     df_columns: list
 ) -> any:
     worker_status, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'status',
@@ -54,6 +56,7 @@ def store_training_context(
         worker_status['cycle'] = info['cycle']
         
         experiment_times, _ = get_experiments_objects(
+            file_lock = file_lock,
             logger = logger,
             minio_client = minio_client,
             object = 'experiment-times',
@@ -65,6 +68,7 @@ def store_training_context(
         experiment_times['experiment-time-end'] = experiment_end
         experiment_times['experiment-total-seconds'] = experiment_total
         set_experiments_objects(
+            file_lock = file_lock,
             logger = logger,
             minio_client = minio_client,
             object = 'experiment-times',
@@ -85,6 +89,7 @@ def store_training_context(
         }
         
         set_experiments_objects(
+            file_lock = file_lock,
             logger = logger,
             minio_client = minio_client,
             object = 'experiment-times',
@@ -114,6 +119,7 @@ def store_training_context(
         worker_status['experiment-id'] = experiment_id
         
         set_experiments_objects(
+            file_lock = file_lock,
             logger = logger,
             minio_client = minio_client,
             object = 'parameters',
@@ -124,6 +130,7 @@ def store_training_context(
         )
 
         set_experiments_objects(
+            file_lock = file_lock,
             logger = logger,
             minio_client = minio_client,
             object = 'parameters',
@@ -141,6 +148,7 @@ def store_training_context(
         }
 
         set_experiments_objects(
+            file_lock = file_lock,
             logger = logger,
             minio_client = minio_client,
             object = 'worker-sample',
@@ -167,6 +175,7 @@ def store_training_context(
     ])
 
     set_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'model',
@@ -178,6 +187,7 @@ def store_training_context(
 
     worker_status['stored'] = True
     set_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'status',
@@ -192,6 +202,7 @@ def store_training_context(
     return {'message': 'stored'}
 # Refactored
 def store_metrics_resources_and_times( 
+   file_lock: any,
    logger: any,
    minio_client: any,
    prometheus_registry: any,
@@ -201,6 +212,7 @@ def store_metrics_resources_and_times(
    metrics: any
 ) -> bool:
     worker_status, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'status',
@@ -269,6 +281,7 @@ def store_metrics_resources_and_times(
             
             if not worker_status['experiment-name'] == '':
                 wanted_data, _ = get_experiments_objects(
+                    file_lock = file_lock,
                     logger = logger,
                     minio_client = minio_client,
                     object = object_name,
@@ -284,6 +297,7 @@ def store_metrics_resources_and_times(
                 object_data[str(new_key)] = metrics
             
                 set_experiments_objects(
+                    file_lock = file_lock,
                     logger = logger,
                     minio_client = minio_client,
                     object = object_name,

@@ -87,39 +87,42 @@ def set_object_paths():
     return object_paths
 # Created
 def get_experiments_objects(
+    file_lock: any,
     logger: any,
     minio_client: any,
     object: str,
     replacer: str
 ) -> any:
-    used_bucket = 'workers'
-    object_paths = set_object_paths()
-    
-    object_path = object_paths[object]
-    if 'replace' in object_path:
-        object_path = object_path[:-7] + replacer
-
-    object_exists = check_object(
-        logger = logger,
-        minio_client = minio_client,
-        bucket_name = used_bucket,
-        object_path = object_path
-    )
-
     object_data = None
     object_metadata = None
-    if object_exists:
-        fetched_object = get_object_data_and_metadata(
+    with file_lock:
+        used_bucket = 'workers'
+        object_paths = set_object_paths()
+        
+        object_path = object_paths[object]
+        if 'replace' in object_path:
+            object_path = object_path[:-7] + replacer
+
+        object_exists = check_object(
             logger = logger,
             minio_client = minio_client,
             bucket_name = used_bucket,
             object_path = object_path
         )
-        object_data = fetched_object['data']
-        object_metadata = format_metadata_dict(fetched_object['metadata'])
+
+        if object_exists:
+            fetched_object = get_object_data_and_metadata(
+                logger = logger,
+                minio_client = minio_client,
+                bucket_name = used_bucket,
+                object_path = object_path
+            )
+            object_data = fetched_object['data']
+            object_metadata = format_metadata_dict(fetched_object['metadata'])
     return object_data, object_metadata
 # Created
 def set_experiments_objects(
+    file_lock: any,
     logger: any,
     minio_client: any,
     object: str,
@@ -128,32 +131,33 @@ def set_experiments_objects(
     object_data: any,
     object_metadata: any
 ):
-    used_bucket = 'workers'
-    object_paths = set_object_paths()
+    with file_lock:
+        used_bucket = 'workers'
+        object_paths = set_object_paths()
 
-    object_path = object_paths[object]
-    if 'replace' in object_path:
-        object_path = object_path[:-7] + replacer
+        object_path = object_paths[object]
+        if 'replace' in object_path:
+            object_path = object_path[:-7] + replacer
 
-    object_exists = check_object(
-        logger = logger,
-        minio_client = minio_client,
-        bucket_name = used_bucket,
-        object_path = object_path
-    )
-    perform = True
-    if object_exists and not overwrite:
-        perform = False
-
-    if perform:
-        create_or_update_object(
+        object_exists = check_object(
             logger = logger,
             minio_client = minio_client,
             bucket_name = used_bucket,
-            object_path = object_path,
-            data = object_data,
-            metadata = encode_metadata_lists_to_strings(object_metadata)
+            object_path = object_path
         )
+        perform = True
+        if object_exists and not overwrite:
+            perform = False
+
+        if perform:
+            create_or_update_object(
+                logger = logger,
+                minio_client = minio_client,
+                bucket_name = used_bucket,
+                object_path = object_path,
+                data = object_data,
+                metadata = encode_metadata_lists_to_strings(object_metadata)
+            )
 # Created and works
 def get_system_resource_usage():
     net_io_counters = psutil.net_io_counters()

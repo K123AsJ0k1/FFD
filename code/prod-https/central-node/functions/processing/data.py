@@ -30,6 +30,7 @@ def data_augmented_sample(
     return randomized_sample_df
 # Refactored and works
 def preprocess_into_train_test_and_evaluate_tensors(
+    file_lock: any,
     logger: any,
     minio_client: any,
     prometheus_registry: any,
@@ -38,6 +39,7 @@ def preprocess_into_train_test_and_evaluate_tensors(
     time_start = time.time()
 
     central_status, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'status',
@@ -63,6 +65,7 @@ def preprocess_into_train_test_and_evaluate_tensors(
     logger.info('Preprocessing into tensors')
     
     central_parameters, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'parameters',
@@ -70,6 +73,7 @@ def preprocess_into_train_test_and_evaluate_tensors(
     )
     
     model_parameters, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'parameters',
@@ -77,6 +81,7 @@ def preprocess_into_train_test_and_evaluate_tensors(
     )
     
     central_pool, details = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'data',
@@ -139,6 +144,7 @@ def preprocess_into_train_test_and_evaluate_tensors(
     )
     
     set_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'tensors',
@@ -148,6 +154,7 @@ def preprocess_into_train_test_and_evaluate_tensors(
         object_metadata = {}
     )
     set_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'tensors',
@@ -157,6 +164,7 @@ def preprocess_into_train_test_and_evaluate_tensors(
         object_metadata = {}
     )
     set_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'tensors',
@@ -171,6 +179,7 @@ def preprocess_into_train_test_and_evaluate_tensors(
     central_status['test-amount'] = X_test.shape[0]
     central_status['eval-amount'] = X_eval.shape[0]
     set_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'status',
@@ -193,6 +202,7 @@ def preprocess_into_train_test_and_evaluate_tensors(
     }
 
     store_metrics_resources_and_times(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         prometheus_registry = prometheus_registry,

@@ -17,6 +17,7 @@ def set_training_context():
     sent_worker_data_columns = sent_payload['worker-data-columns']
  
     payload = store_training_context(
+        file_lock = current_app.file_lock,
         logger = current_app.logger,
         minio_client = current_app.minio_client,
         mlflow_client = current_app.mlflow_client,

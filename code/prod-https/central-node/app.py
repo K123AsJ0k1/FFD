@@ -54,10 +54,12 @@ def create_app():
 
     from functions.initilization import initilize_envs, initilize_minio, initilize_prometheus_gauges
     initilize_envs(
+        file_lock = app.file_lock,
         logger = app.logger,
         minio_client = minio_client
     )
     initilize_minio(
+        file_lock = app.file_lock,
         logger = app.logger,
         minio_client = minio_client
     )
@@ -70,6 +72,7 @@ def create_app():
     from functions.management.pipeline import system_monitoring, server_monitoring, processing_pipeline, model_pipeline, update_pipeline, aggregation_pipeline
     
     given_args = [
+        app.file_lock,
         app.logger,
         app.minio_client,
         app.prometheus_registry,
@@ -89,6 +92,7 @@ def create_app():
         seconds = 10,
         args = given_args 
     )
+    
     # Works 30 sec
     scheduler.add_job(
         func = processing_pipeline,
@@ -98,6 +102,7 @@ def create_app():
     )
 
     given_args = [
+        app.file_lock,
         app.logger,
         app.minio_client,
         app.mlflow_client,

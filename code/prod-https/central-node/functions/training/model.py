@@ -55,6 +55,7 @@ class FederatedLogisticRegression(nn.Module):
         model.load_state_dict(parameters)
 # Refactored and works
 def train(
+    file_lock: any,
     logger: any,
     minio_client: any,
     prometheus_registry: any,
@@ -99,6 +100,7 @@ def train(
     }
 
     store_metrics_resources_and_times(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         prometheus_registry = prometheus_registry,
@@ -109,6 +111,7 @@ def train(
     )
 # Refactored and works
 def test(
+    file_lock: any,
     logger: any,
     minio_client: any,
     prometheus_registry: any,
@@ -154,6 +157,7 @@ def test(
         }
 
         store_metrics_resources_and_times(
+            file_lock = file_lock,
             logger = logger,
             minio_client = minio_client,
             prometheus_registry = prometheus_registry,
@@ -181,7 +185,7 @@ def test(
             BA = (TPR+TNR)/2
             ACC = (TP + TN)/(TP + TN + FP + FN)
         except Exception as e:
-            current_app.logger.warning(e)
+            logger.warning(e)
         
         metrics = {
             'name': 'logistic-regression-' + name,
@@ -201,6 +205,7 @@ def test(
         return metrics
 # Refactored and works
 def initial_model_training(
+    file_lock: any,
     logger: any,
     minio_client: any,
     mlflow_client: any,
@@ -210,6 +215,7 @@ def initial_model_training(
     time_start = time.time()
 
     central_status, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'status',
@@ -235,13 +241,13 @@ def initial_model_training(
     mlflow_parameters = {}
     mlflow_metrics = {}
     mlflow_artifacts = []
-    
+    run_name = 'initial-training-' + str(central_status['experiment']) + '-' + str(central_status['cycle'])
     run_data = start_run(
         logger = logger,
         mlflow_client = mlflow_client,
         experiment_id = central_status['experiment-id'],
         tags = {},
-        name = 'central-initial-training'
+        name = run_name
     )
     # This is for using the with instead of client
     #mlflow.set_tracking_uri('http://127.0.0.1:5000')
@@ -249,6 +255,7 @@ def initial_model_training(
     # add experiment and cycle to parameters
     
     model_parameters, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'parameters',
@@ -265,6 +272,7 @@ def initial_model_training(
         mlflow_parameters[key] = value
 
     train_tensor, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'tensors',
@@ -276,6 +284,7 @@ def initial_model_training(
     mlflow_artifacts.append(train_tensor_temp_path)
 
     test_tensor, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'tensors',
@@ -287,6 +296,7 @@ def initial_model_training(
     mlflow_artifacts.append(test_tensor_temp_path)
 
     eval_tensor, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'tensors',
@@ -321,6 +331,7 @@ def initial_model_training(
     )
 
     train(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         prometheus_registry = prometheus_registry,
@@ -331,6 +342,7 @@ def initial_model_training(
     )
 
     test_metrics = test(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         prometheus_registry = prometheus_registry,
@@ -349,6 +361,7 @@ def initial_model_training(
     test_metrics['eval-amount'] = 0
 
     store_metrics_resources_and_times(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         prometheus_registry = prometheus_registry,
@@ -359,6 +372,7 @@ def initial_model_training(
     )
 
     eval_metrics = test(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         prometheus_registry = prometheus_registry,
@@ -376,6 +390,7 @@ def initial_model_training(
     eval_metrics['test-amount'] = 0
     eval_metrics['eval-amount'] = len(eval_tensor)
     store_metrics_resources_and_times(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         prometheus_registry = prometheus_registry,
@@ -393,6 +408,7 @@ def initial_model_training(
         'eval-amount':  str(len(eval_tensor)),
     }
     set_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'global-model',
@@ -416,6 +432,7 @@ def initial_model_training(
     
     central_status['trained'] = True
     set_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'status',
@@ -446,6 +463,7 @@ def initial_model_training(
     }
 
     store_metrics_resources_and_times(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         prometheus_registry = prometheus_registry,

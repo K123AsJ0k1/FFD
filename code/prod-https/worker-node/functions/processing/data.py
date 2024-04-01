@@ -12,6 +12,7 @@ from functions.management.storage import store_metrics_resources_and_times
 from functions.general import get_experiments_objects, set_experiments_objects
 # Refactored and works
 def preprocess_into_train_test_and_eval_tensors(
+    file_lock: any,
     logger: any,
     minio_client: any,
     prometheus_registry: any,
@@ -20,6 +21,7 @@ def preprocess_into_train_test_and_eval_tensors(
     time_start = time.time()
 
     worker_status, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'status',
@@ -42,6 +44,7 @@ def preprocess_into_train_test_and_eval_tensors(
     logger.info('Preprocessing into tensors')
 
     model_parameters, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'parameters',
@@ -49,6 +52,7 @@ def preprocess_into_train_test_and_eval_tensors(
     )
 
     worker_parameters, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'parameters',
@@ -56,6 +60,7 @@ def preprocess_into_train_test_and_eval_tensors(
     )
 
     worker_sample, worker_sample_details = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'worker-sample',
@@ -109,6 +114,7 @@ def preprocess_into_train_test_and_eval_tensors(
     )
 
     set_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'tensors',
@@ -119,6 +125,7 @@ def preprocess_into_train_test_and_eval_tensors(
     )
 
     set_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'tensors',
@@ -129,6 +136,7 @@ def preprocess_into_train_test_and_eval_tensors(
     )
 
     set_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'tensors',
@@ -143,6 +151,7 @@ def preprocess_into_train_test_and_eval_tensors(
     worker_status['test-amount'] = X_test.shape[0]
     worker_status['eval-amount'] = X_eval.shape[0]
     set_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'status',
@@ -166,6 +175,7 @@ def preprocess_into_train_test_and_eval_tensors(
     }
 
     store_metrics_resources_and_times(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         prometheus_registry = prometheus_registry,

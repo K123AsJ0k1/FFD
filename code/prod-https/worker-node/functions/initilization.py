@@ -8,10 +8,12 @@ from functions.general import set_experiments_objects, get_experiments_objects
 from functions.platforms.prometheus import worker_local_gauge, worker_resources_gauge, worker_time_gauge
 
 def initilize_envs(
+    file_lock: any,
     logger: any,
     minio_client: any
 ):
     worker_status, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'status',
@@ -27,6 +29,7 @@ def initilize_envs(
         os.environ['EXP_NAME'] = ''
 # Created and works
 def initilize_minio(
+    file_lock: any,
     logger: any,
     minio_client: any
 ):
@@ -96,6 +99,7 @@ def initilize_minio(
 
     for key in templates.keys():
         set_experiments_objects(
+            file_lock = file_lock,
             logger = logger,
             minio_client = minio_client,
             object = key,

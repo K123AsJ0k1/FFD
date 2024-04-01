@@ -18,15 +18,17 @@ from functions.general import get_experiments_objects, set_experiments_objects
 from functions.platforms.minio import *
 # Refactored
 def store_metrics_resources_and_times( 
-   logger: any,
-   minio_client: any,
-   prometheus_registry: any,
-   prometheus_metrics: any,
-   type: str,
-   area: str,
-   metrics: any
+    file_lock: any,
+    logger: any,
+    minio_client: any,
+    prometheus_registry: any,
+    prometheus_metrics: any,
+    type: str,
+    area: str,
+    metrics: any
 ) -> bool:
     central_status, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'status',
@@ -94,6 +96,7 @@ def store_metrics_resources_and_times(
                     ).set(value)
             if not central_status['experiment-name'] == '':
                 wanted_data, _ = get_experiments_objects(
+                    file_lock = file_lock,
                     logger = logger,
                     minio_client = minio_client,
                     object = object_name,
@@ -109,6 +112,7 @@ def store_metrics_resources_and_times(
                 object_data[str(new_key)] = metrics
 
                 set_experiments_objects(
+                    file_lock = file_lock,
                     logger = logger,
                     minio_client = minio_client,
                     object = object_name,
@@ -121,6 +125,7 @@ def store_metrics_resources_and_times(
     return True
 # refactored 
 def store_worker(
+    file_lock: any,
     logger: any,
     minio_client: any,
     prometheus_registry: any,
@@ -131,6 +136,7 @@ def store_worker(
     time_start = time.time()
 
     central_status, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'status',
@@ -138,6 +144,7 @@ def store_worker(
     )
 
     workers_status, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'workers',
@@ -210,6 +217,7 @@ def store_worker(
             }
     
     set_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'workers',
@@ -229,6 +237,7 @@ def store_worker(
     }
 
     store_metrics_resources_and_times(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         prometheus_registry = prometheus_registry,
@@ -241,6 +250,7 @@ def store_worker(
     return info 
 # Refactored
 def store_update( 
+    file_lock: any,
     logger: any,
     minio_client: any,
     prometheus_registry: any,
@@ -254,6 +264,7 @@ def store_update(
     time_start = time.time()
 
     central_status, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'status',
@@ -282,6 +293,7 @@ def store_update(
         return {'message': 'not sent'}
     
     workers_status, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'workers',
@@ -306,6 +318,7 @@ def store_update(
     }
     
     set_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'local-models',
@@ -317,6 +330,7 @@ def store_update(
     
     central_status['worker-updates'] = central_status['worker-updates'] + 1
     set_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'status',
@@ -336,6 +350,7 @@ def store_update(
     }
 
     store_metrics_resources_and_times(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         prometheus_registry = prometheus_registry,

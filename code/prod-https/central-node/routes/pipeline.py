@@ -16,6 +16,7 @@ def start_training():
     sent_columns = sent_payload['columns']
 
     status = start_pipeline(
+        file_lock = current_app.file_lock,
         logger = current_app.logger,
         mlflow_client = current_app.mlflow_client,
         minio_client = current_app.minio_client,

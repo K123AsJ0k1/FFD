@@ -13,6 +13,7 @@ from functions.platforms.mlflow import update_run, end_run
 from functions.general import get_experiments_objects, set_experiments_objects, set_object_paths
 # Refactored
 def get_model_updates(
+    file_lock: any,
     logger: any,
     minio_client: any
 ) -> any:
@@ -31,6 +32,7 @@ def get_model_updates(
         model_name = pkl_removal.split('/')[-1]
         
         local_model, details = get_experiments_objects(
+            file_lock = file_lock,
             logger = logger,
             minio_client = minio_client,
             object = 'local-models',
@@ -74,6 +76,7 @@ def model_fed_avg(
     return updated_global_model
 # Refactored
 def update_global_model(
+    file_lock: any,
     logger: any,
     minio_client: any,
     prometheus_registry: any,
@@ -82,6 +85,7 @@ def update_global_model(
     time_start = time.time()
 
     central_status, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'status',
@@ -107,6 +111,7 @@ def update_global_model(
     logger.info('Updating global model')
     
     central_parameters, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'parameters',
@@ -114,6 +119,7 @@ def update_global_model(
     )
 
     available_updates, collective_sample_size = get_model_updates(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client
     )
@@ -132,6 +138,7 @@ def update_global_model(
         'eval-amount': str(0)
     }
     set_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'updated-model',
@@ -144,6 +151,7 @@ def update_global_model(
     central_status['collective-amount'] = collective_sample_size
     central_status['updated'] = True
     set_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'status',
@@ -167,6 +175,7 @@ def update_global_model(
     }
 
     store_metrics_resources_and_times(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         prometheus_registry = prometheus_registry,
@@ -179,6 +188,7 @@ def update_global_model(
     return True
 # Refactored
 def evalute_global_model(
+    file_lock: any,
     logger: any,
     minio_client: any,
     mlflow_client: any,
@@ -188,6 +198,7 @@ def evalute_global_model(
     time_start = time.time()
 
     central_status, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'status',
@@ -215,6 +226,7 @@ def evalute_global_model(
     mlflow_artifacts = []
 
     central_parameters, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'parameters',
@@ -222,6 +234,7 @@ def evalute_global_model(
     )
 
     model_parameters, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'parameters',
@@ -229,6 +242,7 @@ def evalute_global_model(
     )
     
     global_model, global_model_details = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'updated-model',
@@ -255,6 +269,7 @@ def evalute_global_model(
     model.apply_parameters(model, global_model)
 
     eval_tensor, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'tensors',
@@ -272,6 +287,7 @@ def evalute_global_model(
     mlflow_parameters['eval-batch-size'] = eval_batch_size
 
     eval_metrics = test(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         prometheus_registry = prometheus_registry,
@@ -309,6 +325,7 @@ def evalute_global_model(
     eval_metrics['test-amount'] = 0
     eval_metrics['eval-amount'] = len(eval_tensor)
     store_metrics_resources_and_times(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         prometheus_registry = prometheus_registry,
@@ -345,6 +362,7 @@ def evalute_global_model(
         central_status['cycle'] = central_status['cycle'] + 1
     
     experiment_times, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'experiment-times',
@@ -364,6 +382,7 @@ def evalute_global_model(
         }
 
     set_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'experiment-times',
@@ -374,6 +393,7 @@ def evalute_global_model(
     )
 
     set_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'status',
@@ -403,6 +423,7 @@ def evalute_global_model(
     }
 
     store_metrics_resources_and_times(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         prometheus_registry = prometheus_registry,

@@ -6,10 +6,12 @@ from functions.general import set_experiments_objects, get_experiments_objects
 from functions.platforms.prometheus import central_global_gauge, central_time_gauge, central_resource_gauge
 # Created and works
 def initilize_envs(
+    file_lock: any,
     logger: any,
     minio_client: any
 ):
     central_status, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'status',
@@ -25,6 +27,7 @@ def initilize_envs(
         os.environ['EXP_NAME'] = ''
 # Refactored and works        
 def initilize_minio(
+    file_lock: any,
     logger: any,
     minio_client: any
 ):  
@@ -129,6 +132,7 @@ def initilize_minio(
 
     for key in templates.keys():
         set_experiments_objects(
+            file_lock = file_lock,
             logger = logger,
             minio_client = minio_client,
             object = key,

@@ -14,6 +14,7 @@ def worker_status():
     sent_status = sent_payload['status']
 
     payload = store_worker(
+        file_lock = current_app.file_lock,
         logger = current_app.logger,
         minio_client = current_app.minio_client,
         prometheus_registry = current_app.prometheus_registry,
@@ -35,6 +36,7 @@ def set_worker_update():
     sent_cycle = sent_payload['cycle']
 
     payload = store_update(
+        file_lock = current_app.file_lock,
         logger = current_app.logger,
         minio_client = current_app.minio_client,
         prometheus_registry = current_app.prometheus_registry,

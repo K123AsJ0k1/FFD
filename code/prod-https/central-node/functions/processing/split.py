@@ -10,6 +10,7 @@ from functions.general import get_experiments_objects, set_experiments_objects
 from functions.management.storage import store_metrics_resources_and_times
 # Refactored and works
 def central_worker_data_split(
+    file_lock: any,
     logger: any,
     minio_client: any,
     prometheus_registry: any,
@@ -18,6 +19,7 @@ def central_worker_data_split(
     time_start = time.time()
 
     central_status, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'status',
@@ -40,6 +42,7 @@ def central_worker_data_split(
     logger.info('Splitting data into central and workers pools')
 
     central_parameters, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'parameters',
@@ -47,6 +50,7 @@ def central_worker_data_split(
     )
 
     worker_parameters, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'parameters',
@@ -54,6 +58,7 @@ def central_worker_data_split(
     )
 
     source_pool, details = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'data',
@@ -71,6 +76,7 @@ def central_worker_data_split(
         'rows': str(len(object_data))
     }
     set_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'data',
@@ -91,6 +97,7 @@ def central_worker_data_split(
         'rows': str(len(object_data))
     }
     set_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'data',
@@ -102,6 +109,7 @@ def central_worker_data_split(
 
     central_status['data-split'] = True
     set_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'status',
@@ -123,6 +131,7 @@ def central_worker_data_split(
     }
 
     store_metrics_resources_and_times(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         prometheus_registry = prometheus_registry,
@@ -135,6 +144,7 @@ def central_worker_data_split(
     return True
 # Refactored
 def split_data_between_workers(
+    file_lock: any,
     logger: any,
     minio_client: any,
     prometheus_registry: any,
@@ -143,6 +153,7 @@ def split_data_between_workers(
     time_start = time.time()
 
     central_status, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'status',
@@ -168,6 +179,7 @@ def split_data_between_workers(
     logger.info('Splitting data between workers')
 
     workers_status, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'workers',
@@ -175,6 +187,7 @@ def split_data_between_workers(
     )
 
     central_parameters, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'parameters',
@@ -182,6 +195,7 @@ def split_data_between_workers(
     )
 
     worker_parameters, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'parameters',
@@ -201,6 +215,7 @@ def split_data_between_workers(
         return False
     
     workers_data, workers_data_details = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'data',
@@ -224,6 +239,7 @@ def split_data_between_workers(
                 'rows': str(worker_sample_df.shape[0])
             }
             set_experiments_objects(
+                file_lock = file_lock,
                 logger = logger,
                 minio_client = minio_client,
                 object = 'data-worker',
@@ -247,6 +263,7 @@ def split_data_between_workers(
                 'rows': str(worker_sample_df.shape[0])
             }
             set_experiments_objects(
+                file_lock = file_lock,
                 logger = logger,
                 minio_client = minio_client,
                 object = 'data-worker',
@@ -259,6 +276,7 @@ def split_data_between_workers(
 
     central_status['worker-split'] = True
     set_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'status',
@@ -281,6 +299,7 @@ def split_data_between_workers(
     }
 
     store_metrics_resources_and_times(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         prometheus_registry = prometheus_registry,

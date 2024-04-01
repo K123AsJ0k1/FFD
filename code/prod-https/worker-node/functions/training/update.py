@@ -9,6 +9,7 @@ from functions.platforms.minio import get_object_data_and_metadata, create_or_up
 from functions.general import get_experiments_objects, set_experiments_objects
 # Refactored
 def send_info_to_central(
+    file_lock: any,
     logger: any,
     minio_client: any,
     prometheus_registry: any,
@@ -17,6 +18,7 @@ def send_info_to_central(
     time_start = time.time()
 
     worker_status, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'status',
@@ -68,6 +70,7 @@ def send_info_to_central(
                     worker_status['worker-address'] = sent_payload['worker-address']
                 
                 set_experiments_objects(
+                    file_lock = file_lock,
                     logger = logger,
                     minio_client = minio_client,
                     object = 'status',
@@ -90,6 +93,7 @@ def send_info_to_central(
         }
         
         store_metrics_resources_and_times(
+            file_lock = file_lock,
             logger = logger,
             minio_client = minio_client,
             prometheus_registry = prometheus_registry,
@@ -105,6 +109,7 @@ def send_info_to_central(
         return False, None
 # Refactored
 def send_update_to_central(
+    file_lock: any,
     logger: any,
     minio_client: any,
     prometheus_registry: any,
@@ -113,6 +118,7 @@ def send_update_to_central(
     time_start = time.time()
 
     worker_status, _ = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'status',
@@ -135,6 +141,7 @@ def send_update_to_central(
     logger.info('Sending update to central')
  
     local_model, local_model_details = get_experiments_objects(
+        file_lock = file_lock,
         logger = logger,
         minio_client = minio_client,
         object = 'model',
@@ -180,6 +187,7 @@ def send_update_to_central(
 
         if status_code == 200 and (message == 'stored' or message == 'late'):
             experiment_times, _ = get_experiments_objects(
+                file_lock = file_lock,
                 logger = logger,
                 minio_client = minio_client,
                 object = 'experiment-times',
@@ -193,6 +201,7 @@ def send_update_to_central(
             experiment_times[str(worker_status['cycle'])]['cycle-total-seconds'] = cycle_total
             
             set_experiments_objects(
+                file_lock = file_lock,
                 logger = logger,
                 minio_client = minio_client,
                 object = 'experiment-times',
@@ -205,6 +214,7 @@ def send_update_to_central(
             worker_status['updated'] = True
             worker_status['stored'] = False
             set_experiments_objects(
+                file_lock = file_lock,
                 logger = logger,
                 minio_client = minio_client,
                 object = 'status',
@@ -231,6 +241,7 @@ def send_update_to_central(
             }
 
             store_metrics_resources_and_times(
+                file_lock = file_lock,
                 logger = logger,
                 minio_client = minio_client,
                 prometheus_registry = prometheus_registry,
@@ -258,6 +269,7 @@ def send_update_to_central(
         }
 
         store_metrics_resources_and_times(
+            file_lock = file_lock,
             logger = logger,
             minio_client = minio_client,
             prometheus_registry = prometheus_registry,
