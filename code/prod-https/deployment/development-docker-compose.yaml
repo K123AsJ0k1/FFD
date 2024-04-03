@@ -9,7 +9,7 @@ networks:
 
 services:
   ffd-postgres:
-    image: postgres:test4
+    image: t9k4b5ndjok1/ffd:postgres
     restart: always
     ports:
       - '5432:5432'
@@ -55,7 +55,7 @@ services:
       app_network:
         ipv4_address: 172.28.0.5
   ffd-prometheus:
-    image: prometheus:test21
+    image: t9k4b5ndjok1/ffd:prometheus
     restart: always
     ports:
       - '9090:9090'
