@@ -70,7 +70,7 @@ jupyter notebook
 and open the Production-Central-Worker-Demonstration. Before we start the central and worker node, we first need to use the development-docker-compose.yaml via the following command:
 
 ```
-docker compose -f development-docker-compose.yaml
+docker compose -f development-docker-compose.yaml up
 ```
 
 When the logs start appearing, check out the following addresses using your browser:
