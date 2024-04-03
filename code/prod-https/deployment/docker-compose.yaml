@@ -41,8 +41,8 @@ services:
       - POSTGRES_PASSWORD=postgres
       - AWS_ACCESS_KEY_ID=minio
       - AWS_SECRET_ACCESS_KEY=minio123
-      - MLFLOW_S3_ENDPOINT_URL=http://172.28.0.3:9000
-      - MLFLOW_SQL_ALCHEMY_CONN=postgresql+psycopg2://postgres:postgres@172.28.0.2:5432/mlflow_db
+      - MLFLOW_S3_ENDPOINT_URL=http://ffd-minio:9000
+      - MLFLOW_SQL_ALCHEMY_CONN=postgresql+psycopg2://postgres:postgres@ffd-postgres:5432/mlflow_db
     networks:
       app_network:
         ipv4_address: 172.28.0.4
@@ -60,8 +60,8 @@ services:
     ports:
       - '9090:9090'
     environment:
-      - PROMETHEUS_TARGET='172.28.0.5:9090'
-      - PUSHGATEWAY_TARGET='172.28.0.6:9091'
+      - PROMETHEUS_TARGET='ffd-prometheus:9090'
+      - PUSHGATEWAY_TARGET='ffd-pushgateway:9091'
       - CENTRAL_TARGET='127.0.0.1:7600'
       - WORKER_TARGET='127.0.0.1:7500','127.0.0.2:7500'
     networks:
@@ -73,7 +73,7 @@ services:
     ports:
       - '3000:3000'
     environment:
-      - PROMETHEUS_URL=http://172.28.0.6:9090
+      - PROMETHEUS_URL=http://ffd-prometheus:9090
     networks:
       app_network:
         ipv4_address: 172.28.0.7
