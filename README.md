@@ -95,4 +95,34 @@ When the regular Flask logs start to show with central showing logs every 5 seco
 
 ### Docker Compose Setup
 
+Open up one terminal and move it to the following repository path:
+
+- FFD/code/prod-https/deployment
+
+Run the following command to make the stack run:
+
+```
+docker compose -f development-docker-compose.yaml up
+```
+
+Check the following addresses:
+
+- Grafana: http://127.0.0.1:3000/ 
+  - User = admin
+  - Password = admin
+- MLflow: http://127.0.0.1:5000/
+- Central: http://127.0.0.1:7500/logs
+- Worker-1: http://127.0.0.1:7501/logs
+- Worker-2: http://127.0.0.1:7502/logs
+- Worker-3: http://127.0.0.1:7503/logs
+- Worker-4: http://127.0.0.1:7504/logs
+- Worker-5: http://127.0.0.1:7505/logs
+- MinIo: http://127.0.0.1:9001/ 
+  - User = minio
+  - User = minio123   
+- Prometheus: http://127.0.0.1:9090/
+- Pushgateway: http://127.0.0.1:9091/
+
+If there is no errors, proceed to run the demonstration notebook.
+
 ### Oakestra Setup
