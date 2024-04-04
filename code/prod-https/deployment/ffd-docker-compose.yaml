@@ -78,7 +78,7 @@ services:
       app_network:
         ipv4_address: 172.28.0.7
   ffd-central:
-    image: ffd:central-3
+    image: t9k4b5ndjok1/ffd:central
     restart: always
     ports:
       - '7500:7500'
@@ -92,7 +92,7 @@ services:
       app_network:
         ipv4_address: 172.28.0.8
   ffd-worker-1:
-    image: ffd:worker-2
+    image: t9k4b5ndjok1/ffd:worker
     restart: always
     ports:
       - '7501:7501'
@@ -107,7 +107,7 @@ services:
       app_network:
         ipv4_address: 172.28.0.9
   ffd-worker-2:
-    image: ffd:worker-2
+    image: t9k4b5ndjok1/ffd:worker
     restart: always
     ports:
       - '7502:7501'
@@ -122,7 +122,7 @@ services:
       app_network:
         ipv4_address: 172.28.0.10
   ffd-worker-3:
-    image: ffd:worker-2
+    image: t9k4b5ndjok1/ffd:worker
     restart: always
     ports:
       - '7503:7501'
@@ -137,7 +137,7 @@ services:
       app_network:
         ipv4_address: 172.28.0.11
   ffd-worker-4:
-    image: ffd:worker-2
+    image: t9k4b5ndjok1/ffd:worker
     restart: always
     ports:
       - '7504:7501'
@@ -152,7 +152,7 @@ services:
       app_network:
         ipv4_address: 172.28.0.12
   ffd-worker-5:
-    image: ffd:worker-2
+    image: t9k4b5ndjok1/ffd:worker
     restart: always
     ports:
       - '7505:7501'
