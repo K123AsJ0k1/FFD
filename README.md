@@ -102,7 +102,7 @@ Open up one terminal and move it to the following repository path:
 Run the following command to make the stack run:
 
 ```
-docker compose -f development-docker-compose.yaml up
+docker compose -f ffd-docker-compose.yaml up
 ```
 
 Check the following addresses:
