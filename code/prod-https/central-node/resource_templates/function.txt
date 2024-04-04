@@ -1,0 +1,9 @@
+{
+    '1': { 
+        'name': 'initial-model-training', 
+        'activation-date': '',
+        'time-start':0,
+        'time-end':0,
+        'total-seconds': 0
+    }
+}

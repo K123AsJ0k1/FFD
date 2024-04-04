@@ -1,0 +1,27 @@
+{
+    "microservices" : [
+      {
+        "microserviceID": "",
+        "microservice_name": "grafana",
+        "microservice_namespace": "test",
+        "virtualization": "container",
+        "cmd": [],
+        "memory": 200,
+        "vcpus": 1,
+        "vgpus": 0,
+        "vtpus": 0,
+        "bandwidth_in": 0,
+        "bandwidth_out": 0,
+        "storage": 100,
+        "code": "docker.io/t9k4b5ndjok1/ffd:grafana",
+        "state": "",
+        "port": "3000",
+        "addresses": {
+            "rr_ip": "10.30.10.17"
+        },
+        "environment":[
+            "PROMETHEUS_URL=http://10.30.10.16:9090"
+        ]
+      }
+    ]
+}

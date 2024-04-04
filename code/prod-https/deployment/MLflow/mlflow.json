@@ -1,0 +1,29 @@
+{
+    "microservices":[
+        {
+            "microservice_name":"mlflow",
+            "microservice_namespace":"test",
+            "virtualization":"docker",
+            "description":"",
+            "memory":200,
+            "vcpus":1,
+            "vgpus":0,
+            "vtpus":0,
+            "bandwidth_in":0,
+            "bandwidth_out":0,
+            "storage":200,
+            "code":"docker.io/t9k4b5ndjok1/ffd:mlflow",
+            "state":"",
+            "port":"5000",
+            "added_files":[],
+            "constraints":[],
+            "status":"NODE_SCHEDULED",
+            "connectivity":[],
+            "args":[],
+            "environment":[
+                "MLFLOW_S3_ENDPOINT_URL=http://10.30.55.56:9000"
+                ,"MLFLOW_SQL_ALCHEMY_CONN=postgresql+psycopg2://postgres:postgres@10.30.55.55:5432/mlflow_db"
+            ]
+        }
+    ]
+}

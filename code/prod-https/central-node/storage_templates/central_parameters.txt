@@ -1,0 +1,39 @@
+central_parameters = {
+    'sample-pool': 0,
+    'data-augmentation': {
+        'active': False,
+        'sample-pool': 0,
+        '1-0-ratio': 0.0
+    },
+    'eval-ratio': 0.0,
+    'train-ratio': 0.0,
+    'min-update-amount': 0,
+    'max-cycles': 0,
+    'min-metric-success': 0,
+    'metric-thresholds': {
+        'true-positives': 0,
+        'false-positives': 0,
+        'true-negatives': 0, 
+        'false-negatives': 0,
+        'recall': 0.0,
+        'selectivity': 0.0,
+        'precision': 0.0,
+        'miss-rate': 0.0,
+        'fall-out': 0.0,
+        'balanced-accuracy': 0.0,
+        'accuracy': 0.0
+    },
+    'metric-conditions': {
+        'true-positives': '>=',
+        'false-positives': '<=',
+        'true-negatives': '>=', 
+        'false-negatives': '<=',
+        'recall': '>=',
+        'selectivity': '>=',
+        'precision': '>=',
+        'miss-rate': '<=',
+        'fall-out': '<=',
+        'balanced-accuracy': '>=',
+        'accuracy': '>='
+    }
+}

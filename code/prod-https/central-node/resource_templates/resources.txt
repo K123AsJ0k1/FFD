@@ -1,0 +1,11 @@
+{
+    'activation-date': ''
+    'physical-cpu-amount': 0,
+    'total-cpu-amount': 0,
+    'min-cpu-frequency-mhz': 0.0,
+    'max-cpu-frequency-mhz': 0.0,
+    'total-ram-amount-bytes': 0.0,
+    'available-ram-amount-bytes': 0.0,
+    'total-disk-amount-bytes': 0.0,
+    'available-disk-amount-bytes': 0.0
+}

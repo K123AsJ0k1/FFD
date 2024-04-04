@@ -1,0 +1,89 @@
+central_resources = {
+    'general': {
+        'physical-cpu-amount': 0,
+        'total-cpu-amount': 0,
+        'min-cpu-frequency-mhz': 0.0,
+        'max-cpu-frequency-mhz': 0.0,
+        'total-ram-amount-bytes': 0.0,
+        'available-ram-amount-bytes': 0.0,
+        'total-disk-amount-bytes': 0.0,
+        'available-disk-amount-bytes': 0.0,
+        'times': {
+            'experiment-date': '2024-9-28-14:43:23.042',
+            'experiment-time-start':0,
+            'experiment-time-end':0,
+            'experiment-total-seconds': 0,
+            '1': {
+                'cycle-time-start':0,
+                'cycle-time-end':0,
+                'cycle-total-seconds':0
+            }
+        }
+    },
+    'function': {
+        '1': {
+            '1': { 
+                'name': 'initial-model-training',           
+                'time-seconds': 0.0,
+                'cpu-percentage': 0.0,
+                'ram-bytes': 0.0,
+                'disk-bytes': 0.0
+            }
+        }
+    },
+    'network': {
+        '1': {
+            '1': {
+                'name': 'sending-context',
+                'time-seconds': 0.0,
+                'cpu-percentage': 0.0,
+                'ram-bytes': 0.0,
+                'disk-bytes': 0.0
+            }
+        }
+    },
+    'training': {
+        '1': {
+            '1': {
+                'name': 'model-training',
+                'epochs': 0,
+                'batches': 0,
+                'average-batch-size': 0,
+                'time-seconds': 0.0,
+                'cpu-percentage': 0.0,
+                'ram-bytes': 0.0,
+                'disk-bytes': 0.0
+            },
+            '2': {
+                'name': 'model-testing',
+                'batches': 0,
+                'average-batch-size': 0,
+                'time-seconds': 0.0,
+                'cpu-percentage': 0.0,
+                'ram-bytes': 0.0,
+                'disk-bytes': 0.0
+            },
+            '3': {
+                'name': 'model-evaluation',
+                'batches': 0,
+                'average-batch-size': 0,
+                'time-seconds': 0.0,
+                'cpu-percentage': 0.0,
+                'ram-bytes': 0.0,
+                'disk-bytes': 0.0
+            }
+        }
+    },
+    'inference': {
+        '1': {
+            '1': {
+                'name': 'model-prediction',
+                'sample-amount': 0,
+                'time-seconds': 0.0,
+                'cpu-percentage': 0.0,
+                'ram-bytes': 0.0,
+                'disk-bytes': 0.0
+            }
+        }
+    }
+}

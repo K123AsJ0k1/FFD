@@ -1,0 +1,10 @@
+{
+    '1': {
+        'activation-date': 0,
+        'activation-time': 0,
+        'cpu-percentage': 0.0,
+        '
+        'ram-bytes': 0.0,
+        'disk-bytes': 0.0
+    }
+}

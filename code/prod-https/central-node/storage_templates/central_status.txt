@@ -1,0 +1,18 @@
+central_status = {
+    'experiment':1,
+    'start': False,
+    'data-split': False,
+    'preprocessed': False,
+    'worker-split': False,
+    'trained': False,
+    'sent': False,
+    'updated': False,
+    'evaluated': False,
+    'complete': False,
+    'train-amount': 0,
+    'test-amount': 0,
+    'eval-amount': 0,
+    'collective-amount': 0,
+    'worker-updates': 0,
+    'cycle': 1,
+}
