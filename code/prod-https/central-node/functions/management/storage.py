@@ -1,22 +1,13 @@
-import torch 
-import os
-import json
-import copy
-import pandas as pd
-import psutil
-import time
-import torch
-from datetime import datetime
 import time
 
-from pathlib import Path
+import torch
+
+from datetime import datetime
 from collections import OrderedDict
 
-from prometheus_client import push_to_gateway
-from functions.general import get_experiments_objects, set_experiments_objects
-
-from functions.platforms.minio import *
-# Refactored
+#from prometheus_client import push_to_gateway
+from functions.management.objects import get_experiments_objects, set_experiments_objects
+# Refactored and works
 def store_metrics_resources_and_times( 
     file_lock: any,
     logger: any,
@@ -123,7 +114,7 @@ def store_metrics_resources_and_times(
                 )
                 #push_to_gateway('http:127.0.0.1:9091', job = 'central-', registry =  prometheus_registry) 
     return True
-# refactored 
+# refactored and works
 def store_worker(
     file_lock: any,
     logger: any,
@@ -248,7 +239,7 @@ def store_worker(
     )
     
     return info 
-# Refactored
+# Refactored and works
 def store_update( 
     file_lock: any,
     logger: any,

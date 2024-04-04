@@ -2,22 +2,29 @@
 
 FROM python:3.11-slim-bookworm
 
-WORKDIR /worker
+ENV MINIO_ENDPOINT=127.0.0.1:9000
+ENV AWS_ACCESS_KEY_ID=minio
+ENV AWS_SECRET_ACCESS_KEY=minio123
+
+ENV MLFLOW_TRACKING_URI=http://127.0.0.1:5000
+ENV MLFLOW_S3_ENDPOINT_URL=http://127.0.0.1:9000
+
+WORKDIR /central
+
+COPY requirements.txt .
 
 COPY run.py .
 
 COPY app.py .
 
-COPY routes /worker/routes
+COPY routes /central/routes
 
-COPY functions /worker/functions
+COPY functions /central/functions
 
-COPY templates /worker/templates
-
-COPY requirements.txt .
+COPY templates /central/templates
 
 RUN pip install -r requirements.txt 
 
-EXPOSE 7600
+EXPOSE 7500
 
 CMD ["python", "run.py"]

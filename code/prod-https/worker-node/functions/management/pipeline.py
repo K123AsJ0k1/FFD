@@ -1,10 +1,15 @@
-from functions.training.update import send_info_to_central, send_update_to_central
-from functions.processing.data import preprocess_into_train_test_and_eval_tensors
-from functions.training.model import local_model_training
-from functions.general import get_experiments_objects, set_experiments_objects, get_system_resource_usage, get_server_resource_usage
+import time
+
+from functions.monitoring import get_server_resource_usage, get_system_resource_usage
+
+from functions.management.objects import get_experiments_objects, set_experiments_objects
 from functions.management.storage import store_metrics_resources_and_times
 
-import time
+from functions.processing.data import preprocess_into_train_test_and_eval_tensors
+
+from functions.training.update import send_info_to_central, send_update_to_central
+from functions.training.model import local_model_training
+
 # Created and works
 def system_monitoring(
     task_file_lock: any,
@@ -43,7 +48,7 @@ def server_monitoring(
         area = '',
         metrics = server_resources
     )
-# Refactored
+# Refactored and works
 def status_pipeline(
     task_file_lock: any,
     task_logger: any,
@@ -51,7 +56,7 @@ def status_pipeline(
     task_prometheus_registry: any,
     task_prometheus_metrics: any
 ):
-    # Check
+    # Works
     status = send_info_to_central(
         file_lock = task_file_lock,
         logger = task_logger,
@@ -60,7 +65,7 @@ def status_pipeline(
         prometheus_metrics = task_prometheus_metrics
     )
     task_logger.info('Status sending:' + str(status))
-# Refactoroed
+# Refactoroed and works
 def data_pipeline(
     task_file_lock: any,
     task_logger: any,
@@ -69,7 +74,7 @@ def data_pipeline(
     task_prometheus_metrics: any
 ):
     cycle_start = time.time()
-    # Check
+    # Works
     status = preprocess_into_train_test_and_eval_tensors(
         file_lock = task_file_lock,
         logger = task_logger,
@@ -113,7 +118,7 @@ def data_pipeline(
         )
 
     task_logger.info('Data preprocessing:' + str(status))
-# Refactored
+# Refactored and works
 def model_pipeline(
     task_file_lock: any,
     task_logger: any,
@@ -122,7 +127,7 @@ def model_pipeline(
     task_prometheus_registry: any,
     task_prometheus_metrics: any
 ): 
-    # Check
+    # Works
     status = local_model_training(
         file_lock = task_file_lock,
         logger = task_logger,
@@ -132,7 +137,7 @@ def model_pipeline(
         prometheus_metrics = task_prometheus_metrics
     )
     task_logger.info('Model training:' + str(status))
-# Refactored
+# Refactored and works
 def update_pipeline(
     task_file_lock: any,
     task_logger: any,
@@ -140,7 +145,7 @@ def update_pipeline(
     task_prometheus_registry: any,
     task_prometheus_metrics: any
 ):
-    # Check
+    # Works
     status = send_update_to_central(
         file_lock = task_file_lock,
         logger = task_logger,

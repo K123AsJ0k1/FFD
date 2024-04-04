@@ -1,0 +1,30 @@
+{
+    '1': {
+        'name': 'model-training',
+        'epochs': 0,
+        'batches': 0,
+        'average-batch-size': 0,
+        'time-seconds': 0.0,
+        'cpu-percentage': 0.0,
+        'ram-bytes': 0.0,
+        'disk-bytes': 0.0
+    },
+    '2': {
+        'name': 'model-testing',
+        'batches': 0,
+        'average-batch-size': 0,
+        'time-seconds': 0.0,
+        'cpu-percentage': 0.0,
+        'ram-bytes': 0.0,
+        'disk-bytes': 0.0
+    },
+    '3': {
+        'name': 'model-evaluation',
+        'batches': 0,
+        'average-batch-size': 0,
+        'time-seconds': 0.0,
+        'cpu-percentage': 0.0,
+        'ram-bytes': 0.0,
+        'disk-bytes': 0.0
+    }
+}

@@ -1,14 +1,14 @@
 import os 
 import json
-import requests
-import psutil
 import time
-from functions.general import get_experiments_objects, set_experiments_objects
+import requests
+
+from functions.management.objects import get_experiments_objects, set_experiments_objects
+
 from functions.management.storage import store_metrics_resources_and_times
-from functions.platforms.minio import get_object_data_and_metadata, create_or_update_object
 from functions.platforms.mlflow import start_run
 
-# Refactored
+# Refactored and works
 def send_context_to_workers(
     file_lock: any,
     logger: any,

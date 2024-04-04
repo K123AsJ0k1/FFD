@@ -1,0 +1,10 @@
+worker_parameters = {
+    'sample-pool': 0,
+    'data-augmentation': {
+        'active': False,
+        'sample-pool': 0,
+        '1-0-ratio': 0.0
+    },
+    'eval-ratio': 0.0,
+    'train-ratio': 0.0
+}

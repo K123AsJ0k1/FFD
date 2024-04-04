@@ -1,15 +1,22 @@
-from functions.platforms.minio import get_object_data_and_metadata, create_or_update_object
-from functions.processing.split import central_worker_data_split, split_data_between_workers
-from functions.processing.data import preprocess_into_train_test_and_evaluate_tensors
-from functions.training.model import initial_model_training
-from functions.platforms.mlflow import start_experiment, check_experiment
-from functions.management.update import send_context_to_workers
-from functions.training.aggregation import update_global_model, evalute_global_model
-from functions.general import get_experiments_objects, set_experiments_objects, get_system_resource_usage, get_server_resource_usage
-from datetime import datetime
-from functions.management.storage import store_metrics_resources_and_times
 import time
 import os
+
+from datetime import datetime
+
+from functions.monitoring import get_system_resource_usage, get_server_resource_usage
+
+from functions.management.update import send_context_to_workers
+from functions.management.objects import get_experiments_objects, set_experiments_objects
+from functions.management.storage import store_metrics_resources_and_times
+
+from functions.platforms.mlflow import start_experiment, check_experiment
+
+from functions.processing.split import central_worker_data_split, split_data_between_workers
+from functions.processing.data import preprocess_into_train_test_and_evaluate_tensors
+
+from functions.training.model import initial_model_training
+from functions.training.aggregation import update_global_model, evalute_global_model
+
 # Refactored and works
 def start_pipeline(
     file_lock: any,
@@ -47,7 +54,6 @@ def start_pipeline(
         central_status['experiment'] = central_status['experiment'] + 1
         central_status['cycle'] = 1
 
-    # change to enable different experiment names that have different tries
     central_experiment_name = 'central-' + experiment['name']
     experiment_dict = check_experiment(
         logger = logger,
@@ -267,7 +273,7 @@ def update_pipeline(
     task_prometheus_registry: any,
     task_prometheus_metrics: any,
 ):
-    # Check
+    # Works
     status = split_data_between_workers(
         file_lock = task_file_lock,
         logger = task_logger,
@@ -276,7 +282,7 @@ def update_pipeline(
         prometheus_metrics = task_prometheus_metrics
     )
     task_logger.info('Worker data split:' + str(status))
-    # Check
+    # Works
     status = send_context_to_workers(
         file_lock = task_file_lock,
         logger = task_logger,
@@ -286,7 +292,7 @@ def update_pipeline(
         prometheus_metrics = task_prometheus_metrics
     )
     task_logger.info('Worker context sending:' + str(status))
-# Refactor
+# Refactor and works
 def aggregation_pipeline(
     task_file_lock: any,
     task_logger: any,
@@ -295,7 +301,7 @@ def aggregation_pipeline(
     task_prometheus_registry: any,
     task_prometheus_metrics: any,
 ):
-    # Check
+    # Works
     status = update_global_model(
         file_lock = task_file_lock,
         logger = task_logger,
@@ -304,7 +310,7 @@ def aggregation_pipeline(
         prometheus_metrics = task_prometheus_metrics
     )
     task_logger.info('Updating global model:' + str(status))
-    # Check
+    # Works
     status = evalute_global_model(
         file_lock = task_file_lock,
         logger = task_logger,

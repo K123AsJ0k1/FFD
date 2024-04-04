@@ -35,16 +35,13 @@ def create_app():
         # Refactor to handle given envs
         critical_variables = {
             'worker-id': str(uuid.uuid4()),
-            'central-address': '127.0.0.1',
-            'central-port': '7600',
-            'worker-port': '7500'
+            'central-address': os.environ.get('CENTRAL_ADDRESS'),
+            'central-port': os.environ.get('CENTRAL_PORT'),
+            'worker-port': '7501'
         }
         with open(critical_path, 'w') as f:
             json.dump(critical_variables, f, indent=4)
         os.environ['WORKER_ID'] = critical_variables['worker-id']
-        os.environ['CENTRAL_ADDRESS'] = critical_variables['central-address']
-        os.environ['CENTRAL_PORT'] = critical_variables['central-port']
-        os.environ['WORKER_PORT'] = critical_variables['worker-port']
     
     logger = logging.getLogger('worker-logger')
     logger.setLevel(logging.INFO)
@@ -55,19 +52,16 @@ def create_app():
     app.logger = logger
 
     minio_client = Minio(
-        endpoint = "127.0.0.1:9000", 
-        access_key = 'minio', 
-        secret_key = 'minio123',
+        endpoint = os.environ.get('MINIO_ENDPOINT'), 
+        access_key = os.environ.get('AWS_ACCESS_KEY_ID'), 
+        secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY'),
         secure = False
     )
     app.minio_client = minio_client
     app.logger.warning('Minion client ready')
 
-    os.environ['MLFLOW_S3_ENDPOINT_URL'] = 'http://127.0.0.1:9000'
-    os.environ['AWS_ACCESS_KEY_ID'] = 'minio'
-    os.environ['AWS_SECRET_ACCESS_KEY'] = 'minio123'
     mlflow_client = MlflowClient(
-        tracking_uri = "http://127.0.0.1:5000"
+        tracking_uri = os.environ.get('MLFLOW_TRACKING_URI')
     )
     app.mlflow_client = mlflow_client
     app.logger.warning('MLflow client ready')
@@ -116,15 +110,15 @@ def create_app():
         seconds = 5,
         args = given_args 
     )
-    '''
-    # Works 10 sec
-    scheduler.add_job(
-        func = system_monitoring,
-        trigger = "interval",
-        seconds = 10,
-        args = given_args 
-    )
-    '''
+    if os.environ.get('WORKER_SYSTEM_MONITOR') == '1':
+        # Works 10 sec
+        scheduler.add_job(
+            func = system_monitoring,
+            trigger = "interval",
+            seconds = 10,
+            args = given_args 
+        )
+    
     scheduler.add_job(
         func = status_pipeline,
         trigger = "interval",
@@ -171,13 +165,11 @@ def create_app():
     from routes.general import general
     from routes.model import model
     from routes.orchestration import orchestration
-    from routes.pipeline import pipeline
     app.logger.info('Routes imported')
 
     app.register_blueprint(general)
     app.register_blueprint(model)
     app.register_blueprint(orchestration)
-    app.register_blueprint(pipeline)
     app.logger.info('Routes registered')
     
     app.logger.info('Worker ready')

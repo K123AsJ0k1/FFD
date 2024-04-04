@@ -1,14 +1,15 @@
-import torch  
 import os
 import time
+
+import torch 
 
 from datetime import datetime
 from collections import OrderedDict
 
-from functions.platforms.minio import get_object_data_and_metadata, create_or_update_object, check_object
-from functions.general import get_experiments_objects, set_experiments_objects
+from functions.management.objects import get_experiments_objects, set_experiments_objects
+
 from functions.platforms.mlflow import start_experiment, check_experiment
-# Refactored
+# Refactored and works
 def store_training_context(
     file_lock: any,
     logger: any,
@@ -99,7 +100,6 @@ def store_training_context(
             object_metadata = {}
         )
 
-        # change to enable different experiment names
         worker_experiment_name = 'worker-' + str(os.environ.get('WORKER_ID')) + '-' + str(info['experiment-name'])
         experiment_dict = check_experiment(
             logger = logger,
@@ -157,12 +157,6 @@ def store_training_context(
             object_data = worker_sample,
             object_metadata = worker_sample_metadata
         )
-        '''
-        worker_status['preprocessed'] = False
-        worker_status['trained'] = False
-        worker_status['updated'] = False
-        worker_status['complete'] = False
-        '''
         worker_status['experiment-name'] = info['experiment-name']
         worker_status['experiment'] = info['experiment']
         worker_status['cycle'] = info['cycle']
@@ -201,7 +195,7 @@ def store_training_context(
     os.environ['STATUS'] = 'stored'
 
     return {'message': 'stored'}
-# Refactored
+# Refactored and works
 def store_metrics_resources_and_times( 
    file_lock: any,
    logger: any,

@@ -1,13 +1,15 @@
 import os
+import time
+
 import numpy as np
 import pandas as pd
 import torch 
-import time
-import psutil
 
 from sklearn.model_selection import train_test_split
+
 from torch.utils.data import TensorDataset
-from functions.general import get_experiments_objects, set_experiments_objects
+
+from functions.management.objects import get_experiments_objects, set_experiments_objects
 from functions.management.storage import store_metrics_resources_and_times
 
 # Created and works

@@ -1,17 +1,22 @@
-import numpy as np
-import torch 
 import os 
 import time
 
+import numpy as np
+import torch 
+
 from collections import OrderedDict
 
-from functions.management.storage import store_metrics_resources_and_times
-from functions.platforms.minio import get_object_data_and_metadata, create_or_update_object, get_object_list
-from functions.training.model import FederatedLogisticRegression, test
 from torch.utils.data import DataLoader
+
+from functions.management.objects import get_experiments_objects, set_experiments_objects, set_object_paths
+
+from functions.platforms.minio import get_object_list
 from functions.platforms.mlflow import update_run, end_run
-from functions.general import get_experiments_objects, set_experiments_objects, set_object_paths
-# Refactored
+
+from functions.management.storage import store_metrics_resources_and_times
+from functions.training.model import FederatedLogisticRegression, test
+
+# Refactored and works
 def get_model_updates(
     file_lock: any,
     logger: any,
@@ -186,7 +191,7 @@ def update_global_model(
     )
 
     return True
-# Refactored
+# Refactored and works
 def evalute_global_model(
     file_lock: any,
     logger: any,

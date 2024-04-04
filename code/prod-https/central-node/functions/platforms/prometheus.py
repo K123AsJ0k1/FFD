@@ -130,6 +130,7 @@ def central_time_gauge(
         'elapsed-time-seconds': 'ElTiSec',
         'epochs': 'Epo',
         'batches': 'Bat',
-        'average-batch-size': 'AvBatSi'
+        'average-batch-size': 'AvBatSi',
+        'sample-amount': 'SaAm'
     }
     return gauge, names

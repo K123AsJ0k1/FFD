@@ -1,5 +1,5 @@
-from flask import Blueprint, jsonify, render_template, request, current_app
-from functions.general import get_central_logs, get_system_resource_usage, get_server_resource_usage
+from flask import Blueprint, render_template, current_app
+from functions.general import get_central_logs
 from prometheus_client import generate_latest
 
 general = Blueprint('general', __name__)

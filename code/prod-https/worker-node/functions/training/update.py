@@ -1,13 +1,11 @@
 import os
 import json
 import requests
-import psutil
 import time
 
 from functions.management.storage import store_metrics_resources_and_times
-from functions.platforms.minio import get_object_data_and_metadata, create_or_update_object
-from functions.general import get_experiments_objects, set_experiments_objects
-# Refactored
+from functions.management.objects import get_experiments_objects, set_experiments_objects
+# Refactored and works
 def send_info_to_central(
     file_lock: any,
     logger: any,
@@ -112,7 +110,7 @@ def send_info_to_central(
     except Exception as e:
         logger.error('Sending info to central error:' +  str(e)) 
         return False, None
-# Refactored
+# Refactored and works
 def send_update_to_central(
     file_lock: any,
     logger: any,

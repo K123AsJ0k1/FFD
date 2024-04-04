@@ -1,12 +1,13 @@
 from flask import Flask
-from apscheduler.schedulers.background import BackgroundScheduler
-from minio import Minio
-from prometheus_client import CollectorRegistry
-from mlflow import MlflowClient
 
 import threading
 import logging
 import os
+
+from apscheduler.schedulers.background import BackgroundScheduler
+from minio import Minio
+from mlflow import MlflowClient
+from prometheus_client import CollectorRegistry
 # Refactored and works
 def create_app():
     app = Flask(__name__)
@@ -27,22 +28,18 @@ def create_app():
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
     app.logger = logger
-    
+
     minio_client = Minio(
-        endpoint = "127.0.0.1:9000", 
-        access_key = 'minio', 
-        secret_key = 'minio123',
+        endpoint = os.environ.get('MINIO_ENDPOINT'), 
+        access_key = os.environ.get('AWS_ACCESS_KEY_ID'), 
+        secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY'),
         secure = False
     )
     app.minio_client = minio_client
     app.logger.warning('Minion client ready')
 
-    os.environ['MLFLOW_S3_ENDPOINT_URL'] = 'http://127.0.0.1:9000'
-    os.environ['AWS_ACCESS_KEY_ID'] = 'minio'
-    os.environ['AWS_SECRET_ACCESS_KEY'] = 'minio123'
-
     mlflow_cient = MlflowClient(
-        tracking_uri = "http://127.0.0.1:5000"
+        tracking_uri = os.environ.get('MLFLOW_TRACKING_URI')
     )
     app.mlflow_client = mlflow_cient
     app.logger.warning('MLflow client ready')
@@ -135,7 +132,6 @@ def create_app():
     scheduler.start()
     app.logger.info('Scheduler ready')
     
-
     from routes.general import general
     from routes.model import model
     from routes.orchestration import orchestration

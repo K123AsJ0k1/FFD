@@ -1,0 +1,11 @@
+model_parameters = {
+    'seed': 0,
+    'used-columns': [],
+    'input-size': 0,
+    'target-column': '',
+    'scaled-columns': [],
+    'learning-rate': 0.0,
+    'sample-rate': 0.0,
+    'optimizer': '',
+    'epochs': 0
+}

@@ -1,18 +1,22 @@
-from flask import current_app
+import time
+import os
+
+import numpy as np
 
 import torch
 import torch.nn as nn 
-import psutil
-import time
-import os
-import numpy as np
 
 from sklearn.metrics import confusion_matrix
 from torch.utils.data import DataLoader
 
-from functions.general import get_experiments_objects, set_experiments_objects
-from functions.management.storage import store_metrics_resources_and_times
+from functions.platforms.minio import check_object, get_object_data_and_metadata
 from functions.platforms.mlflow import start_run, update_run, end_run
+
+from functions.general import format_metadata_dict
+
+from functions.management.objects import get_experiments_objects, set_experiments_objects, set_object_paths
+
+from functions.management.storage import store_metrics_resources_and_times
 
 # Refactored and works
 class FederatedLogisticRegression(nn.Module):
@@ -252,8 +256,7 @@ def initial_model_training(
     # This is for using the with instead of client
     #mlflow.set_tracking_uri('http://127.0.0.1:5000')
     #mlflow.set_experiment(experiment_id = central_status['experiment-id'])
-    # add experiment and cycle to parameters
-    
+
     model_parameters, _ = get_experiments_objects(
         file_lock = file_lock,
         logger = logger,
@@ -473,67 +476,90 @@ def initial_model_training(
         metrics = resource_metrics
     )
     return True
-# Refactor
+# Refactored and works
 def model_inference(
     file_lock: any,
-    experiment: int,
-    subject: str,
-    cycle: int,
+    logger: any,
+    minio_client: any,
+    prometheus_registry: any,
+    prometheus_metrics: any,
+    experiment_name: str,
+    experiment: str,
+    cycle: str,
     input: any
 ) -> any:
-    this_process = psutil.Process(os.getpid())
-    mem_start = psutil.virtual_memory().used 
-    disk_start = psutil.disk_usage('.').used
-    cpu_start = this_process.cpu_percent(interval=0.2)
+    used_bucket = 'central'
     time_start = time.time()
-
-    current_experiment_number = get_current_experiment_number()
-    model_parameters_path = 'parameters/experiment_' + str(current_experiment_number) + '/model.txt'
-    model_parameters = get_file_data(
-        file_lock = file_lock,
-        file_path = model_parameters_path
-    )
-
-    wanted_model = get_wanted_model(
-        file_lock = file_lock,
-        experiment = experiment,
-        subject = subject,
-        cycle = cycle
-    )
     
-    lr_model = FederatedLogisticRegression(dim = model_parameters['input-size'])
-    lr_model.apply_parameters(lr_model, wanted_model)
+    global_model_path = set_object_paths()['global-model']
     
-    input_tensor = torch.tensor(np.array(input, dtype=np.float32))
+    path_split = global_model_path.split('/')
+    path_split[1] = experiment_name
+    path_split[2] = experiment
+    path_split[3] = cycle
+    wanted_global_model_path = '/'.join(path_split)
+    
+    model_data = None
+    model_metadata = None
+    with file_lock:
+        object_exists = check_object(
+            logger = logger,
+            minio_client = minio_client,
+            bucket_name = used_bucket,
+            object_path = wanted_global_model_path
+        )
+        
+        if object_exists:
+            fetched_object = get_object_data_and_metadata(
+                logger = logger,
+                minio_client = minio_client,
+                bucket_name = used_bucket,
+                object_path = wanted_global_model_path
+            )
+            
+            model_data = fetched_object['data']
+            model_metadata = format_metadata_dict(fetched_object['metadata'])
 
-    with torch.no_grad():
-        output = lr_model.prediction(lr_model,input_tensor)
+    output = None
+    if not model_data is None:
+        model_parameters, _ = get_experiments_objects(
+            file_lock = file_lock,
+            logger = logger,
+            minio_client = minio_client,
+            object = 'parameters',
+            replacer = 'model'
+        )
 
+        model = FederatedLogisticRegression(dim = model_parameters['input-size'])
+        model.apply_parameters(model, model_data)
+
+        input_tensor = torch.tensor(np.array(input, dtype=np.float32))
+        prediction = None
+        with torch.no_grad():
+            prediction = model.prediction(model,input_tensor)
+        
+        output = prediction.tolist()
+        
     time_end = time.time()
-    cpu_end = this_process.cpu_percent(interval=0.2)
-    mem_end = psutil.virtual_memory().used 
-    disk_end = psutil.disk_usage('.').used
-
     time_diff = (time_end - time_start) 
-    cpu_diff = cpu_end - cpu_start 
-    mem_diff = (mem_end - mem_start)
-    disk_diff = (disk_end - disk_start)
-
+    
     resource_metrics = {
-        'name': str(experiment) + '-' + subject + '-' + str(cycle) + '-prediction',
+        'name': experiment_name + '-' + experiment + '-' + cycle + '-prediction',
         'sample-amount': len(input_tensor),
-        'time-seconds': time_diff,
-        'cpu-percentage': cpu_diff,
-        'ram-bytes': mem_diff,
-        'disk-bytes': disk_diff
+        'action-time-start': time_start,
+        'action-time-end': time_end,
+        'action-total-seconds': round(time_diff,5)
     }
 
-    status = store_metrics_and_resources(
+    store_metrics_resources_and_times(
         file_lock = file_lock,
-        type = 'resources',
-        subject = 'central',
+        logger = logger,
+        minio_client = minio_client,
+        prometheus_registry = prometheus_registry,
+        prometheus_metrics = prometheus_metrics,
+        type = 'times',
         area = 'inference',
         metrics = resource_metrics
     )
 
-    return output.tolist()
+    return output

@@ -1,0 +1,21 @@
+worker_status = {
+    '5bd07009-b888-4d97-92a7-03623e608f0f': {
+        'worker-id': '5bd07009-b888-4d97-92a7-03623e608f0f',
+        'network-id': 1,
+        'central-address': '127.0.0.1',
+        'central-port': 7600,
+        'worker-address': '127.0.0.1',
+        'worker-port': 7500,
+        'status': '',
+        'experiment': 1,
+        'stored': False,
+        'preprocessed': False,
+        'trained': False,
+        'updated': False,
+        'complete': False,
+        'train-amount': 0,
+        'test-amount':0,
+        'eval-amount': 0,
+        'cycle': 1
+    }
+}
