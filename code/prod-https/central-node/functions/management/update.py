@@ -99,8 +99,9 @@ def send_context_to_workers(
                 run_id = central_status['run-id']
             )
             
-            if not run_info['status'] == 'FINISHED':
-                perform = False
+            if not run_info is None:
+                if not run_info['status'] == 'FINISHED':
+                    perform = False
             
         if perform:
             run_name = 'federated-training-' + str(central_status['experiment']) + '-' + str(central_status['cycle'])

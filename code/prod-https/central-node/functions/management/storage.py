@@ -47,8 +47,6 @@ def store_metrics_resources_and_times(
             if type == 'resources':
                 object_name = 'resources'
                 replacer = metrics['name']
-                #set_date = metrics['date']
-                #set_time = metrics['time']
                 source = metrics['name']
                 for key,value in metrics.items():
                     if key == 'name' or key == 'date' or key == 'time':
@@ -153,20 +151,17 @@ def store_worker(
     if not status['worker-id'] in workers_status:
         # When new worker status is started due to experiments
         given_network_id = str(smallest_missing_id)
-        #given_worker_address = address
         given_experiment_name = central_status['experiment-name']
         given_experiment = central_status['experiment']
         given_cycle = central_status['cycle']
 
         status['network-id'] = given_network_id
-        #status['worker-address'] = given_worker_address
         status['experiment-name'] = given_experiment_name
         status['experiment'] = given_experiment
         status['cycle'] = given_cycle
         # Might be anti pattern
         workers_status[status['worker-id']] = status
         
-        #'worker-address': given_worker_address,
         info = {
             'message': 'registered', 
             'network-id': given_network_id,
@@ -175,8 +170,6 @@ def store_worker(
             'cycle': given_cycle
         }
     else:
-        #worker_metadata = workers_status[status['worker-id']]
-        #if worker_metadata['worker-address'] == address:
         # When worker is already registered and address has stayed the same
         workers_status[status['worker-id']] = status
         info = {
@@ -187,21 +180,7 @@ def store_worker(
             'experiment': None,
             'cycle': None
         }
-        '''
-        else:
-            # When worker id has stayed the same, but address has changed due to load balancing
-            status['worker-address'] = address
-            workers_status[status['worker-id']] = status
-            info = {
-                'message': 'rerouted', 
-                'network-id': None,
-                'worker-address': address,
-                'experiment-name': None,
-                'experiment': None,
-                'cycle': None
-            }
-        '''
-    
+        
     set_experiments_objects(
         file_lock = file_lock,
         logger = logger,
