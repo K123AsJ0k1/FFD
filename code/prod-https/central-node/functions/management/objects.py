@@ -11,6 +11,7 @@ def set_object_paths():
     next_cycle = ''
     if not cycle is None:
         next_cycle = int(cycle) + 1
+    # Has errors during start due to lacking name
     object_paths = {
         'status': experiments_folder + '/status',
         'specifications': experiments_folder + '/specifications',

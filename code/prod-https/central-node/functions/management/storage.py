@@ -37,8 +37,6 @@ def store_metrics_resources_and_times(
                         continue
                     metric_name = prometheus_metrics['global-name'][key]
                     prometheus_metrics['global'].labels(
-                        date = datetime.now().strftime('%Y-%m-%d-%H:%M:%S.%f'),
-                        time = time.time(),
                         collector = 'central-main',
                         name = central_status['experiment-name'],
                         experiment = central_status['experiment'], 
@@ -49,16 +47,14 @@ def store_metrics_resources_and_times(
             if type == 'resources':
                 object_name = 'resources'
                 replacer = metrics['name']
-                set_date = metrics['date']
-                set_time = metrics['time']
+                #set_date = metrics['date']
+                #set_time = metrics['time']
                 source = metrics['name']
                 for key,value in metrics.items():
                     if key == 'name' or key == 'date' or key == 'time':
                         continue
                     metric_name = prometheus_metrics['resource-name'][key]
                     prometheus_metrics['resource'].labels(
-                        date = set_date,
-                        time = set_time,
                         collector = 'central-main', 
                         name = central_status['experiment-name'], 
                         experiment = central_status['experiment'],
@@ -75,8 +71,6 @@ def store_metrics_resources_and_times(
                         continue
                     metric_name = prometheus_metrics['time-name'][key]
                     prometheus_metrics['time'].labels(
-                        date = datetime.now().strftime('%Y-%m-%d-%H:%M:%S.%f'),
-                        time = time.time(),
                         collector = 'central-main',
                         name = central_status['experiment-name'],
                         experiment = central_status['experiment'], 
@@ -121,7 +115,6 @@ def store_worker(
     minio_client: any,
     prometheus_registry: any,
     prometheus_metrics: any,
-    address: str,
     status: any
 ) -> any:
     time_start = time.time()
@@ -160,40 +153,41 @@ def store_worker(
     if not status['worker-id'] in workers_status:
         # When new worker status is started due to experiments
         given_network_id = str(smallest_missing_id)
-        given_worker_address = address
+        #given_worker_address = address
         given_experiment_name = central_status['experiment-name']
         given_experiment = central_status['experiment']
         given_cycle = central_status['cycle']
 
         status['network-id'] = given_network_id
-        status['worker-address'] = given_worker_address
+        #status['worker-address'] = given_worker_address
         status['experiment-name'] = given_experiment_name
         status['experiment'] = given_experiment
         status['cycle'] = given_cycle
         # Might be anti pattern
         workers_status[status['worker-id']] = status
+        
+        #'worker-address': given_worker_address,
         info = {
             'message': 'registered', 
             'network-id': given_network_id,
-            'worker-address': given_worker_address,
             'experiment-name': given_experiment_name,
             'experiment': given_experiment,
             'cycle': given_cycle
         }
-
     else:
-        worker_metadata = workers_status[status['worker-id']]
-        if worker_metadata['worker-address'] == address:
-            # When worker is already registered and address has stayed the same
-            workers_status[status['worker-id']] = status
-            info = {
-                'message': 'checked', 
-                'network-id': None,
-                'worker-address': None,
-                'experiment-name': None,
-                'experiment': None,
-                'cycle': None
-            }
+        #worker_metadata = workers_status[status['worker-id']]
+        #if worker_metadata['worker-address'] == address:
+        # When worker is already registered and address has stayed the same
+        workers_status[status['worker-id']] = status
+        info = {
+            'message': 'checked', 
+            'network-id': None,
+            'worker-address': None,
+            'experiment-name': None,
+            'experiment': None,
+            'cycle': None
+        }
+        '''
         else:
             # When worker id has stayed the same, but address has changed due to load balancing
             status['worker-address'] = address
@@ -206,6 +200,7 @@ def store_worker(
                 'experiment': None,
                 'cycle': None
             }
+        '''
     
     set_experiments_objects(
         file_lock = file_lock,

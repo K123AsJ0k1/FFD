@@ -27,7 +27,7 @@ def initilize_envs(
     else:
         os.environ['CYCLE'] = str(1)
         os.environ['EXP'] = str(1)
-        os.environ['EXP_NAME'] = ''
+        os.environ['EXP_NAME'] = 'default'
 # Refactored and works        
 def initilize_minio(
     file_lock: any,
@@ -36,7 +36,7 @@ def initilize_minio(
 ):  
     templates = {
         'status': {
-            'experiment-name': '',
+            'experiment-name': 'default',
             'experiment': 1,
             'experiment-id': '',
             'start': False,

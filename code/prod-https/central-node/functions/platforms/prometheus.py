@@ -4,12 +4,11 @@ from prometheus_client import Gauge
 def central_global_gauge(
     prometheus_registry: any
 ) -> any:
+    # Date and time could be reconsidered
     gauge = Gauge(
-        name = 'C_M_M',
-        documentation = 'Central global metrics',
+        name = 'central_metrics',
+        documentation = 'Central global model metrics',
         labelnames = [
-            'date',
-            'time',
             'collector',
             'name', 
             'experiment',
@@ -40,12 +39,11 @@ def central_global_gauge(
 def central_resource_gauge(
     prometheus_registry: any 
 ) -> any:
+    # Date and time could be reconsidered
     gauge = Gauge(
-        name = 'C_R_M',
-        documentation = 'Central resource metrics',
+        name = 'central_resources',
+        documentation = 'Central system and server resource metrics',
         labelnames = [
-            'date',
-            'time',
             'collector',
             'name', 
             'experiment',
@@ -98,12 +96,11 @@ def central_resource_gauge(
 def central_time_gauge(
     prometheus_registry: any    
 ) -> any:
+    # Date and time could be reconsidered
     gauge = Gauge(
-        name = 'C_T_M',
-        documentation = 'Central time metrics',
+        name = 'central_times',
+        documentation = 'Central function run time metrics',
         labelnames = [
-            'date', 
-            'time',
             'collector', 
             'name', 
             'experiment',
@@ -126,6 +123,7 @@ def central_time_gauge(
         'action-time-end': 'AcTiEn',
         'action-total-seconds': 'AcToSec',
         'status-code': 'StCo',
+        'payload-size-bytes': 'PaSiBy',
         'processing-time-seconds': 'PrTiSec',
         'elapsed-time-seconds': 'ElTiSec',
         'epochs': 'Epo',

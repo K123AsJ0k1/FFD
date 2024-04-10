@@ -6,7 +6,7 @@ import requests
 from functions.management.objects import get_experiments_objects, set_experiments_objects
 
 from functions.management.storage import store_metrics_resources_and_times
-from functions.platforms.mlflow import start_run
+from functions.platforms.mlflow import start_run, check_run
 
 # Refactored and works
 def send_context_to_workers(
@@ -91,15 +91,27 @@ def send_context_to_workers(
     }
 
     if not central_status['complete']:
-        run_name = 'federated-training-' + str(central_status['experiment']) + '-' + str(central_status['cycle'])
-        run_data = start_run(
-            logger = logger,
-            mlflow_client = mlflow_client,
-            experiment_id = central_status['experiment-id'],
-            tags = {},
-            name = run_name 
-        )
-        central_status['run-id'] = run_data['id']
+        perform = True
+        if not central_status['run-id'] == 0:
+            run_info = check_run(
+                logger = logger,
+                mlflow_client = mlflow_client,
+                run_id = central_status['run-id']
+            )
+            
+            if not run_info['status'] == 'FINISHED':
+                perform = False
+            
+        if perform:
+            run_name = 'federated-training-' + str(central_status['experiment']) + '-' + str(central_status['cycle'])
+            run_data = start_run(
+                logger = logger,
+                mlflow_client = mlflow_client,
+                experiment_id = central_status['experiment-id'],
+                tags = {},
+                name = run_name 
+            )
+            central_status['run-id'] = run_data['id']
 
     # Refactor to have failure fixing 
     success = False
@@ -183,6 +195,7 @@ def send_context_to_workers(
                 resource_metrics = {
                     'name': 'sending-context-to-worker-' + str(worker_key),
                     'status-code': response.status_code,
+                    'payload-size-bytes': len(json_payload),
                     'processing-time-seconds': net_time_diff,
                     'elapsed-time-seconds': response.elapsed.total_seconds(),
                     'action-time-start': time_start,

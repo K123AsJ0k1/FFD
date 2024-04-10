@@ -150,7 +150,7 @@ def split_data_between_workers(
     prometheus_metrics: any
 ) -> bool:
     time_start = time.time()
-
+    # There might be a concurrency problem with small resources in Oakestra
     central_status, _ = get_experiments_objects(
         file_lock = file_lock,
         logger = logger,
