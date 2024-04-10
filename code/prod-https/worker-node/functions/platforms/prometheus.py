@@ -5,11 +5,9 @@ def worker_local_gauge(
     prometheus_registry: any 
 ):
     gauge = Gauge(
-        name = 'W_L_M',
-        documentation = 'Worker local metrics',
+        name = 'worker_metrics',
+        documentation = 'Worker local model metrics',
         labelnames = [
-            'date',
-            'time',
             'collector',
             'name', 
             'experiment',
@@ -41,11 +39,9 @@ def worker_resources_gauge(
     prometheus_registry: any 
 ):
     gauge = Gauge(
-        name = 'W_R_M',
-        documentation = 'Central resource metrics',
+        name = 'worker_resources',
+        documentation = 'Worker system and server resource metrics',
         labelnames = [
-            'date',
-            'time',
             'collector',
             'name', 
             'experiment',
@@ -99,11 +95,9 @@ def worker_time_gauge(
     prometheus_registry: any 
 ):
     gauge = Gauge(
-        name = 'W_T_M',
-        documentation = 'Worker time metrics',
+        name = 'worker_times',
+        documentation = 'Worker function run time metrics',
         labelnames = [
-            'date', 
-            'time',
             'collector', 
             'name', 
             'experiment',
@@ -114,12 +108,7 @@ def worker_time_gauge(
         ],
         registry = prometheus_registry
     )
-    '''
-    woid = worker_status['worker-id'],
-    neid = worker_status['network-id'],
-    cead = worker_status['central-address'],
-    woad = worker_status['worker-address'],
-    '''
+    
     names = {
         'experiment-date': 'ExDa',
         'experiment-time-start':'ExTiSt',
@@ -132,6 +121,7 @@ def worker_time_gauge(
         'action-time-end': 'AcTiEn',
         'action-total-seconds': 'AcToSec',
         'status-code': 'StCo',
+        'payload-size-bytes': 'PaSiBy',
         'processing-time-seconds': 'PrTiSec',
         'elapsed-time-seconds': 'ElTiSec',
         'epochs': 'Epo',

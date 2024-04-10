@@ -31,13 +31,17 @@ def create_app():
         os.environ['CENTRAL_ADDRESS'] = critical_variables['central-address']
         os.environ['CENTRAL_PORT'] = critical_variables['central-port']
         os.environ['WORKER_PORT'] = critical_variables['worker-port']
+        os.environ['WORKER_ADDRESS'] = critical_variables['worker-address']
+        os.environ['WORKER_SYSTEM_MONITOR'] = critical_variables['worker-system-monitor']
     else:
         # Refactor to handle given envs
         critical_variables = {
             'worker-id': str(uuid.uuid4()),
             'central-address': os.environ.get('CENTRAL_ADDRESS'),
             'central-port': os.environ.get('CENTRAL_PORT'),
-            'worker-port': '7501'
+            'worker-port': os.environ.get('WORKER_PORT'),
+            'worker-address': os.environ.get('WORKER_ADDRESS'),
+            'worker-system-monitor': os.environ.get('WORKER_SYSTEM_MONITOR')
         }
         with open(critical_path, 'w') as f:
             json.dump(critical_variables, f, indent=4)

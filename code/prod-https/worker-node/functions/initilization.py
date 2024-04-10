@@ -26,7 +26,7 @@ def initilize_envs(
     else:
         os.environ['CYCLE'] = str(1)
         os.environ['EXP'] = str(1)
-        os.environ['EXP_NAME'] = ''
+        os.environ['EXP_NAME'] = 'default'
 # Created and works
 def initilize_minio(
     file_lock: any,
@@ -37,16 +37,17 @@ def initilize_minio(
     central_address = os.environ.get('CENTRAL_ADDRESS')
     central_port = os.environ.get('CENTRAL_PORT')
     worker_port = os.environ.get('WORKER_PORT')
+    worker_address = os.environ.get('WORKER_ADDRESS')
     templates = {
         'status': {
             'worker-id': worker_id,
             'network-id': 0,
             'central-address': central_address,
             'central-port': central_port,
-            'worker-address': '',
+            'worker-address': worker_address,
             'worker-port': worker_port,
             'status': 'waiting',
-            'experiment-name': '',
+            'experiment-name': 'default',
             'experiment':1,
             'experiment-id': '',
             'stored': False,

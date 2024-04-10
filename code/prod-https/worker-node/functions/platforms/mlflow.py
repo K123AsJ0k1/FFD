@@ -1,5 +1,3 @@
-from flask import current_app
-
 '''
 MLFlow experiment format:
 - list_experiments(): list
@@ -132,7 +130,6 @@ def check_run(
         run_object = MLFLOW_CLIENT.get_run(
             run_id = run_id
         )
-        current_app.logger.info('Checking succeeded')
         run_dict = {
             'e_id': run_object.info.experiment_id,
             'id': run_object.info.run_id,

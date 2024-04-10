@@ -225,8 +225,6 @@ def store_metrics_resources_and_times(
                         continue
                     metric_name = prometheus_metrics['local-name'][key]
                     prometheus_metrics['local'].labels(
-                        date = datetime.now().strftime('%Y-%m-%d-%H:%M:%S.%f'),
-                        time = time.time(),
                         collector = 'worker-' + worker_status['worker-id'],
                         name = worker_status['experiment-name'],
                         experiment = worker_status['experiment'], 
@@ -237,16 +235,12 @@ def store_metrics_resources_and_times(
             if type == 'resources':
                 object_name = 'resources'
                 replacer = metrics['name']
-                set_date = metrics['date']
-                set_time = metrics['time']
                 source = metrics['name']
                 for key,value in metrics.items():
                     if key == 'name' or key == 'date' or key == 'time':
                         continue
                     metric_name = prometheus_metrics['resource-name'][key]
                     prometheus_metrics['resource'].labels(
-                        date = set_date,
-                        time = set_time,
                         collector = 'worker-' + worker_status['worker-id'],
                         name = worker_status['experiment-name'], 
                         experiment = worker_status['experiment'],
@@ -261,10 +255,10 @@ def store_metrics_resources_and_times(
                 for key,value in metrics.items():
                     if key == 'name':
                         continue
+                    #date = datetime.now().strftime('%Y-%m-%d-%H:%M:%S.%f'),
+                    #time = time.time(),
                     metric_name = prometheus_metrics['time-name'][key]
                     prometheus_metrics['time'].labels(
-                        date = datetime.now().strftime('%Y-%m-%d-%H:%M:%S.%f'),
-                        time = time.time(),
                         collector = 'worker-' + worker_status['worker-id'],
                         name = worker_status['experiment-name'],
                         experiment = worker_status['experiment'], 

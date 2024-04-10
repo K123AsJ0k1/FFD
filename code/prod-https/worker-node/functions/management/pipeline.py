@@ -7,7 +7,7 @@ from functions.management.storage import store_metrics_resources_and_times
 
 from functions.processing.data import preprocess_into_train_test_and_eval_tensors
 
-from functions.training.update import send_info_to_central, send_update_to_central
+from functions.management.update import send_info_to_central, send_update_to_central
 from functions.training.model import local_model_training
 
 # Created and works
