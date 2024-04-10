@@ -9,7 +9,7 @@ networks:
 
 services:
   ffd-postgres:
-    image: t9k4b5ndjok1/ffd:postgres
+    image: postgres:test4
     restart: always
     ports:
       - '5432:5432'

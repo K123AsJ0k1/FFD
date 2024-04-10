@@ -1,0 +1,73 @@
+{
+    "microservices" : [
+      {
+        "microserviceID": "",
+        "microservice_name": "pushgateway",
+        "microservice_namespace": "monitoring",
+        "virtualization": "container",
+        "cmd": [],
+        "memory": 200,
+        "vcpus": 1,
+        "vgpus": 0,
+        "vtpus": 0,
+        "bandwidth_in": 0,
+        "bandwidth_out": 0,
+        "storage": 200,
+        "code": "docker.io/prom/pushgateway:v1.8.0",
+        "state": "",
+        "port": "9091",
+        "addresses": {
+          "rr_ip": "10.30.10.04"
+        }
+      },
+      {
+        "microserviceID": "",
+        "microservice_name": "prometheus",
+        "microservice_namespace": "monitoring",
+        "virtualization": "container",
+        "cmd": [],
+        "memory": 500,
+        "vcpus": 1,
+        "vgpus": 0,
+        "vtpus": 0,
+        "bandwidth_in": 0,
+        "bandwidth_out": 0,
+        "storage": 600,
+        "code": "docker.io/t9k4b5ndjok1/ffd:prometheus",
+        "state": "",
+        "port": "9090",
+        "addresses": {
+          "rr_ip": "10.30.10.05"
+        },
+        "environment":[
+          "PROMETHEUS_TARGET='10.30.10.05:9090'",
+          "PUSHGATEWAY_TARGET='10.30.10.04:9091'",
+          "CENTRAL_TARGET='10.30.10.07:7500'",
+          "WORKER_TARGET='10.30.10.08:7501','10.30.10.09:7501','10.30.10.10:7501','10.30.10.11:7501','10.30.10.11:7501'"
+        ]
+      },
+      {
+        "microserviceID": "",
+        "microservice_name": "grafana",
+        "microservice_namespace": "monitoring",
+        "virtualization": "container",
+        "cmd": [],
+        "memory": 200,
+        "vcpus": 1,
+        "vgpus": 0,
+        "vtpus": 0,
+        "bandwidth_in": 0,
+        "bandwidth_out": 0,
+        "storage": 100,
+        "code": "docker.io/t9k4b5ndjok1/ffd:grafana",
+        "state": "",
+        "port": "3000",
+        "addresses": {
+          "rr_ip": "10.30.10.06"
+        },
+        "environment":[
+          "PROMETHEUS_URL=http://10.30.10.05:9090"
+        ]
+      }
+    ]
+}
