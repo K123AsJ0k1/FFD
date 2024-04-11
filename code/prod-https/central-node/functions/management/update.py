@@ -146,7 +146,10 @@ def send_context_to_workers(
                     'model': model_parameters,
                     'worker': worker_parameters
                 }
-                
+                # Can cause problems, if all workers don't get data
+                if worker_data_details['header'] is None:
+                    continue
+
                 context = {
                     'info': info,
                     'global-model': formatted_global_model,
@@ -169,7 +172,7 @@ def send_context_to_workers(
                     'worker-data-list': None,
                     'worker-data-columns': None
                 }
-        
+            # There might be double sending during completion
             json_payload = json.dumps(context) 
             try:
                 worker_url = 'http://' + worker_status['worker-address'] + ':' + worker_status['worker-port'] + '/context'
