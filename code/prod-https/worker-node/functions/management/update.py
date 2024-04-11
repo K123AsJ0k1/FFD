@@ -54,23 +54,19 @@ def send_info_to_central(
             
             if message == 'registered':
                 # Worker is either new or new experiment has been started
-                #if message == 'registered':
                 worker_status['stored'] = False
                 worker_status['preprocessed'] = False
                 worker_status['trained'] = False
                 worker_status['updated'] = False
                 worker_status['complete'] = False
                 worker_status['network-id'] = sent_payload['network-id']
-                #worker_status['worker-address'] = sent_payload['worker-address']
+                
                 worker_status['experiment-name'] = sent_payload['experiment-name']
                 worker_status['experiment'] = sent_payload['experiment']
                 worker_status['cycle'] = sent_payload['cycle']
                 os.environ['EXP_NAME'] = str(sent_payload['experiment-name'])
                 os.environ['EXP'] = str(sent_payload['experiment'])
                 os.environ['CYCLE'] = str(sent_payload['cycle'])
-                # Worker id is known, but address has changed
-                #if message == 'rerouted':
-                #    worker_status['worker-address'] = sent_payload['worker-address']
                 
                 set_experiments_objects(
                     file_lock = file_lock,
@@ -188,7 +184,7 @@ def send_update_to_central(
             message = json.loads(response.text)['message']
         except Exception as e:
             logger.error('Status sending error:' + str(e))
-        # and (message == 'stored' or message == 'late')
+        
         if status_code == 200:
             experiment_times, _ = get_experiments_objects(
                 file_lock = file_lock,

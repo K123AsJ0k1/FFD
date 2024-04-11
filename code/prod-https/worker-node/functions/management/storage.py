@@ -39,12 +39,6 @@ def store_training_context(
     if not info['worker-id'] == worker_status['worker-id']:
         return {'message': 'incorrect'}
 
-    #if not info['experiment-name'] == worker_status['experiment-name']:
-    #    return {'message': 'incorrect'}
-    
-    #if not info['experiment'] == worker_status['experiment']:
-    #    return {'message': 'incorrect'}
-    
     if worker_status['stored'] and not worker_status['updated']:
         return {'message': 'ongoing'}
     
@@ -255,8 +249,6 @@ def store_metrics_resources_and_times(
                 for key,value in metrics.items():
                     if key == 'name':
                         continue
-                    #date = datetime.now().strftime('%Y-%m-%d-%H:%M:%S.%f'),
-                    #time = time.time(),
                     metric_name = prometheus_metrics['time-name'][key]
                     prometheus_metrics['time'].labels(
                         collector = 'worker-' + worker_status['worker-id'],
