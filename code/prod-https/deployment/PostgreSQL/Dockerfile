@@ -1,15 +1,18 @@
-FROM docker.io/postgres:13
+FROM docker.io/postgres:16.2
 
-COPY --chmod=0755 postgresql.conf /etc/postgresql/postgresql.conf
-COPY --chmod=0755 pg_hba.conf /etc/postgresql/pg_hba.conf
+RUN mkdir /postgres 
+RUN chown -R postgres:postgres /postgres && chmod -R 700 /postgres
+RUN mkdir /postgres/config 
+RUN chown -R postgres:postgres /postgres/config && chmod -R 700 /postgres/config
+RUN mkdir /postgres/logs
+RUN chown -R postgres:postgres /postgres/logs && chmod -R 700 /postgres/logs
 
-RUN mkdir /data
+COPY --chmod=0755 postgresql.conf /postgres/config/postgresql.conf
 
 ENV POSTGRES_USER=postgres
 ENV POSTGRES_PASSWORD=postgres
 ENV POSTGRES_DB=mlflow_db
-ENV PGDATA=/data/pgdata
 
 EXPOSE 5432
 
-CMD ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
+CMD ["postgres", "-c", "config_file=/postgres/config/postgresql.conf"]

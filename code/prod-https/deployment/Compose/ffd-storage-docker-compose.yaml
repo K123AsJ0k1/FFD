@@ -1,0 +1,46 @@
+version: '3.8'
+
+networks:
+  app_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+services:
+  ffd-postgres:
+    image: postgres:test13
+    restart: always
+    environment:
+      - POSTGRES_USER=23954sdmS923013jksd
+      - POSTGRES_PASSWORD=sod3054nsiersio13kls
+    networks:
+      app_network:
+        ipv4_address: 172.28.0.2
+  ffd-minio:
+    image: t9k4b5ndjok1/ffd:minio
+    restart: always
+    ports:
+      - '127.0.0.1:9000:9000'
+      - '127.0.0.1:9001:9001'
+    environment:
+      - MINIO_ROOT_USER=23034opsdjhksd
+      - MINIO_ROOT_PASSWORD=sdkl3slömdm
+    networks:
+      app_network:
+        ipv4_address: 172.28.0.3
+  ffd-mlflow:
+    image: t9k4b5ndjok1/ffd:mlflow
+    restart: always
+    ports:
+      - '127.0.0.1:5000:5000'
+    environment:
+      - POSTGRES_USER=23954sdmS923013jksd
+      - POSTGRES_PASSWORD=sod3054nsiersio13kls
+      - AWS_ACCESS_KEY_ID=23034opsdjhksd
+      - AWS_SECRET_ACCESS_KEY=sdkl3slömdm
+      - MLFLOW_S3_ENDPOINT_URL=http://ffd-minio:9000
+      - MLFLOW_SQL_ALCHEMY_CONN=postgresql+psycopg2://23954sdmS923013jksd:sod3054nsiersio13kls@ffd-postgres:5432/mlflow_db
+    networks:
+      app_network:
+        ipv4_address: 172.28.0.4
