@@ -79,7 +79,7 @@ def model_fed_avg(
         ('linear.bias', torch.tensor(FedAvg_bias,dtype=torch.float32))
     ])
     return updated_global_model
-# Refactored
+# Refactored and works
 def update_global_model(
     file_lock: any,
     logger: any,
@@ -172,7 +172,7 @@ def update_global_model(
     time_end = time.time()
     time_diff = (time_end - time_start) 
 
-    resource_metrics = {
+    action_time = {
         'name': 'update-global-model',
         'action-time-start': time_start,
         'action-time-end': time_end,
@@ -187,7 +187,7 @@ def update_global_model(
         prometheus_metrics = prometheus_metrics,
         type = 'times',
         area = 'function',
-        metrics = resource_metrics
+        metrics = action_time
     )
 
     return True
@@ -420,7 +420,7 @@ def evalute_global_model(
     
     time_end = time.time()
     time_diff = (time_end - time_start) 
-    resource_metrics = {
+    action_time = {
         'name': 'evaluate-global-model',
         'action-time-start': time_start,
         'action-time-end': time_end,
@@ -435,7 +435,7 @@ def evalute_global_model(
         prometheus_metrics = prometheus_metrics,
         type = 'times',
         area = 'function',
-        metrics = resource_metrics
+        metrics = action_time
     )
     os.environ['CYCLE'] = str(central_status['cycle'])
     return True

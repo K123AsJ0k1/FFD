@@ -12,8 +12,8 @@ if __name__ == "__main__":
     os.environ['CENTRAL_PORT'] = '7500'
 
     os.environ['MINIO_ENDPOINT'] = '127.0.0.1:9000'
-    os.environ['AWS_ACCESS_KEY_ID'] = 'minio'
-    os.environ['AWS_SECRET_ACCESS_KEY'] = 'minio123'
+    os.environ['AWS_ACCESS_KEY_ID'] = '23034opsdjhksd'
+    os.environ['AWS_SECRET_ACCESS_KEY'] = 'sdkl3slömdm'
 
     os.environ['MLFLOW_TRACKING_URI'] = 'http://127.0.0.1:5000'
     os.environ['MLFLOW_S3_ENDPOINT_URL'] = 'http://127.0.0.1:9000'

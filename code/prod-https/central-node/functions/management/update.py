@@ -196,7 +196,7 @@ def send_context_to_workers(
                 time_end = time.time()
                 time_diff = (time_end - time_start) 
                 
-                resource_metrics = {
+                action_time = {
                     'name': 'sending-context-to-worker-' + str(worker_key),
                     'status-code': response.status_code,
                     'payload-size-bytes': len(json_payload),
@@ -215,7 +215,7 @@ def send_context_to_workers(
                     prometheus_metrics = prometheus_metrics,
                     type = 'times',
                     area = 'network',
-                    metrics = resource_metrics
+                    metrics = action_time
                 )
             except Exception as e:
                 logger.error('Context sending error:' + str(e))
@@ -224,12 +224,13 @@ def send_context_to_workers(
         for worker_key in payload_status.keys():
             worker_data = payload_status[worker_key]
             if worker_data['response'] == 200 :
-                if worker_data['message'] == 'stored' or worker_data['message'] == 'ongoing':
+                if worker_data['message'] == 'stored' or worker_data['message'] == 'ongoing' or worker_data['message'] == 'complete':
                     successes = successes + 1
                 continue
             successes = successes + 1 
         # Could be reconsidered
         if central_parameters['min-update-amount'] <= successes:
+            # If workers receive final completion in a late manner, this isn't achieved
             central_status['sent'] = True
             success = True
             if not central_status['complete']:
@@ -279,7 +280,7 @@ def send_context_to_workers(
 
     time_end = time.time()
     time_diff = (time_end - time_start) 
-    resource_metrics = {
+    action_time  = {
         'name': 'send-context-to-workers',
         'action-time-start': time_start,
         'action-time-end': time_end,
@@ -294,7 +295,7 @@ def send_context_to_workers(
         prometheus_metrics = prometheus_metrics,
         type = 'times',
         area = 'function',
-        metrics = resource_metrics
+        metrics = action_time 
     )
     
     return True

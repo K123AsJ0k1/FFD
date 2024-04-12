@@ -18,11 +18,15 @@ def start_training():
     status = start_pipeline(
         file_lock = current_app.file_lock,
         logger = current_app.logger,
-        mlflow_client = current_app.mlflow_client,
         minio_client = current_app.minio_client,
+        mlflow_client = current_app.mlflow_client,
+        prometheus_registry = current_app.prometheus_registry,
+        prometheus_metrics = current_app.prometheus_metrics,
         experiment = sent_experiment,
         parameters = sent_parameters,
         df_data = sent_data,
         df_columns = sent_columns
     )
+    current_app.logger.info('Start training: ' + str(status))
+
     return jsonify({'training': status})

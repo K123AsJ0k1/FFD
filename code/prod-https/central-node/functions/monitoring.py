@@ -28,7 +28,7 @@ def get_system_resource_usage():
         'network-packets-incoming-dropped': net_io_counters.dropin
     }
     return system_resources
-# Created and works
+# Created and works 
 def get_server_resource_usage():
     this_process = psutil.Process(os.getpid())
     cpu_percent = this_process.cpu_percent(interval = 0.1)

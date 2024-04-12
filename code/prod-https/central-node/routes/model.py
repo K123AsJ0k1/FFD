@@ -3,7 +3,7 @@ import json
 from functions.training.model import model_inference
 
 model = Blueprint('model', __name__)
-# Refactor
+# Refactored and works
 @model.route('/predict', methods=["POST"]) 
 def inference():
     sent_payload = json.loads(request.json)

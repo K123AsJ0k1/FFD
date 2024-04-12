@@ -66,7 +66,7 @@ def create_app():
     )
     
     scheduler = BackgroundScheduler(daemon = True)
-    from functions.management.pipeline import system_monitoring, server_monitoring, processing_pipeline, model_pipeline, update_pipeline, aggregation_pipeline
+    from functions.management.pipeline import system_monitoring, server_monitoring, data_pipeline, model_pipeline, update_pipeline, aggregation_pipeline
     
     given_args = [
         app.file_lock,
@@ -92,7 +92,7 @@ def create_app():
     
     # Works 30 sec
     scheduler.add_job(
-        func = processing_pipeline,
+        func = data_pipeline,
         trigger = "interval",
         seconds = 30,
         args = given_args 

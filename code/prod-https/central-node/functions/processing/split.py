@@ -122,7 +122,7 @@ def central_worker_data_split(
     
     time_end = time.time()
     time_diff = (time_end - time_start) 
-    resource_metrics = {
+    action_time = {
         'name': 'central-worker-data-split',
         'action-time-start': time_start,
         'action-time-end': time_end,
@@ -137,7 +137,7 @@ def central_worker_data_split(
         prometheus_metrics = prometheus_metrics,
         type = 'times',
         area = 'function',
-        metrics = resource_metrics
+        metrics = action_time
     )
 
     return True
@@ -290,7 +290,7 @@ def split_data_between_workers(
 
     time_end = time.time()
     time_diff = (time_end - time_start) 
-    resource_metrics = {
+    action_time = {
         'name': 'split-data-between-workers',
         'action-time-start': time_start,
         'action-time-end': time_end,
@@ -305,7 +305,7 @@ def split_data_between_workers(
         prometheus_metrics = prometheus_metrics,
         type = 'times',
         area = 'function',
-        metrics = resource_metrics
+        metrics = action_time
     )
 
     return True  

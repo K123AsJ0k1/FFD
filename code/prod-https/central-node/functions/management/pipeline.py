@@ -18,16 +18,20 @@ from functions.training.model import initial_model_training
 from functions.training.aggregation import update_global_model, evalute_global_model
 
 # Refactored and works
-def start_pipeline(
+def start_pipeline( 
     file_lock: any,
     logger: any,
-    mlflow_client: any,
     minio_client: any,
+    mlflow_client: any,
+    prometheus_registry: any,
+    prometheus_metrics: any,
     experiment: any,
     parameters: any,
     df_data: list,
     df_columns: list
 ):  
+    time_start = time.time()
+
     central_status, _ = get_experiments_objects(
         file_lock = file_lock,
         logger = logger,
@@ -145,6 +149,26 @@ def start_pipeline(
         object_metadata = {}
     )
 
+    time_end = time.time()
+    time_diff = (time_end - time_start) 
+    action_time = {
+        'name': 'start-pipeline',
+        'action-time-start': time_start,
+        'action-time-end': time_end,
+        'action-total-seconds': round(time_diff,5)
+    }
+
+    store_metrics_resources_and_times(
+        file_lock = file_lock,
+        logger = logger,
+        minio_client = minio_client,
+        prometheus_registry = prometheus_registry,
+        prometheus_metrics = prometheus_metrics,
+        type = 'times',
+        area = 'function',
+        metrics = action_time
+    )
+
     return True
 # Created and works
 def system_monitoring(
@@ -154,6 +178,8 @@ def system_monitoring(
     task_prometheus_registry: any,
     task_prometheus_metrics: any
 ):
+    time_start = time.time()
+
     system_resources = get_system_resource_usage()
     store_metrics_resources_and_times(
         file_lock = task_file_lock,
@@ -165,6 +191,26 @@ def system_monitoring(
         area = '',
         metrics = system_resources
     )
+
+    time_end = time.time()
+    time_diff = (time_end - time_start) 
+    action_time = {
+        'name': 'system-monitoring',
+        'action-time-start': time_start,
+        'action-time-end': time_end,
+        'action-total-seconds': round(time_diff,5)
+    }
+
+    store_metrics_resources_and_times(
+        file_lock = task_file_lock,
+        logger = task_logger,
+        minio_client = task_minio_client,
+        prometheus_registry = task_prometheus_registry,
+        prometheus_metrics = task_prometheus_metrics,
+        type = 'times',
+        area = 'task',
+        metrics = action_time
+    )
 # Created and works
 def server_monitoring(
     task_file_lock: any,
@@ -173,6 +219,8 @@ def server_monitoring(
     task_prometheus_registry: any,
     task_prometheus_metrics: any
 ):
+    time_start = time.time()
+
     server_resources = get_server_resource_usage()
     store_metrics_resources_and_times(
         file_lock = task_file_lock,
@@ -184,14 +232,36 @@ def server_monitoring(
         area = '',
         metrics = server_resources
     )
+
+    time_end = time.time()
+    time_diff = (time_end - time_start) 
+    action_time = {
+        'name': 'server-monitoring',
+        'action-time-start': time_start,
+        'action-time-end': time_end,
+        'action-total-seconds': round(time_diff,5)
+    }
+
+    store_metrics_resources_and_times(
+        file_lock = task_file_lock,
+        logger = task_logger,
+        minio_client = task_minio_client,
+        prometheus_registry = task_prometheus_registry,
+        prometheus_metrics = task_prometheus_metrics,
+        type = 'times',
+        area = 'task',
+        metrics = action_time
+    )
 # Refactored and works
-def processing_pipeline(
+def data_pipeline(
     task_file_lock: any,
     task_logger: any,
     task_minio_client: any,
     task_prometheus_registry: any,
     task_prometheus_metrics: any
 ):
+    time_start = time.time()
+
     cycle_start = time.time()
     # Works
     status = central_worker_data_split(
@@ -245,6 +315,27 @@ def processing_pipeline(
         prometheus_metrics = task_prometheus_metrics
     )
     task_logger.info('Central pool preprocessing:' + str(status))
+    
+    time_end = time.time()
+    time_diff = (time_end - time_start) 
+    action_time = {
+        'name': 'data-pipeline',
+        'action-time-start': time_start,
+        'action-time-end': time_end,
+        'action-total-seconds': round(time_diff,5)
+    }
+
+    store_metrics_resources_and_times(
+        file_lock = task_file_lock,
+        logger = task_logger,
+        minio_client = task_minio_client,
+        prometheus_registry = task_prometheus_registry,
+        prometheus_metrics = task_prometheus_metrics,
+        type = 'times',
+        area = 'task',
+        metrics = action_time
+    )
+
 # Refactored and works
 def model_pipeline(
     task_file_lock: any,
@@ -254,6 +345,8 @@ def model_pipeline(
     task_prometheus_registry: any,
     task_prometheus_metrics: any,
 ):  
+    time_start = time.time()
+
     # Works
     status = initial_model_training(
         file_lock = task_file_lock,
@@ -264,6 +357,26 @@ def model_pipeline(
         prometheus_metrics = task_prometheus_metrics
     )
     task_logger.info('Initial model training:' + str(status))
+
+    time_end = time.time()
+    time_diff = (time_end - time_start) 
+    action_time = {
+        'name': 'model-pipeline',
+        'action-time-start': time_start,
+        'action-time-end': time_end,
+        'action-total-seconds': round(time_diff,5)
+    }
+
+    store_metrics_resources_and_times(
+        file_lock = task_file_lock,
+        logger = task_logger,
+        minio_client = task_minio_client,
+        prometheus_registry = task_prometheus_registry,
+        prometheus_metrics = task_prometheus_metrics,
+        type = 'times',
+        area = 'task',
+        metrics = action_time
+    )
 # Refactor and works
 def update_pipeline(
     task_file_lock: any,
@@ -273,6 +386,8 @@ def update_pipeline(
     task_prometheus_registry: any,
     task_prometheus_metrics: any,
 ):
+    time_start = time.time()
+
     # Works
     status = split_data_between_workers(
         file_lock = task_file_lock,
@@ -292,6 +407,26 @@ def update_pipeline(
         prometheus_metrics = task_prometheus_metrics
     )
     task_logger.info('Worker context sending:' + str(status))
+
+    time_end = time.time()
+    time_diff = (time_end - time_start) 
+    action_time = {
+        'name': 'update-pipeline',
+        'action-time-start': time_start,
+        'action-time-end': time_end,
+        'action-total-seconds': round(time_diff,5)
+    }
+
+    store_metrics_resources_and_times(
+        file_lock = task_file_lock,
+        logger = task_logger,
+        minio_client = task_minio_client,
+        prometheus_registry = task_prometheus_registry,
+        prometheus_metrics = task_prometheus_metrics,
+        type = 'times',
+        area = 'task',
+        metrics = action_time
+    )
 # Refactor and works
 def aggregation_pipeline(
     task_file_lock: any,
@@ -301,6 +436,8 @@ def aggregation_pipeline(
     task_prometheus_registry: any,
     task_prometheus_metrics: any,
 ):
+    time_start = time.time()
+
     # Works
     status = update_global_model(
         file_lock = task_file_lock,
@@ -320,3 +457,23 @@ def aggregation_pipeline(
         prometheus_metrics = task_prometheus_metrics
     )
     task_logger.info('Global model evaluation:' + str(status))
+
+    time_end = time.time()
+    time_diff = (time_end - time_start) 
+    action_time = {
+        'name': 'aggregation-pipeline',
+        'action-time-start': time_start,
+        'action-time-end': time_end,
+        'action-total-seconds': round(time_diff,5)
+    }
+
+    store_metrics_resources_and_times(
+        file_lock = task_file_lock,
+        logger = task_logger,
+        minio_client = task_minio_client,
+        prometheus_registry = task_prometheus_registry,
+        prometheus_metrics = task_prometheus_metrics,
+        type = 'times',
+        area = 'task',
+        metrics = action_time
+    )

@@ -194,7 +194,7 @@ def store_worker(
 
     time_end = time.time()
     time_diff = (time_end - time_start) 
-    resource_metrics = {
+    action_time = {
         'name': 'store-worker-' + status['worker-id'],
         'action-time-start': time_start,
         'action-time-end': time_end,
@@ -209,7 +209,7 @@ def store_worker(
         prometheus_metrics = prometheus_metrics,
         type = 'times',
         area = 'function',
-        metrics = resource_metrics
+        metrics = action_time
     )
     
     return info 
@@ -307,7 +307,7 @@ def store_update(
 
     time_end = time.time()
     time_diff = (time_end - time_start) 
-    resource_metrics = {
+    action_time = {
         'name': 'update-from-worker-' + str(id),
         'action-time-start': time_start,
         'action-time-end': time_end,
@@ -322,7 +322,7 @@ def store_update(
         prometheus_metrics = prometheus_metrics,
         type = 'times',
         area = 'function',
-        metrics = resource_metrics
+        metrics = action_time
     )
     
     return {'message': 'stored'}
