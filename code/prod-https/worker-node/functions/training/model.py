@@ -91,7 +91,7 @@ def train(
     time_end = time.time()
     time_diff = (time_end - time_start) 
      
-    resource_metrics = {
+    action_time = {
         'name': 'logistic-regression-training',
         'epochs': model_parameters['epochs'],
         'batches': len(train_loader),
@@ -109,7 +109,7 @@ def train(
         prometheus_metrics = prometheus_metrics,
         type = 'times',
         area = 'training',
-        metrics = resource_metrics
+        metrics = action_time
     )
 # Refactored and works
 def test(
@@ -148,8 +148,9 @@ def test(
             
         time_end = time.time()
         time_diff = (time_end - time_start) 
-        resource_metrics = {
+        action_time = {
             'name': 'logistic-regression-' + name,
+            'epochs': 0,
             'batches': len(test_loader),
             'average-batch-size': total_size / len(test_loader),
             'action-time-start': time_start,
@@ -165,7 +166,7 @@ def test(
             prometheus_metrics = prometheus_metrics,
             type = 'times',
             area = 'training',
-            metrics = resource_metrics
+            metrics = action_time
         )
     
         TP, FP, TN, FN = total_confusion_matrix
@@ -463,7 +464,7 @@ def local_model_training(
     time_end = time.time()
     time_diff = (time_end - time_start) 
     
-    resource_metrics = {
+    action_time = {
         'name': 'local-model-training',
         'action-time-start': time_start,
         'action-time-end': time_end,
@@ -478,7 +479,7 @@ def local_model_training(
         prometheus_metrics = prometheus_metrics,
         type = 'times',
         area = 'function',
-        metrics = resource_metrics
+        metrics = action_time
     )
 
     return True
@@ -550,7 +551,7 @@ def model_inference(
     time_end = time.time()
     time_diff = (time_end - time_start) 
     
-    resource_metrics = {
+    action_time = {
         'name': experiment_name + '-' + experiment + '-' + cycle + '-prediction',
         'sample-amount': len(input_tensor),
         'action-time-start': time_start,
@@ -566,7 +567,7 @@ def model_inference(
         prometheus_metrics = prometheus_metrics,
         type = 'times',
         area = 'inference',
-        metrics = resource_metrics
+        metrics = action_time
     )
 
     return output

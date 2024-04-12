@@ -170,7 +170,7 @@ def preprocess_into_train_test_and_eval_tensors(
     time_end = time.time()
     time_diff = (time_end - time_start) 
 
-    resource_metrics = {
+    action_time = {
         'name': 'preprocess-into-train-test-and-evalute-tensors',
         'action-time-start': time_start,
         'action-time-end': time_end,
@@ -185,7 +185,7 @@ def preprocess_into_train_test_and_eval_tensors(
         prometheus_metrics = prometheus_metrics,
         type = 'times',
         area = 'function',
-        metrics = resource_metrics
+        metrics = action_time
     )
 
     return True 

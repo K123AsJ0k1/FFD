@@ -22,6 +22,8 @@ def store_training_context(
     df_data: list,
     df_columns: list
 ) -> any:
+    time_start = time.time()
+
     worker_status, _ = get_experiments_objects(
         file_lock = file_lock,
         logger = logger,
@@ -41,6 +43,8 @@ def store_training_context(
 
     if worker_status['stored'] and not worker_status['updated']:
         return {'message': 'ongoing'}
+
+    logger.info('Training context received for ' + str(info['experiment-name']) + '-' + str(info['experiment']) + '-' + str(info['cycle']))
     
     os.environ['STATUS'] = 'storing'
     os.environ['EXP_NAME'] = str(info['experiment-name'])
@@ -185,7 +189,27 @@ def store_training_context(
         object_data = worker_status,
         object_metadata = {}
     )
-    
+
+    time_end = time.time()
+    time_diff = (time_end - time_start) 
+    action_time = {
+        'name': 'store-training-context',
+        'action-time-start': time_start,
+        'action-time-end': time_end,
+        'action-total-seconds': round(time_diff,5),
+    }
+
+    store_metrics_resources_and_times(
+        file_lock = file_lock,
+        logger = logger,
+        minio_client = minio_client,
+        prometheus_registry = prometheus_registry,
+        prometheus_metrics = prometheus_metrics,
+        type = 'times',
+        area = 'function',
+        metrics = action_time
+    )
+    logger.info('Training context stored')
     os.environ['STATUS'] = 'stored'
 
     return {'message': 'stored'}

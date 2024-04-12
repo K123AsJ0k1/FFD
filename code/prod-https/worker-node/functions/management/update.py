@@ -81,7 +81,7 @@ def send_info_to_central(
 
         time_end = time.time()
         time_diff = (time_end - time_start) 
-        time_metrics = {
+        action_time = {
             'name': 'sending-info-to-central',
             'status-code': response.status_code,
             'payload-size-bytes': len(payload),
@@ -100,7 +100,7 @@ def send_info_to_central(
             prometheus_metrics = prometheus_metrics,
             type = 'times',
             area = 'network',
-            metrics = time_metrics
+            metrics = action_time
         )
         
         return True, response.status_code
@@ -215,12 +215,12 @@ def send_update_to_central(
             worker_status['stored'] = False
             
             os.environ['STATUS'] = 'update sent to central'
-            logger.info('Update sent to central')
+            logger.info('Update sent to central: ' + message)
 
             time_end = time.time()
             time_diff = (time_end - time_start) 
         
-            resource_metrics = {
+            action_time = {
                 'name': 'sending-update-to-central',
                 'status-code': response.status_code,
                 'payload-size-bytes': len(payload),
@@ -239,17 +239,17 @@ def send_update_to_central(
                 prometheus_metrics = prometheus_metrics,
                 type = 'times',
                 area = 'network',
-                metrics = resource_metrics
+                metrics = action_time
             )
             success = True
             continue 
         
         os.environ['STATUS'] = 'update not sent to central'
-        logger.info('Update not sent to central')
+        logger.info('Update not sent to central: ' + message)
 
         time_end = time.time()
         time_diff = (time_end - time_start) 
-        resource_metrics = {
+        action_time = {
             'name': 'sending-update-to-central',
             'status-code': response.status_code,
             'payload-size-bytes': len(payload),
@@ -268,7 +268,7 @@ def send_update_to_central(
             prometheus_metrics = prometheus_metrics,
             type = 'times',
             area = 'network',
-            metrics = resource_metrics
+            metrics = action_time
         )
 
     set_experiments_objects(
