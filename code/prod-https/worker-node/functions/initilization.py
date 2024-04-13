@@ -32,12 +32,13 @@ def initilize_minio(
     file_lock: any,
     logger: any,
     minio_client: any
-):
+) -> bool:
     worker_id = os.environ.get('WORKER_ID')
     central_address = os.environ.get('CENTRAL_ADDRESS')
     central_port = os.environ.get('CENTRAL_PORT')
     worker_port = os.environ.get('WORKER_PORT')
     worker_address = os.environ.get('WORKER_ADDRESS')
+    
     templates = {
         'status': {
             'worker-id': worker_id,
@@ -98,16 +99,21 @@ def initilize_minio(
     }
 
     for key in templates.keys():
-        set_experiments_objects(
-            file_lock = file_lock,
-            logger = logger,
-            minio_client = minio_client,
-            object = key,
-            replacer = '',
-            overwrite = False,
-            object_data = templates[key],
-            object_metadata = {} 
-        )  
+        try:
+            set_experiments_objects(
+                file_lock = file_lock,
+                logger = logger,
+                minio_client = minio_client,
+                object = key,
+                replacer = '',
+                overwrite = False,
+                object_data = templates[key],
+                object_metadata = {} 
+            )  
+        except Exception as e:
+            logger.error('Worker initilization error: ' + str(e))
+            return False
+    return True
 # Created and works
 def initilize_prometheus_gauges(
     prometheus_registry: any,

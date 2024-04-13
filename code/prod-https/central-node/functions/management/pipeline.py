@@ -170,7 +170,7 @@ def start_pipeline(
     )
 
     return True
-# Created
+# Created and works
 def check_workers(
     task_file_lock: any,
     task_logger: any,

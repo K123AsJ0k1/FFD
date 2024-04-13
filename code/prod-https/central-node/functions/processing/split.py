@@ -201,6 +201,9 @@ def split_data_between_workers(
         replacer = ''
     )
 
+    if workers_status is None:
+        return False
+
     if len(workers_status) == 0:
         return False
     

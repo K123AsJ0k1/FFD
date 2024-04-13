@@ -85,11 +85,15 @@ def create_app():
         logger = app.logger,
         minio_client = minio_client
     )
-    initilize_minio(
-        file_lock = app.file_lock,
-        logger = app.logger,
-        minio_client = minio_client
-    )
+    success = False
+    for tries in range(0,10):
+        if success:
+            break
+        success = initilize_minio(
+            file_lock = app.file_lock,
+            logger = app.logger,
+            minio_client = minio_client
+        )
     initilize_prometheus_gauges(
         prometheus_registry = app.prometheus_registry,
         prometheus_metrics = app.prometheus_metrics
