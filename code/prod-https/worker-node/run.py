@@ -7,7 +7,7 @@ warnings.filterwarnings("ignore")
 if __name__ == "__main__":
     # This application uses the app factory method
     # to make code easier to understand and refactor
-    '''
+    
     os.environ['CENTRAL_ADDRESS'] = '127.0.0.1'
     os.environ['CENTRAL_PORT'] = '7500'
 
@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
     os.environ['MLFLOW_TRACKING_URI'] = 'http://127.0.0.1:5000'
     os.environ['MLFLOW_S3_ENDPOINT_URL'] = 'http://127.0.0.1:9000'
-    '''
+    
     app = create_app()
     app.run(
         host = '0.0.0.0', 
