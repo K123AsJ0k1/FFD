@@ -239,7 +239,6 @@ def initial_model_training(
     if central_status['trained']:
         return False
 
-    os.environ['STATUS'] = 'training initial model'
     logger.info('Training initial model')
 
     artifact_folder = 'artifacts'
@@ -446,7 +445,6 @@ def initial_model_training(
         object_metadata = {}
     )
 
-    os.environ['STATUS'] = 'initial model trained'
     logger.info('Initial model trained')
     
     end_run(

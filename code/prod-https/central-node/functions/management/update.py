@@ -42,9 +42,6 @@ def send_context_to_workers(
     if central_status['sent']:
         return False
     
-    os.environ['STATUS'] = 'sending context to workers'
-    logger.info('Sending context to workers')
-
     workers_status, _ = get_experiments_objects(
         file_lock = file_lock,
         logger = logger,
@@ -53,13 +50,33 @@ def send_context_to_workers(
         replacer = ''
     )
 
-    central_parameters, _ = get_experiments_objects(
-        file_lock = file_lock,
-        logger = logger,
-        minio_client = minio_client,
-        object = 'parameters',
-        replacer = 'central'
-    )
+    if workers_status is None:
+        return False
+    
+    if len(workers_status) == 0:
+        return False
+
+    available_workers = []
+    for worker_key in workers_status.keys():
+        worker_status = workers_status[worker_key]
+        if not worker_status['stored'] and not worker_status['complete']: 
+            available_workers.append(worker_key)
+    
+    if len(available_workers) == 0:
+        central_status['sent'] = True
+        set_experiments_objects(
+            file_lock = file_lock,
+            logger = logger,
+            minio_client = minio_client,
+            object = 'status',
+            replacer = '',
+            overwrite = True,
+            object_data = central_status,
+            object_metadata = {}
+        )
+        return False
+
+    logger.info('Sending context to workers')
 
     model_parameters, _ = get_experiments_objects(
         file_lock = file_lock,
@@ -113,19 +130,18 @@ def send_context_to_workers(
                 name = run_name 
             )
             central_status['run-id'] = run_data['id']
-
-    # Refactor to have failure fixing 
-    success = False
-    for i in range(0,10):
-        if success:
-            break
-
-        payload_status = {}
+    
+    sent_workers = set([])
+    for i in range(0,50):
         for worker_key in workers_status.keys():
+            if worker_key in sent_workers:
+                continue
+
             net_time_start = time.time()
-            
+
             worker_status = workers_status[worker_key]
             if worker_status['stored']:
+                sent_workers.add(worker_key)
                 continue
 
             context = None
@@ -146,8 +162,9 @@ def send_context_to_workers(
                     'model': model_parameters,
                     'worker': worker_parameters
                 }
-                # Can cause problems, if all workers don't get data
-                if worker_data_details['header'] is None:
+                
+                if worker_data_details is None:
+                    sent_workers.add(worker_key)
                     continue
 
                 context = {
@@ -172,9 +189,9 @@ def send_context_to_workers(
                     'worker-data-list': None,
                     'worker-data-columns': None
                 }
-            # There might be double sending during completion
-            json_payload = json.dumps(context) 
+            
             try:
+                json_payload = json.dumps(context)
                 worker_url = 'http://' + worker_status['worker-address'] + ':' + worker_status['worker-port'] + '/context'
                 response = requests.post(
                     url = worker_url, 
@@ -186,10 +203,9 @@ def send_context_to_workers(
                 )
 
                 sent_message = json.loads(response.text)['message']
-                payload_status[worker_key] = {
-                    'response': response.status_code,
-                    'message': sent_message
-                }
+
+                sent_workers.add(worker_key)
+                logger.info('Worker ' + worker_key + ' message: ' + str(sent_message))
 
                 net_time_end = time.time()
                 net_time_diff = (net_time_end - net_time_start) 
@@ -220,23 +236,9 @@ def send_context_to_workers(
             except Exception as e:
                 logger.error('Context sending error:' + str(e))
         
-        successes = 0
-        for worker_key in payload_status.keys():
-            worker_data = payload_status[worker_key]
-            if worker_data['response'] == 200 :
-                if worker_data['message'] == 'stored' or worker_data['message'] == 'ongoing' or worker_data['message'] == 'complete':
-                    successes = successes + 1
-                continue
-            successes = successes + 1 
-        # Could be reconsidered
-        if central_parameters['min-update-amount'] <= successes:
-            # If workers receive final completion in a late manner, this isn't achieved
+        if len(available_workers) <= len(sent_workers):
             central_status['sent'] = True
-            success = True
-            if not central_status['complete']:
-                os.environ['STATUS'] = 'waiting updates'
-            else: 
-                os.environ['STATUS'] = 'training complete'
+            break
 
     if central_status['complete']:
         experiment_times, _ = get_experiments_objects(
@@ -275,7 +277,6 @@ def send_context_to_workers(
         object_metadata = {}
     )
 
-    os.environ['STATUS'] = 'context sent to workers'
     logger.info('Context sent to workers')
 
     time_end = time.time()

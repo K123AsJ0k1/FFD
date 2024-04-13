@@ -4,7 +4,7 @@ import time
 import numpy as np
 import pandas as pd
 
-from functions.management.objects import get_experiments_objects, set_experiments_objects
+from functions.management.objects import get_experiments_objects, set_experiments_objects, get_folder_object_paths, set_object_paths
 from functions.management.storage import store_metrics_resources_and_times
 from functions.processing.data import data_augmented_sample
 # Refactored and works
@@ -37,7 +37,6 @@ def central_worker_data_split(
     if central_status['data-split']:
         return False
     
-    os.environ['STATUS'] = 'splitting central and worker data'
     logger.info('Splitting data into central and workers pools')
 
     central_parameters, _ = get_experiments_objects(
@@ -117,7 +116,6 @@ def central_worker_data_split(
         object_data = central_status,
         object_metadata = {}
     )
-    os.environ['STATUS'] = 'central and worker data split'
     logger.info('Central and workers pools created')
     
     time_end = time.time()
@@ -141,7 +139,28 @@ def central_worker_data_split(
     )
 
     return True
-# Refactored and works
+# Created and works
+def get_data_workers(
+    file_lock: any,
+    logger: any,
+    minio_client: any
+):
+    object_paths = set_object_paths()
+    folder_path = object_paths['data-worker'][:-8]
+    
+    paths = get_folder_object_paths(
+        file_lock = file_lock,
+        logger = logger,
+        minio_client = minio_client,
+        folder_path = folder_path
+    )
+
+    workers = []
+    for path in paths:
+        path_split = path.split('/')
+        workers.append(path_split[-1])
+    return workers
+# Refactored
 def split_data_between_workers(
     file_lock: any,
     logger: any,
@@ -150,7 +169,7 @@ def split_data_between_workers(
     prometheus_metrics: any
 ) -> bool:
     time_start = time.time()
-    # There might be a concurrency problem with small resources in Oakestra
+    
     central_status, _ = get_experiments_objects(
         file_lock = file_lock,
         logger = logger,
@@ -174,9 +193,6 @@ def split_data_between_workers(
     if central_status['worker-split']:
         return False
     
-    os.environ['STATUS'] = 'splitting data between workers'
-    logger.info('Splitting data between workers')
-
     workers_status, _ = get_experiments_objects(
         file_lock = file_lock,
         logger = logger,
@@ -185,13 +201,40 @@ def split_data_between_workers(
         replacer = ''
     )
 
-    central_parameters, _ = get_experiments_objects(
+    if len(workers_status) == 0:
+        return False
+    
+    available_workers = []
+    for worker_key in workers_status.keys():
+        worker_status = workers_status[worker_key]
+        if not worker_status['stored'] and not worker_status['complete']: 
+            available_workers.append(worker_key)
+
+    splitted_workers = get_data_workers(
         file_lock = file_lock,
         logger = logger,
-        minio_client = minio_client,
-        object = 'parameters',
-        replacer = 'central'
+        minio_client = minio_client
     )
+    
+    if len(available_workers) <= len(splitted_workers):
+        central_status['worker-split'] = True
+        set_experiments_objects(
+            file_lock = file_lock,
+            logger = logger,
+            minio_client = minio_client,
+            object = 'status',
+            replacer = '',
+            overwrite = True,
+            object_data = central_status,
+            object_metadata = {}
+        )
+        return False
+
+    logger.info('Splitting data between workers')
+
+    free_workers = set(available_workers)
+    split_workers = set(splitted_workers)
+    remaining_workers = list(free_workers-split_workers)
 
     worker_parameters, _ = get_experiments_objects(
         file_lock = file_lock,
@@ -201,18 +244,6 @@ def split_data_between_workers(
         replacer = 'worker'
     )
 
-    os.environ['STATUS'] = 'worker splitting'
-    
-    available_workers = []
-    for worker_key in workers_status.keys():
-        worker_status = workers_status[worker_key]
-        if not worker_status['stored'] and not worker_status['complete']: 
-            available_workers.append(worker_key)
-    
-    # Could be reconsidered
-    if not central_parameters['min-update-amount'] <= len(available_workers):
-        return False
-    
     workers_data, workers_data_details = get_experiments_objects(
         file_lock = file_lock,
         logger = logger,
@@ -222,9 +253,9 @@ def split_data_between_workers(
     )
 
     workers_pool_df = pd.DataFrame(workers_data, columns = workers_data_details['header'])
-
+    split_amount = 0
     if worker_parameters['data-augmentation']['active']:
-        for worker_key in available_workers:
+        for worker_key in remaining_workers:
             worker_sample_df = data_augmented_sample(
                 pool_df = workers_pool_df,
                 sample_pool = worker_parameters['data-augmentation']['sample-pool'],
@@ -243,16 +274,16 @@ def split_data_between_workers(
                 minio_client = minio_client,
                 object = 'data-worker',
                 replacer = worker_key,
-                overwrite = True,
+                overwrite = False,
                 object_data = object_data,
                 object_metadata = object_metadata
             )
-            
+            split_amount = split_amount + 1
     else:
         worker_df = workers_pool_df.sample(frac = 1)
         worker_dfs = np.array_split(worker_df, len(available_workers))
         index = 0
-        for worker_key in available_workers:
+        for worker_key in remaining_workers:
             worker_sample_df = worker_dfs[index]
              
             object_data = worker_sample_df.values.tolist()
@@ -267,25 +298,13 @@ def split_data_between_workers(
                 minio_client = minio_client,
                 object = 'data-worker',
                 replacer = worker_key,
-                overwrite = True,
+                overwrite = False,
                 object_data = object_data,
                 object_metadata = object_metadata
             )
             index = index + 1
-
-    central_status['worker-split'] = True
-    set_experiments_objects(
-        file_lock = file_lock,
-        logger = logger,
-        minio_client = minio_client,
-        object = 'status',
-        replacer = '',
-        overwrite = True,
-        object_data = central_status,
-        object_metadata = {}
-    )
-
-    os.environ['STATUS'] = 'worker data split'
+            split_amount = split_amount + 1
+    
     logger.info('Worker data split')
 
     time_end = time.time()

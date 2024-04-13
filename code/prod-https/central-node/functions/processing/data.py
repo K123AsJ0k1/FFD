@@ -63,7 +63,6 @@ def preprocess_into_train_test_and_evaluate_tensors(
     if central_status['preprocessed']:
         return False
     
-    os.environ['STATUS'] = 'preprocessing into tensors'
     logger.info('Preprocessing into tensors')
     
     central_parameters, _ = get_experiments_objects(
@@ -191,7 +190,6 @@ def preprocess_into_train_test_and_evaluate_tensors(
         object_metadata = {}
     )
     
-    os.environ['STATUS'] = 'tensors created'
     logger.info('Tensors created')
 
     time_end = time.time()

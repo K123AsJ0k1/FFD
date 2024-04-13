@@ -112,9 +112,6 @@ def update_global_model(
     if central_status['updated']:
         return False
     
-    os.environ['STATUS'] = 'updating global model'
-    logger.info('Updating global model')
-    
     central_parameters, _ = get_experiments_objects(
         file_lock = file_lock,
         logger = logger,
@@ -129,8 +126,12 @@ def update_global_model(
         minio_client = minio_client
     )
     # Could be reconsidered
+    logger.info('Updating global model')
     if not central_parameters['min-update-amount'] <= len(available_updates):
+        logger.info('Not enough updates: ' +  str(len(available_updates)) + '/' + str(central_parameters['min-update-amount']))
         return False
+
+    logger.info('Enough updates: ' +  str(len(available_updates)) + '/' + str(central_parameters['min-update-amount']))
     
     model_data = model_fed_avg(
         updates = available_updates,
@@ -166,7 +167,6 @@ def update_global_model(
         object_metadata = {}
     )
 
-    os.environ['STATUS'] = 'global model updated'
     logger.info('Global model updated')
 
     time_end = time.time()
@@ -222,7 +222,6 @@ def evalute_global_model(
     if central_status['evaluated']:
         return False
     
-    os.environ['STATUS'] = 'evaluating global model'
     logger.info('Evaluating global model')
 
     artifact_folder = 'artifacts'
@@ -309,21 +308,25 @@ def evalute_global_model(
     succesful_metrics = 0
     thresholds = central_parameters['metric-thresholds']
     conditions = central_parameters['metric-conditions']
+    
+    logger.info('Metric evalution (value condition threshold):')
     for key,value in eval_metrics.items():
         if 'amount' in key or 'name' in key:
             continue
-        message = 'Metric ' + str(key)
-        if conditions[key] == '>=' and thresholds[key] <= value:
-            message = message + ' succeeded with ' + str(value) + str(conditions[key]) + str(thresholds[key])
+        message = str(key)
+        # >= means that the metric should be bigger or equal to threshold
+        if conditions[key] == '>=' and value >= thresholds[key]:
+            message = message + ' succeeded: ' + str(value) + str(conditions[key]) + str(thresholds[key])
             logger.info(message)
             succesful_metrics += 1
             continue
+        # <= means that the metric should be smaller or equal to threshold
         if conditions[key] == '<=' and value <= thresholds[key]:
-            message = message + ' succeeded with ' + str(value) + str(conditions[key]) + str(thresholds[key])
+            message = message + ' succeeded: ' + str(value) + str(conditions[key]) + str(thresholds[key])
             logger.info(message)
             succesful_metrics += 1
             continue
-        message = message + ' failed with ' + str(value) + str(conditions[key]) + str(thresholds[key])
+        message = message + ' failed: ' + str(value) + str(conditions[key]) + str(thresholds[key])
         logger.info(message)
 
     eval_metrics['train-amount'] = int(global_model_details['train-amount'])
@@ -408,7 +411,6 @@ def evalute_global_model(
         object_metadata = {}
     )
     
-    os.environ['STATUS'] = 'global model evaluated'
     logger.info('Global model evaluated')
 
     end_run(

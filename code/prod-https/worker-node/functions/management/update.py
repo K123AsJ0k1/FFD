@@ -29,9 +29,6 @@ def send_info_to_central(
     if worker_status['central-address'] == '':
         return False, None
     
-    if worker_status['trained'] and not worker_status['updated']:
-        return False, None
-    
     try:
         info = {
             'status': worker_status
@@ -137,7 +134,6 @@ def send_update_to_central(
     if worker_status['updated']:
         return False
 
-    os.environ['STATUS'] = 'sending update to central'
     logger.info('Sending update to central')
  
     local_model, local_model_details = get_experiments_objects(
@@ -214,7 +210,6 @@ def send_update_to_central(
             worker_status['updated'] = True
             worker_status['stored'] = False
             
-            os.environ['STATUS'] = 'update sent to central'
             logger.info('Update sent to central: ' + message)
 
             time_end = time.time()
@@ -244,7 +239,6 @@ def send_update_to_central(
             success = True
             continue 
         
-        os.environ['STATUS'] = 'update not sent to central'
         logger.info('Update not sent to central: ' + message)
 
         time_end = time.time()

@@ -34,7 +34,6 @@ def create_app():
         os.environ['WORKER_ADDRESS'] = critical_variables['worker-address']
         os.environ['WORKER_SYSTEM_MONITOR'] = critical_variables['worker-system-monitor']
     else:
-        # Refactor to handle given envs
         critical_variables = {
             'worker-id': str(uuid.uuid4()),
             'central-address': os.environ.get('CENTRAL_ADDRESS'),
@@ -62,13 +61,13 @@ def create_app():
         secure = False
     )
     app.minio_client = minio_client
-    app.logger.warning('Minion client ready')
+    app.logger.info('Minion client ready')
 
     mlflow_client = MlflowClient(
         tracking_uri = os.environ.get('MLFLOW_TRACKING_URI')
     )
     app.mlflow_client = mlflow_client
-    app.logger.warning('MLflow client ready')
+    app.logger.info('MLflow client ready')
 
     registry = CollectorRegistry()
     app.prometheus_registry = registry
@@ -78,7 +77,7 @@ def create_app():
         'central-resources': None,
         'central-resources-names': None
     }
-    app.logger.warning('Prometheus registry and gauges ready')
+    app.logger.info('Prometheus registry and gauges ready')
 
     from functions.initilization import initilize_envs, initilize_minio, initilize_prometheus_gauges
     initilize_envs(
@@ -177,5 +176,4 @@ def create_app():
     app.logger.info('Routes registered')
     
     app.logger.info('Worker ready')
-    os.environ['STATUS'] = 'waiting'
     return app

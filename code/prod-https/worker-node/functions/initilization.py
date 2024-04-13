@@ -46,7 +46,6 @@ def initilize_minio(
             'central-port': central_port,
             'worker-address': worker_address,
             'worker-port': worker_port,
-            'status': 'waiting',
             'experiment-name': 'default',
             'experiment':1,
             'experiment-id': '',

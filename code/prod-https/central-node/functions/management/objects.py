@@ -1,6 +1,6 @@
 import os
 
-from functions.platforms.minio import check_object, get_object_data_and_metadata, create_or_update_object
+from functions.platforms.minio import check_object, get_object_data_and_metadata, create_or_update_object, get_object_list
 from functions.general import format_metadata_dict, encode_metadata_lists_to_strings
 # Created and works
 def set_object_paths():
@@ -105,3 +105,24 @@ def set_experiments_objects(
                 data = object_data,
                 metadata = encode_metadata_lists_to_strings(object_metadata)
             )
+# Craeted
+def get_folder_object_paths(
+    file_lock: any,
+    logger: any,
+    minio_client: any,
+    folder_path: str  
+):
+    formatted_paths = []
+    with file_lock:
+        used_bucket = 'central'
+        folder_objects = get_object_list(
+            logger = logger,
+            minio_client = minio_client,
+            bucket_name = used_bucket,
+            path_prefix = folder_path
+        )
+
+        for path in folder_objects.keys():
+            pkl_split = path.split('.')[0]
+            formatted_paths.append(pkl_split)
+    return formatted_paths

@@ -46,11 +46,13 @@ def store_training_context(
 
     logger.info('Training context received for ' + str(info['experiment-name']) + '-' + str(info['experiment']) + '-' + str(info['cycle']))
     
-    os.environ['STATUS'] = 'storing'
     os.environ['EXP_NAME'] = str(info['experiment-name'])
     os.environ['EXP'] = str(info['experiment'])
     os.environ['CYCLE'] = str(info['cycle'])
     if info['model'] == None:
+        worker_status['preprocessed'] = False
+        worker_status['trained'] = False
+        worker_status['updated'] = False
         worker_status['complete'] = True
         worker_status['cycle'] = info['cycle']
         
@@ -210,8 +212,7 @@ def store_training_context(
         metrics = action_time
     )
     logger.info('Training context stored')
-    os.environ['STATUS'] = 'stored'
-
+    
     return {'message': 'stored'}
 # Refactored and works
 def store_metrics_resources_and_times( 

@@ -57,17 +57,17 @@ def start_pipeline(
         central_status['complete'] = False
         central_status['experiment'] = central_status['experiment'] + 1
         central_status['cycle'] = 1
-
+    
     central_experiment_name = 'central-' + experiment['name']
     experiment_dict = check_experiment(
         logger = logger,
         mlflow_client = mlflow_client,
         experiment_name = central_experiment_name
     )    
-    os.environ['EXP_NAME'] = central_experiment_name
+    os.environ['EXP_NAME'] = experiment['name']
     os.environ['EXP'] = str(central_status['experiment'])
     os.environ['CYCLE'] = str(central_status['cycle'])
-    central_status['experiment-name'] = central_experiment_name
+    central_status['experiment-name'] = experiment['name']
     experiment_id = ''
     if experiment_dict is None:
         experiment_id = start_experiment(
@@ -170,6 +170,69 @@ def start_pipeline(
     )
 
     return True
+# Created
+def check_workers(
+    task_file_lock: any,
+    task_logger: any,
+    task_minio_client: any,
+    task_prometheus_registry: any,
+    task_prometheus_metrics: any
+):
+    time_start = time.time()
+
+    workers_status, _ = get_experiments_objects(
+        file_lock = task_file_lock,
+        logger = task_logger,
+        minio_client = task_minio_client,
+        object = 'workers',
+        replacer = ''
+    )
+
+    if not workers_status is None:
+        if not len(workers_status) == 0:
+            delete_workers = []
+            for worker in workers_status.keys():
+                storage_time = workers_status[worker]['storing-time']
+                current_time = time.time()
+                difference = int((current_time-storage_time))
+                # If difference is more than 1200 seconds, we remove worker
+                if 1200 <= difference:
+                    delete_workers.append(worker)
+            
+            for worker in delete_workers:
+                task_logger.info('Worker ' + str(worker) + ' removed')
+                del workers_status[worker]
+                
+            set_experiments_objects(
+                file_lock = task_file_lock,
+                logger = task_logger,
+                minio_client = task_minio_client,
+                object = 'workers',
+                replacer = '',
+                overwrite = True,
+                object_data = workers_status,
+                object_metadata = {}
+            )
+
+    time_end = time.time()
+    time_diff = (time_end - time_start) 
+    action_time = {
+        'name': 'check-workers',
+        'action-time-start': time_start,
+        'action-time-end': time_end,
+        'action-total-seconds': round(time_diff,5),
+    }
+
+    store_metrics_resources_and_times(
+        file_lock = task_file_lock,
+        logger = task_logger,
+        minio_client = task_minio_client,
+        prometheus_registry = task_prometheus_registry,
+        prometheus_metrics = task_prometheus_metrics,
+        type = 'times',
+        area = 'task',
+        metrics = action_time
+    )
 # Created and works
 def system_monitoring(
     task_file_lock: any,

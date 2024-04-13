@@ -236,7 +236,6 @@ def local_model_training(
     if worker_status['trained']:
         return False
 
-    os.environ['STATUS'] = 'training local model'
     logger.info('Training local model')
 
     artifact_folder = 'artifacts'
@@ -451,7 +450,6 @@ def local_model_training(
         object_metadata = {}
     )
     
-    os.environ['STATUS'] = 'local model trained'
     logger.info('Local model trained')
 
     end_run(

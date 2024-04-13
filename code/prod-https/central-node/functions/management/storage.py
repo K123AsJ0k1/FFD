@@ -147,14 +147,17 @@ def store_worker(
     while smallest_missing_id in set_of_used_ids:
         smallest_missing_id += 1
     # We will assume that MinIO enables memory fault tolerance and logs critical isn't damaged
+    
     info = None
     if not status['worker-id'] in workers_status:
+        logger.info('Storing worker ' + str(status['worker-id']) + ' status')
         # When new worker status is started due to experiments
         given_network_id = str(smallest_missing_id)
         given_experiment_name = central_status['experiment-name']
         given_experiment = central_status['experiment']
         given_cycle = central_status['cycle']
 
+        status['storing-time'] = time.time()
         status['network-id'] = given_network_id
         status['experiment-name'] = given_experiment_name
         status['experiment'] = given_experiment
@@ -171,6 +174,7 @@ def store_worker(
         }
     else:
         # When worker is already registered and address has stayed the same
+        status['storing-time'] = time.time()
         workers_status[status['worker-id']] = status
         info = {
             'message': 'checked', 
@@ -228,6 +232,8 @@ def store_update(
 ) -> bool:
     time_start = time.time()
 
+    logger.info('Storing worker ' + str(worker_id) + ' update')
+
     central_status, _ = get_experiments_objects(
         file_lock = file_lock,
         logger = logger,
@@ -235,7 +241,7 @@ def store_update(
         object = 'status',
         replacer = ''
     )
-    
+
     if central_status is None:
         return {'message': 'no status'}
     
@@ -267,7 +273,10 @@ def store_update(
 
     if workers_status is None:
         return False
-    
+
+    if not str(worker_id) in workers_status:
+        return False
+        
     train_amount = workers_status[str(worker_id)]['train-amount']
     test_amount = workers_status[str(worker_id)]['test-amount']
     eval_amount = workers_status[str(worker_id)]['eval-amount']
