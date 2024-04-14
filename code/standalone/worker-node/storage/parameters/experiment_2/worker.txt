@@ -1,0 +1,10 @@
+{
+    "sample-pool": 50000,
+    "data-augmentation": {
+        "active": true,
+        "sample-pool": 100000,
+        "1-0-ratio": 0.2
+    },
+    "eval-ratio": 0.2,
+    "train-ratio": 0.8
+}

@@ -1,0 +1,17 @@
+{
+    "start": true,
+    "data-split": true,
+    "preprocessed": true,
+    "worker-split": true,
+    "trained": true,
+    "sent": true,
+    "updated": true,
+    "evaluated": true,
+    "complete": true,
+    "train-amount": 20000,
+    "test-amount": 5000,
+    "eval-amount": 25000,
+    "collective-amount": 8000,
+    "worker-updates": 1,
+    "cycle": 7
+}

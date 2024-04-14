@@ -1,0 +1,17 @@
+{
+    "1": {
+        "central-address": "http://127.0.0.1:7600",
+        "complete": true,
+        "cycle": 7,
+        "eval-amount": 10000,
+        "id": "1",
+        "preprocessed": true,
+        "status": "stored",
+        "stored": true,
+        "test-amount": 2000,
+        "train-amount": 8000,
+        "trained": true,
+        "updated": true,
+        "worker-address": "http://127.0.0.1:7500"
+    }
+}

@@ -1,0 +1,2411 @@
+{
+    "general": {
+        "physical-cpu-amount": 4,
+        "total-cpu-amount": 8,
+        "min-cpu-frequency-mhz": 400.0,
+        "max-cpu-frequency-mhz": 3400.0,
+        "total-ram-amount-bytes": 16650469376,
+        "available-ram-amount-bytes": 2867314688,
+        "total-disk-amount-bytes": 370490241024,
+        "available-disk-amount-bytes": 150463668224,
+        "times": {
+            "experiment-date": "2024-03-10-16:34:03.440859",
+            "experiment-time-start": 1710081243.4409227,
+            "experiment-time-end": 1710083040.913127,
+            "experiment-total-seconds": 1797.472204208374,
+            "1": {
+                "cycle-time-start": 1710081263.4582827,
+                "cycle-time-end": 1710081384.0897262,
+                "cycle-total-seconds": 120.6314435005188
+            },
+            "2": {
+                "cycle-time-start": 1710081473.45792,
+                "cycle-time-end": 1710081544.1532257,
+                "cycle-total-seconds": 70.6953055858612
+            },
+            "3": {
+                "cycle-time-start": 1710081623.4583542,
+                "cycle-time-end": 1710081744.1581407,
+                "cycle-total-seconds": 120.69978642463684
+            },
+            "4": {
+                "cycle-time-start": 1710081833.4580808,
+                "cycle-time-end": 1710081904.2308605,
+                "cycle-total-seconds": 70.77277970314026
+            },
+            "5": {
+                "cycle-time-start": 1710081983.4585524,
+                "cycle-time-end": 1710082104.1660767,
+                "cycle-total-seconds": 120.70752429962158
+            },
+            "6": {
+                "cycle-time-start": 1710082193.4579558,
+                "cycle-time-end": 1710082264.1805463,
+                "cycle-total-seconds": 70.72259044647217
+            },
+            "7": {
+                "cycle-time-start": 1710082343.4584637,
+                "cycle-time-end": 1710082464.1898756,
+                "cycle-total-seconds": 120.73141193389893
+            },
+            "8": {
+                "cycle-time-start": 1710082553.4578805,
+                "cycle-time-end": 1710082624.1085882,
+                "cycle-total-seconds": 70.6507077217102
+            },
+            "9": {
+                "cycle-time-start": 1710082703.4584756,
+                "cycle-time-end": 1710082824.1155903,
+                "cycle-total-seconds": 120.6571147441864
+            },
+            "10": {
+                "cycle-time-start": 1710082913.458275,
+                "cycle-time-end": 1710082984.1711054,
+                "cycle-total-seconds": 70.71283030509949
+            }
+        }
+    },
+    "function": {
+        "1": {
+            "1": {
+                "name": "preprocess-into-train-test-and-evalute-tensors",
+                "time-seconds": 0.32262,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 5775360,
+                "disk-bytes": 2813952
+            },
+            "2": {
+                "name": "local-model-training",
+                "time-seconds": 30.961085557937622,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -4452352,
+                "disk-bytes": -8192
+            }
+        },
+        "2": {
+            "1": {
+                "name": "preprocess-into-train-test-and-evalute-tensors",
+                "time-seconds": 0.24092,
+                "cpu-percentage": 5.0,
+                "ram-bytes": 16670720,
+                "disk-bytes": 2809856
+            },
+            "2": {
+                "name": "local-model-training",
+                "time-seconds": 30.307928562164307,
+                "cpu-percentage": 5.0,
+                "ram-bytes": 4812800,
+                "disk-bytes": 12288
+            }
+        },
+        "3": {
+            "1": {
+                "name": "preprocess-into-train-test-and-evalute-tensors",
+                "time-seconds": 0.22763,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 2691072,
+                "disk-bytes": 2805760
+            },
+            "2": {
+                "name": "local-model-training",
+                "time-seconds": 31.980086088180542,
+                "cpu-percentage": -5.0,
+                "ram-bytes": -2662400,
+                "disk-bytes": 12288
+            }
+        },
+        "4": {
+            "1": {
+                "name": "preprocess-into-train-test-and-evalute-tensors",
+                "time-seconds": 0.22034,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 2691072,
+                "disk-bytes": 2809856
+            },
+            "2": {
+                "name": "local-model-training",
+                "time-seconds": 30.709768056869507,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -14581760,
+                "disk-bytes": 4096
+            }
+        },
+        "5": {
+            "1": {
+                "name": "preprocess-into-train-test-and-evalute-tensors",
+                "time-seconds": 0.2237,
+                "cpu-percentage": -4.8,
+                "ram-bytes": 823296,
+                "disk-bytes": 2809856
+            },
+            "2": {
+                "name": "local-model-training",
+                "time-seconds": 30.345070838928223,
+                "cpu-percentage": -5.0,
+                "ram-bytes": -20320256,
+                "disk-bytes": 12288
+            }
+        },
+        "6": {
+            "1": {
+                "name": "preprocess-into-train-test-and-evalute-tensors",
+                "time-seconds": 0.26253,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 9416704,
+                "disk-bytes": 2809856
+            },
+            "2": {
+                "name": "local-model-training",
+                "time-seconds": 31.571045875549316,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -3735552,
+                "disk-bytes": -32768
+            }
+        },
+        "7": {
+            "1": {
+                "name": "preprocess-into-train-test-and-evalute-tensors",
+                "time-seconds": 0.28182,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 21336064,
+                "disk-bytes": 2813952
+            },
+            "2": {
+                "name": "local-model-training",
+                "time-seconds": 30.779884099960327,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -2007040,
+                "disk-bytes": 16384
+            }
+        },
+        "8": {
+            "1": {
+                "name": "preprocess-into-train-test-and-evalute-tensors",
+                "time-seconds": 0.27116,
+                "cpu-percentage": 5.0,
+                "ram-bytes": 22548480,
+                "disk-bytes": 2813952
+            },
+            "2": {
+                "name": "local-model-training",
+                "time-seconds": 30.52544641494751,
+                "cpu-percentage": 14.999999999999998,
+                "ram-bytes": -15933440,
+                "disk-bytes": 24576
+            }
+        },
+        "9": {
+            "1": {
+                "name": "preprocess-into-train-test-and-evalute-tensors",
+                "time-seconds": 0.27704,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 19283968,
+                "disk-bytes": 2809856
+            },
+            "2": {
+                "name": "local-model-training",
+                "time-seconds": 30.616393089294434,
+                "cpu-percentage": 15.0,
+                "ram-bytes": -29097984,
+                "disk-bytes": 12288
+            }
+        },
+        "10": {
+            "1": {
+                "name": "preprocess-into-train-test-and-evalute-tensors",
+                "time-seconds": 0.33713,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 14016512,
+                "disk-bytes": 2809856
+            },
+            "2": {
+                "name": "local-model-training",
+                "time-seconds": 30.924084424972534,
+                "cpu-percentage": -4.9,
+                "ram-bytes": -3932160,
+                "disk-bytes": 24576
+            }
+        }
+    },
+    "network": {
+        "1": {
+            "1": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.433704137802124,
+                "elapsed-time-seconds": 0.416363,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 946176,
+                "disk-bytes": 0
+            },
+            "2": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4198338985443115,
+                "elapsed-time-seconds": 0.414521,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -3223552,
+                "disk-bytes": 0
+            },
+            "3": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.41873717308044434,
+                "elapsed-time-seconds": 0.414623,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -1290240,
+                "disk-bytes": 0
+            },
+            "4": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.42215633392333984,
+                "elapsed-time-seconds": 0.417557,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 1687552,
+                "disk-bytes": 0
+            },
+            "5": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4212677478790283,
+                "elapsed-time-seconds": 0.417271,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 6180864,
+                "disk-bytes": 0
+            },
+            "6": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4171149730682373,
+                "elapsed-time-seconds": 0.413435,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -1118208,
+                "disk-bytes": 4096
+            },
+            "7": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.46204185485839844,
+                "elapsed-time-seconds": 0.414681,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 1024000,
+                "disk-bytes": 0
+            },
+            "8": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4469001293182373,
+                "elapsed-time-seconds": 0.41504,
+                "cpu-percentage": -5.0,
+                "ram-bytes": 196608,
+                "disk-bytes": 0
+            },
+            "9": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.47992897033691406,
+                "elapsed-time-seconds": 0.413953,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 270336,
+                "disk-bytes": 0
+            },
+            "10": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4177582263946533,
+                "elapsed-time-seconds": 0.414056,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -241664,
+                "disk-bytes": 8192
+            },
+            "11": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.8069710731506348,
+                "elapsed-time-seconds": 0.740036,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -311296,
+                "disk-bytes": 0
+            },
+            "12": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.6518726348876953,
+                "elapsed-time-seconds": 0.648216,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -303104,
+                "disk-bytes": 0
+            },
+            "13": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4660940170288086,
+                "elapsed-time-seconds": 0.462806,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 221184,
+                "disk-bytes": 0
+            },
+            "14": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.42254114151000977,
+                "elapsed-time-seconds": 0.417136,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 2203648,
+                "disk-bytes": 0
+            },
+            "15": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.45000314712524414,
+                "elapsed-time-seconds": 0.445545,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -36306944,
+                "disk-bytes": 4096
+            },
+            "16": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.48212170600891113,
+                "elapsed-time-seconds": 0.478246,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 1753088,
+                "disk-bytes": 0
+            },
+            "17": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.6013486385345459,
+                "elapsed-time-seconds": 0.416521,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 5959680,
+                "disk-bytes": 2813952
+            },
+            "18": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.419325590133667,
+                "elapsed-time-seconds": 0.415384,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -6283264,
+                "disk-bytes": 0
+            },
+            "19": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.41990065574645996,
+                "elapsed-time-seconds": 0.415763,
+                "cpu-percentage": 5.0,
+                "ram-bytes": 2248704,
+                "disk-bytes": 0
+            },
+            "20": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4203641414642334,
+                "elapsed-time-seconds": 0.415536,
+                "cpu-percentage": 5.0,
+                "ram-bytes": 2748416,
+                "disk-bytes": 8192
+            },
+            "21": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.42288661003112793,
+                "elapsed-time-seconds": 0.417895,
+                "cpu-percentage": -5.0,
+                "ram-bytes": -4231168,
+                "disk-bytes": 0
+            },
+            "22": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4830594062805176,
+                "elapsed-time-seconds": 0.479007,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 671744,
+                "disk-bytes": 0
+            },
+            "23": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.5981197357177734,
+                "elapsed-time-seconds": 0.58602,
+                "cpu-percentage": 106.4,
+                "ram-bytes": 7254016,
+                "disk-bytes": 0
+            },
+            "24": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.47885608673095703,
+                "elapsed-time-seconds": 0.421538,
+                "cpu-percentage": -2.299999999999997,
+                "ram-bytes": -7856128,
+                "disk-bytes": 0
+            },
+            "25": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.5057315826416016,
+                "elapsed-time-seconds": 0.490086,
+                "cpu-percentage": -25.0,
+                "ram-bytes": -7794688,
+                "disk-bytes": 0
+            },
+            "26": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.42093753814697266,
+                "elapsed-time-seconds": 0.413143,
+                "cpu-percentage": 5.0,
+                "ram-bytes": -598016,
+                "disk-bytes": 0
+            },
+            "27": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.421720027923584,
+                "elapsed-time-seconds": 0.417341,
+                "cpu-percentage": -5.0,
+                "ram-bytes": -53248,
+                "disk-bytes": 4096
+            },
+            "28": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.42139577865600586,
+                "elapsed-time-seconds": 0.417046,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -1695744,
+                "disk-bytes": 0
+            },
+            "29": {
+                "name": "sending-update-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4277536869049072,
+                "elapsed-time-seconds": 0.415633,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -30035968,
+                "disk-bytes": 8192
+            },
+            "30": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4823009967803955,
+                "elapsed-time-seconds": 0.47334,
+                "cpu-percentage": 0.09999999999999964,
+                "ram-bytes": -29786112,
+                "disk-bytes": 8192
+            },
+            "31": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.42244958877563477,
+                "elapsed-time-seconds": 0.417925,
+                "cpu-percentage": -5.0,
+                "ram-bytes": 2535424,
+                "disk-bytes": 0
+            },
+            "32": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.42212367057800293,
+                "elapsed-time-seconds": 0.41761,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -7725056,
+                "disk-bytes": 0
+            },
+            "33": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4250669479370117,
+                "elapsed-time-seconds": 0.419315,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -8830976,
+                "disk-bytes": 0
+            },
+            "34": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.426311731338501,
+                "elapsed-time-seconds": 0.420387,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 5152768,
+                "disk-bytes": 0
+            },
+            "35": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4264097213745117,
+                "elapsed-time-seconds": 0.421396,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 0,
+                "disk-bytes": 0
+            }
+        },
+        "2": {
+            "1": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.7132480144500732,
+                "elapsed-time-seconds": 0.610078,
+                "cpu-percentage": -33.2,
+                "ram-bytes": -28778496,
+                "disk-bytes": 3407872
+            },
+            "2": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4240245819091797,
+                "elapsed-time-seconds": 0.419464,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 180224,
+                "disk-bytes": 4096
+            },
+            "3": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.42383241653442383,
+                "elapsed-time-seconds": 0.418724,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 2019328,
+                "disk-bytes": 0
+            },
+            "4": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.42400026321411133,
+                "elapsed-time-seconds": 0.418739,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 15556608,
+                "disk-bytes": 2809856
+            },
+            "5": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4252002239227295,
+                "elapsed-time-seconds": 0.420395,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 2019328,
+                "disk-bytes": 0
+            },
+            "6": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.42551136016845703,
+                "elapsed-time-seconds": 0.420324,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 405504,
+                "disk-bytes": 0
+            },
+            "7": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4377872943878174,
+                "elapsed-time-seconds": 0.426848,
+                "cpu-percentage": 101.1,
+                "ram-bytes": 3883008,
+                "disk-bytes": 0
+            },
+            "8": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4254145622253418,
+                "elapsed-time-seconds": 0.421965,
+                "cpu-percentage": 2.9000000000000057,
+                "ram-bytes": 2052096,
+                "disk-bytes": 0
+            },
+            "9": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4370758533477783,
+                "elapsed-time-seconds": 0.422953,
+                "cpu-percentage": -2.700000000000003,
+                "ram-bytes": -2580480,
+                "disk-bytes": 0
+            },
+            "10": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.42737698554992676,
+                "elapsed-time-seconds": 0.420759,
+                "cpu-percentage": -103.9,
+                "ram-bytes": -2408448,
+                "disk-bytes": 8192
+            },
+            "11": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.42905449867248535,
+                "elapsed-time-seconds": 0.422696,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 6004736,
+                "disk-bytes": 4096
+            },
+            "12": {
+                "name": "sending-update-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4964413642883301,
+                "elapsed-time-seconds": 0.480888,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 5779456,
+                "disk-bytes": 4096
+            },
+            "13": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.42653846740722656,
+                "elapsed-time-seconds": 0.421109,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 704512,
+                "disk-bytes": 4096
+            },
+            "14": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.42984557151794434,
+                "elapsed-time-seconds": 0.423044,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 1142784,
+                "disk-bytes": 0
+            },
+            "15": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4267246723175049,
+                "elapsed-time-seconds": 0.421607,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -9113600,
+                "disk-bytes": 0
+            },
+            "16": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4271230697631836,
+                "elapsed-time-seconds": 0.421473,
+                "cpu-percentage": 5.0,
+                "ram-bytes": -1011712,
+                "disk-bytes": 0
+            },
+            "17": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4271278381347656,
+                "elapsed-time-seconds": 0.422107,
+                "cpu-percentage": -5.0,
+                "ram-bytes": 208896,
+                "disk-bytes": 4096
+            }
+        },
+        "3": {
+            "1": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.6987137794494629,
+                "elapsed-time-seconds": 0.479728,
+                "cpu-percentage": -122.7,
+                "ram-bytes": -77803520,
+                "disk-bytes": 3403776
+            },
+            "2": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4357752799987793,
+                "elapsed-time-seconds": 0.429979,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 9527296,
+                "disk-bytes": 0
+            },
+            "3": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.43662405014038086,
+                "elapsed-time-seconds": 0.424858,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 2850816,
+                "disk-bytes": 2809856
+            },
+            "4": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4407963752746582,
+                "elapsed-time-seconds": 0.432622,
+                "cpu-percentage": 5.0,
+                "ram-bytes": 20856832,
+                "disk-bytes": 0
+            },
+            "5": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4324023723602295,
+                "elapsed-time-seconds": 0.424777,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -8790016,
+                "disk-bytes": 4096
+            },
+            "6": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.43148326873779297,
+                "elapsed-time-seconds": 0.424751,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -90112,
+                "disk-bytes": 0
+            },
+            "7": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.42919254302978516,
+                "elapsed-time-seconds": 0.422414,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 479232,
+                "disk-bytes": 0
+            },
+            "8": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.43055152893066406,
+                "elapsed-time-seconds": 0.425215,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 0,
+                "disk-bytes": 0
+            },
+            "9": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4315023422241211,
+                "elapsed-time-seconds": 0.424762,
+                "cpu-percentage": 102.3,
+                "ram-bytes": 49152,
+                "disk-bytes": 0
+            },
+            "10": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.530839204788208,
+                "elapsed-time-seconds": 0.508061,
+                "cpu-percentage": -2.1000000000000085,
+                "ram-bytes": 0,
+                "disk-bytes": 0
+            },
+            "11": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4841294288635254,
+                "elapsed-time-seconds": 0.435086,
+                "cpu-percentage": -3.0999999999999943,
+                "ram-bytes": 1003520,
+                "disk-bytes": 8192
+            },
+            "12": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4298093318939209,
+                "elapsed-time-seconds": 0.423346,
+                "cpu-percentage": -94.5,
+                "ram-bytes": -524288,
+                "disk-bytes": 0
+            },
+            "13": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.42979884147644043,
+                "elapsed-time-seconds": 0.424105,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -839680,
+                "disk-bytes": 0
+            },
+            "14": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.43061304092407227,
+                "elapsed-time-seconds": 0.42456,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 2019328,
+                "disk-bytes": 0
+            },
+            "15": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.43256211280822754,
+                "elapsed-time-seconds": 0.426021,
+                "cpu-percentage": 5.0,
+                "ram-bytes": 659456,
+                "disk-bytes": 4096
+            },
+            "16": {
+                "name": "sending-update-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.492311954498291,
+                "elapsed-time-seconds": 0.4791,
+                "cpu-percentage": -9.6,
+                "ram-bytes": 659456,
+                "disk-bytes": 4096
+            },
+            "17": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.43164801597595215,
+                "elapsed-time-seconds": 0.425398,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -6328320,
+                "disk-bytes": 4096
+            },
+            "18": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4301750659942627,
+                "elapsed-time-seconds": 0.424423,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -6590464,
+                "disk-bytes": 0
+            },
+            "19": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4327266216278076,
+                "elapsed-time-seconds": 0.426012,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -2883584,
+                "disk-bytes": 0
+            },
+            "20": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.43256092071533203,
+                "elapsed-time-seconds": 0.425677,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 4923392,
+                "disk-bytes": 0
+            },
+            "21": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.43218135833740234,
+                "elapsed-time-seconds": 0.426354,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -1359872,
+                "disk-bytes": 0
+            }
+        },
+        "4": {
+            "1": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.5913269519805908,
+                "elapsed-time-seconds": 0.424855,
+                "cpu-percentage": -104.0,
+                "ram-bytes": -81330176,
+                "disk-bytes": 3403776
+            },
+            "2": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4307880401611328,
+                "elapsed-time-seconds": 0.424894,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -1003520,
+                "disk-bytes": 0
+            },
+            "3": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.43313097953796387,
+                "elapsed-time-seconds": 0.427072,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -2256896,
+                "disk-bytes": 4096
+            },
+            "4": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.5886921882629395,
+                "elapsed-time-seconds": 0.427839,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -29478912,
+                "disk-bytes": 2813952
+            },
+            "5": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.43178606033325195,
+                "elapsed-time-seconds": 0.425884,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -1105920,
+                "disk-bytes": 0
+            },
+            "6": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4319474697113037,
+                "elapsed-time-seconds": 0.426054,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 208896,
+                "disk-bytes": 4096
+            },
+            "7": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.49515318870544434,
+                "elapsed-time-seconds": 0.483172,
+                "cpu-percentage": 102.0,
+                "ram-bytes": -1331200,
+                "disk-bytes": 0
+            },
+            "8": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4328899383544922,
+                "elapsed-time-seconds": 0.427231,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -577536,
+                "disk-bytes": 0
+            },
+            "9": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4457380771636963,
+                "elapsed-time-seconds": 0.428124,
+                "cpu-percentage": -0.6000000000000085,
+                "ram-bytes": 258048,
+                "disk-bytes": 0
+            },
+            "10": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.43147873878479004,
+                "elapsed-time-seconds": 0.421655,
+                "cpu-percentage": -74.0,
+                "ram-bytes": 0,
+                "disk-bytes": 0
+            },
+            "11": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.5035042762756348,
+                "elapsed-time-seconds": 0.492104,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -9035776,
+                "disk-bytes": 12288
+            },
+            "12": {
+                "name": "sending-update-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.576409101486206,
+                "elapsed-time-seconds": 0.562842,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -9043968,
+                "disk-bytes": 16384
+            },
+            "13": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4350311756134033,
+                "elapsed-time-seconds": 0.428777,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 212992,
+                "disk-bytes": 4096
+            },
+            "14": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.43729162216186523,
+                "elapsed-time-seconds": 0.428265,
+                "cpu-percentage": -5.0,
+                "ram-bytes": 446464,
+                "disk-bytes": 0
+            },
+            "15": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4374198913574219,
+                "elapsed-time-seconds": 0.431102,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -1331200,
+                "disk-bytes": 0
+            },
+            "16": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4369626045227051,
+                "elapsed-time-seconds": 0.42995,
+                "cpu-percentage": -5.0,
+                "ram-bytes": 3874816,
+                "disk-bytes": 0
+            },
+            "17": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4357945919036865,
+                "elapsed-time-seconds": 0.428187,
+                "cpu-percentage": -5.0,
+                "ram-bytes": 544768,
+                "disk-bytes": 0
+            }
+        },
+        "5": {
+            "1": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.7762961387634277,
+                "elapsed-time-seconds": 0.483042,
+                "cpu-percentage": -88.6,
+                "ram-bytes": -83103744,
+                "disk-bytes": 3399680
+            },
+            "2": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4350755214691162,
+                "elapsed-time-seconds": 0.42871,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 204800,
+                "disk-bytes": 0
+            },
+            "3": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.45678067207336426,
+                "elapsed-time-seconds": 0.449857,
+                "cpu-percentage": 5.0,
+                "ram-bytes": -7766016,
+                "disk-bytes": 2809856
+            },
+            "4": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4357590675354004,
+                "elapsed-time-seconds": 0.429268,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -557056,
+                "disk-bytes": 4096
+            },
+            "5": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.43597960472106934,
+                "elapsed-time-seconds": 0.429472,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -262144,
+                "disk-bytes": 4096
+            },
+            "6": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.43728017807006836,
+                "elapsed-time-seconds": 0.429975,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -1613824,
+                "disk-bytes": 0
+            },
+            "7": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4359133243560791,
+                "elapsed-time-seconds": 0.428884,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -1503232,
+                "disk-bytes": 0
+            },
+            "8": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4363594055175781,
+                "elapsed-time-seconds": 0.429373,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 1224704,
+                "disk-bytes": 0
+            },
+            "9": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.45610761642456055,
+                "elapsed-time-seconds": 0.433374,
+                "cpu-percentage": 92.9,
+                "ram-bytes": -2908160,
+                "disk-bytes": 4096
+            },
+            "10": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.5401465892791748,
+                "elapsed-time-seconds": 0.522846,
+                "cpu-percentage": -2.3000000000000114,
+                "ram-bytes": -7540736,
+                "disk-bytes": 0
+            },
+            "11": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4300398826599121,
+                "elapsed-time-seconds": 0.424649,
+                "cpu-percentage": 2.5,
+                "ram-bytes": -6184960,
+                "disk-bytes": 0
+            },
+            "12": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.44205307960510254,
+                "elapsed-time-seconds": 0.434391,
+                "cpu-percentage": -93.8,
+                "ram-bytes": -3944448,
+                "disk-bytes": 8192
+            },
+            "13": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.43717455863952637,
+                "elapsed-time-seconds": 0.430265,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 176128,
+                "disk-bytes": 4096
+            },
+            "14": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4368903636932373,
+                "elapsed-time-seconds": 0.430063,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 217088,
+                "disk-bytes": 0
+            },
+            "15": {
+                "name": "sending-update-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.5087301731109619,
+                "elapsed-time-seconds": 0.485522,
+                "cpu-percentage": 5.0,
+                "ram-bytes": 598016,
+                "disk-bytes": 4096
+            },
+            "16": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.5661826133728027,
+                "elapsed-time-seconds": 0.556253,
+                "cpu-percentage": 0.09999999999999964,
+                "ram-bytes": 598016,
+                "disk-bytes": 4096
+            },
+            "17": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4386262893676758,
+                "elapsed-time-seconds": 0.431261,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -1335296,
+                "disk-bytes": 4096
+            },
+            "18": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4380486011505127,
+                "elapsed-time-seconds": 0.430307,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 380928,
+                "disk-bytes": 0
+            },
+            "19": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.44068241119384766,
+                "elapsed-time-seconds": 0.432416,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -315392,
+                "disk-bytes": 0
+            },
+            "20": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4403858184814453,
+                "elapsed-time-seconds": 0.432615,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 2859008,
+                "disk-bytes": 0
+            },
+            "21": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.43877553939819336,
+                "elapsed-time-seconds": 0.431797,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -1523712,
+                "disk-bytes": 0
+            }
+        },
+        "6": {
+            "1": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.6345140933990479,
+                "elapsed-time-seconds": 0.433893,
+                "cpu-percentage": -123.4,
+                "ram-bytes": -87642112,
+                "disk-bytes": 3403776
+            },
+            "2": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.43872833251953125,
+                "elapsed-time-seconds": 0.43167,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -1576960,
+                "disk-bytes": 0
+            },
+            "3": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.43974971771240234,
+                "elapsed-time-seconds": 0.431312,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -843776,
+                "disk-bytes": 0
+            },
+            "4": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.6247353553771973,
+                "elapsed-time-seconds": 0.433461,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -11530240,
+                "disk-bytes": 2809856
+            },
+            "5": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.43899059295654297,
+                "elapsed-time-seconds": 0.431808,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -593920,
+                "disk-bytes": 0
+            },
+            "6": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.44042229652404785,
+                "elapsed-time-seconds": 0.433252,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -1339392,
+                "disk-bytes": 0
+            },
+            "7": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.7265658378601074,
+                "elapsed-time-seconds": 0.444185,
+                "cpu-percentage": 98.69999999999999,
+                "ram-bytes": 12214272,
+                "disk-bytes": 0
+            },
+            "8": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4536900520324707,
+                "elapsed-time-seconds": 0.448232,
+                "cpu-percentage": -2.4000000000000057,
+                "ram-bytes": 1228800,
+                "disk-bytes": 0
+            },
+            "9": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4475564956665039,
+                "elapsed-time-seconds": 0.436465,
+                "cpu-percentage": -0.29999999999999716,
+                "ram-bytes": 258048,
+                "disk-bytes": 0
+            },
+            "10": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.43529272079467773,
+                "elapsed-time-seconds": 0.42932,
+                "cpu-percentage": 0.10000000000000853,
+                "ram-bytes": 2306048,
+                "disk-bytes": 4096
+            },
+            "11": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4495584964752197,
+                "elapsed-time-seconds": 0.440581,
+                "cpu-percentage": 5.0,
+                "ram-bytes": -7671808,
+                "disk-bytes": 8192
+            },
+            "12": {
+                "name": "sending-update-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.5276885032653809,
+                "elapsed-time-seconds": 0.503759,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -7585792,
+                "disk-bytes": 8192
+            },
+            "13": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4420158863067627,
+                "elapsed-time-seconds": 0.434258,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -5390336,
+                "disk-bytes": 0
+            },
+            "14": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.44547343254089355,
+                "elapsed-time-seconds": 0.435757,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 733184,
+                "disk-bytes": 0
+            },
+            "15": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4415242671966553,
+                "elapsed-time-seconds": 0.433937,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 417792,
+                "disk-bytes": 0
+            },
+            "16": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.44449591636657715,
+                "elapsed-time-seconds": 0.435919,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 217088,
+                "disk-bytes": 0
+            },
+            "17": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4482100009918213,
+                "elapsed-time-seconds": 0.438821,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 565248,
+                "disk-bytes": 4096
+            }
+        },
+        "7": {
+            "1": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.5996248722076416,
+                "elapsed-time-seconds": 0.432772,
+                "cpu-percentage": -80.9,
+                "ram-bytes": -8151040,
+                "disk-bytes": 3407872
+            },
+            "2": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.45815515518188477,
+                "elapsed-time-seconds": 0.448043,
+                "cpu-percentage": 5.0,
+                "ram-bytes": 10477568,
+                "disk-bytes": 0
+            },
+            "3": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.6480250358581543,
+                "elapsed-time-seconds": 0.437839,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -1970176,
+                "disk-bytes": 2818048
+            },
+            "4": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4438467025756836,
+                "elapsed-time-seconds": 0.436174,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -57344,
+                "disk-bytes": 0
+            },
+            "5": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.44275856018066406,
+                "elapsed-time-seconds": 0.435018,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 1232896,
+                "disk-bytes": 0
+            },
+            "6": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.44868922233581543,
+                "elapsed-time-seconds": 0.439698,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -9588736,
+                "disk-bytes": 0
+            },
+            "7": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4459245204925537,
+                "elapsed-time-seconds": 0.436768,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 700416,
+                "disk-bytes": 0
+            },
+            "8": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.44350695610046387,
+                "elapsed-time-seconds": 0.434933,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 102400,
+                "disk-bytes": 0
+            },
+            "9": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.49800658226013184,
+                "elapsed-time-seconds": 0.479014,
+                "cpu-percentage": 110.9,
+                "ram-bytes": -8790016,
+                "disk-bytes": 0
+            },
+            "10": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4888725280761719,
+                "elapsed-time-seconds": 0.450016,
+                "cpu-percentage": -4.799999999999997,
+                "ram-bytes": 413696,
+                "disk-bytes": 4096
+            },
+            "11": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.43736791610717773,
+                "elapsed-time-seconds": 0.430386,
+                "cpu-percentage": 0.20000000000000284,
+                "ram-bytes": 978944,
+                "disk-bytes": 0
+            },
+            "12": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.43885040283203125,
+                "elapsed-time-seconds": 0.432341,
+                "cpu-percentage": -39.7,
+                "ram-bytes": 2539520,
+                "disk-bytes": 0
+            },
+            "13": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4455256462097168,
+                "elapsed-time-seconds": 0.436673,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 528384,
+                "disk-bytes": 0
+            },
+            "14": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4514896869659424,
+                "elapsed-time-seconds": 0.44217,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 1835008,
+                "disk-bytes": 0
+            },
+            "15": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4564192295074463,
+                "elapsed-time-seconds": 0.443609,
+                "cpu-percentage": 10.0,
+                "ram-bytes": -7606272,
+                "disk-bytes": 4096
+            },
+            "16": {
+                "name": "sending-update-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.5341536998748779,
+                "elapsed-time-seconds": 0.505257,
+                "cpu-percentage": 5.0,
+                "ram-bytes": -7614464,
+                "disk-bytes": 4096
+            },
+            "17": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4502842426300049,
+                "elapsed-time-seconds": 0.442054,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -9990144,
+                "disk-bytes": 4096
+            },
+            "18": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4749178886413574,
+                "elapsed-time-seconds": 0.466753,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -1286144,
+                "disk-bytes": 0
+            },
+            "19": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4526081085205078,
+                "elapsed-time-seconds": 0.442749,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -3719168,
+                "disk-bytes": 0
+            },
+            "20": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4475882053375244,
+                "elapsed-time-seconds": 0.438589,
+                "cpu-percentage": -5.0,
+                "ram-bytes": 6447104,
+                "disk-bytes": 0
+            },
+            "21": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.452242374420166,
+                "elapsed-time-seconds": 0.443996,
+                "cpu-percentage": 5.0,
+                "ram-bytes": -9371648,
+                "disk-bytes": 0
+            }
+        },
+        "8": {
+            "1": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.649360179901123,
+                "elapsed-time-seconds": 0.436037,
+                "cpu-percentage": -171.6,
+                "ram-bytes": -77758464,
+                "disk-bytes": 3399680
+            },
+            "2": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4482765197753906,
+                "elapsed-time-seconds": 0.439358,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -983040,
+                "disk-bytes": -139264
+            },
+            "3": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.44835710525512695,
+                "elapsed-time-seconds": 0.439155,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -12066816,
+                "disk-bytes": 0
+            },
+            "4": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4468050003051758,
+                "elapsed-time-seconds": 0.43752,
+                "cpu-percentage": 10.0,
+                "ram-bytes": -6922240,
+                "disk-bytes": 2813952
+            },
+            "5": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.44747209548950195,
+                "elapsed-time-seconds": 0.439079,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -7647232,
+                "disk-bytes": -8192
+            },
+            "6": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4496276378631592,
+                "elapsed-time-seconds": 0.440785,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -3207168,
+                "disk-bytes": 0
+            },
+            "7": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4514501094818115,
+                "elapsed-time-seconds": 0.438378,
+                "cpu-percentage": 101.8,
+                "ram-bytes": -884736,
+                "disk-bytes": 0
+            },
+            "8": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.5169787406921387,
+                "elapsed-time-seconds": 0.496995,
+                "cpu-percentage": -4.299999999999997,
+                "ram-bytes": -3280896,
+                "disk-bytes": 0
+            },
+            "9": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4642641544342041,
+                "elapsed-time-seconds": 0.447022,
+                "cpu-percentage": -2.3000000000000114,
+                "ram-bytes": -8880128,
+                "disk-bytes": 0
+            },
+            "10": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4435732364654541,
+                "elapsed-time-seconds": 0.43302,
+                "cpu-percentage": -89.1,
+                "ram-bytes": -655360,
+                "disk-bytes": 8192
+            },
+            "11": {
+                "name": "sending-update-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.45946383476257324,
+                "elapsed-time-seconds": 0.430541,
+                "cpu-percentage": 5.0,
+                "ram-bytes": -901120,
+                "disk-bytes": 8192
+            },
+            "12": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.5142350196838379,
+                "elapsed-time-seconds": 0.504242,
+                "cpu-percentage": 5.0,
+                "ram-bytes": -901120,
+                "disk-bytes": 8192
+            },
+            "13": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4597361087799072,
+                "elapsed-time-seconds": 0.449757,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 1720320,
+                "disk-bytes": 8192
+            },
+            "14": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.450747013092041,
+                "elapsed-time-seconds": 0.441018,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -610304,
+                "disk-bytes": 0
+            },
+            "15": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4533247947692871,
+                "elapsed-time-seconds": 0.44392,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -2752512,
+                "disk-bytes": 0
+            },
+            "16": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4501497745513916,
+                "elapsed-time-seconds": 0.440563,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 3858432,
+                "disk-bytes": 0
+            },
+            "17": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4530770778656006,
+                "elapsed-time-seconds": 0.443246,
+                "cpu-percentage": -5.0,
+                "ram-bytes": -9940992,
+                "disk-bytes": 0
+            }
+        },
+        "9": {
+            "1": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.7843313217163086,
+                "elapsed-time-seconds": 0.440542,
+                "cpu-percentage": -80.7,
+                "ram-bytes": -64155648,
+                "disk-bytes": 3399680
+            },
+            "2": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4571189880371094,
+                "elapsed-time-seconds": 0.445521,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -1003520,
+                "disk-bytes": 4096
+            },
+            "3": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.6538581848144531,
+                "elapsed-time-seconds": 0.445076,
+                "cpu-percentage": -5.0,
+                "ram-bytes": 5226496,
+                "disk-bytes": 2813952
+            },
+            "4": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.45127129554748535,
+                "elapsed-time-seconds": 0.44227,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 6897664,
+                "disk-bytes": 4096
+            },
+            "5": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.45206761360168457,
+                "elapsed-time-seconds": 0.443051,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 1474560,
+                "disk-bytes": 0
+            },
+            "6": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4536118507385254,
+                "elapsed-time-seconds": 0.443204,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -712704,
+                "disk-bytes": 0
+            },
+            "7": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.45485973358154297,
+                "elapsed-time-seconds": 0.445465,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 462848,
+                "disk-bytes": 0
+            },
+            "8": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.45044732093811035,
+                "elapsed-time-seconds": 0.441415,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -462848,
+                "disk-bytes": 0
+            },
+            "9": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.5842289924621582,
+                "elapsed-time-seconds": 0.568063,
+                "cpu-percentage": 95.2,
+                "ram-bytes": 950272,
+                "disk-bytes": 0
+            },
+            "10": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.45923924446105957,
+                "elapsed-time-seconds": 0.441991,
+                "cpu-percentage": 51.0,
+                "ram-bytes": -1327104,
+                "disk-bytes": 0
+            },
+            "11": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.7453668117523193,
+                "elapsed-time-seconds": 0.525986,
+                "cpu-percentage": -12.400000000000006,
+                "ram-bytes": 536576,
+                "disk-bytes": 0
+            },
+            "12": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.44861793518066406,
+                "elapsed-time-seconds": 0.437486,
+                "cpu-percentage": -86.5,
+                "ram-bytes": -9490432,
+                "disk-bytes": 8192
+            },
+            "13": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4682483673095703,
+                "elapsed-time-seconds": 0.456181,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 1863680,
+                "disk-bytes": 4096
+            },
+            "14": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.46637582778930664,
+                "elapsed-time-seconds": 0.455358,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 2285568,
+                "disk-bytes": 0
+            },
+            "15": {
+                "name": "sending-update-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.47019290924072266,
+                "elapsed-time-seconds": 0.430459,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 7118848,
+                "disk-bytes": 4096
+            },
+            "16": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.5254576206207275,
+                "elapsed-time-seconds": 0.513932,
+                "cpu-percentage": 10.0,
+                "ram-bytes": -1896448,
+                "disk-bytes": 4096
+            },
+            "17": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4711334705352783,
+                "elapsed-time-seconds": 0.460212,
+                "cpu-percentage": -5.0,
+                "ram-bytes": 22605824,
+                "disk-bytes": 0
+            },
+            "18": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.47139835357666016,
+                "elapsed-time-seconds": 0.460705,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 3182592,
+                "disk-bytes": 0
+            },
+            "19": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.46179795265197754,
+                "elapsed-time-seconds": 0.449741,
+                "cpu-percentage": 5.0,
+                "ram-bytes": -6627328,
+                "disk-bytes": 4096
+            },
+            "20": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4795355796813965,
+                "elapsed-time-seconds": 0.467259,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 12877824,
+                "disk-bytes": 0
+            },
+            "21": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4711031913757324,
+                "elapsed-time-seconds": 0.459844,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 7475200,
+                "disk-bytes": 4096
+            },
+            "22": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.9223735332489014,
+                "elapsed-time-seconds": 0.541591,
+                "cpu-percentage": -82.10000000000001,
+                "ram-bytes": 31330304,
+                "disk-bytes": 2711552
+            }
+        },
+        "10": {
+            "1": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4679996967315674,
+                "elapsed-time-seconds": 0.456569,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 3842048,
+                "disk-bytes": 0
+            },
+            "2": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.46991872787475586,
+                "elapsed-time-seconds": 0.45689,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 8892416,
+                "disk-bytes": 0
+            },
+            "3": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.6925921440124512,
+                "elapsed-time-seconds": 0.453549,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -729088,
+                "disk-bytes": 2809856
+            },
+            "4": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4624476432800293,
+                "elapsed-time-seconds": 0.451573,
+                "cpu-percentage": -5.0,
+                "ram-bytes": 15208448,
+                "disk-bytes": 0
+            },
+            "5": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.45476269721984863,
+                "elapsed-time-seconds": 0.44512,
+                "cpu-percentage": -5.0,
+                "ram-bytes": 2150400,
+                "disk-bytes": 0
+            },
+            "6": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.46955418586730957,
+                "elapsed-time-seconds": 0.453225,
+                "cpu-percentage": 101.7,
+                "ram-bytes": -196608,
+                "disk-bytes": 0
+            },
+            "7": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.45937585830688477,
+                "elapsed-time-seconds": 0.450871,
+                "cpu-percentage": 10.799999999999997,
+                "ram-bytes": 2146304,
+                "disk-bytes": 0
+            },
+            "8": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4522392749786377,
+                "elapsed-time-seconds": 0.443389,
+                "cpu-percentage": -5.0,
+                "ram-bytes": -4763648,
+                "disk-bytes": 4096
+            },
+            "9": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4512505531311035,
+                "elapsed-time-seconds": 0.441346,
+                "cpu-percentage": 0.09999999999999432,
+                "ram-bytes": 102400,
+                "disk-bytes": 4096
+            },
+            "10": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.46364450454711914,
+                "elapsed-time-seconds": 0.452549,
+                "cpu-percentage": 5.0,
+                "ram-bytes": 16519168,
+                "disk-bytes": 4096
+            },
+            "11": {
+                "name": "sending-update-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.5242245197296143,
+                "elapsed-time-seconds": 0.490445,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 16584704,
+                "disk-bytes": 4096
+            },
+            "12": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4563734531402588,
+                "elapsed-time-seconds": 0.44638,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 4853760,
+                "disk-bytes": 0
+            },
+            "13": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.45973658561706543,
+                "elapsed-time-seconds": 0.448049,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 2179072,
+                "disk-bytes": 0
+            },
+            "14": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4576430320739746,
+                "elapsed-time-seconds": 0.447541,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 974848,
+                "disk-bytes": 0
+            },
+            "15": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4588017463684082,
+                "elapsed-time-seconds": 0.448134,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 524288,
+                "disk-bytes": 0
+            },
+            "16": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.4598257541656494,
+                "elapsed-time-seconds": 0.447851,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 2338816,
+                "disk-bytes": 4096
+            }
+        },
+        "11": {
+            "1": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.45771121978759766,
+                "elapsed-time-seconds": 0.447536,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 331776,
+                "disk-bytes": 0
+            },
+            "2": {
+                "name": "sending-info-to-central",
+                "status-code": 200,
+                "processing-time-seconds": 0.5420629978179932,
+                "elapsed-time-seconds": 0.529026,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 2744320,
+                "disk-bytes": 0
+            }
+        }
+    },
+    "training": {
+        "1": {
+            "1": {
+                "name": "logistic-regression-training",
+                "epochs": 20,
+                "batches": 10,
+                "average-batch-size": 128000.0,
+                "time-seconds": 28.00971,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 3956736,
+                "disk-bytes": -12288
+            },
+            "2": {
+                "name": "logistic-regression-testing",
+                "batches": 250,
+                "average-batch-size": 64.0,
+                "time-seconds": 0.73244,
+                "cpu-percentage": -5.0,
+                "ram-bytes": 2048000,
+                "disk-bytes": 0
+            },
+            "3": {
+                "name": "logistic-regression-evalution",
+                "batches": 313,
+                "average-batch-size": 63.89776357827476,
+                "time-seconds": 0.9804,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -3039232,
+                "disk-bytes": 0
+            }
+        },
+        "2": {
+            "1": {
+                "name": "logistic-regression-training",
+                "epochs": 20,
+                "batches": 10,
+                "average-batch-size": 128000.0,
+                "time-seconds": 27.46042,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 9023488,
+                "disk-bytes": 4096
+            },
+            "2": {
+                "name": "logistic-regression-testing",
+                "batches": 250,
+                "average-batch-size": 64.0,
+                "time-seconds": 0.71894,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -1802240,
+                "disk-bytes": 0
+            },
+            "3": {
+                "name": "logistic-regression-evalution",
+                "batches": 313,
+                "average-batch-size": 63.89776357827476,
+                "time-seconds": 0.87972,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 0,
+                "disk-bytes": 4096
+            }
+        },
+        "3": {
+            "1": {
+                "name": "logistic-regression-training",
+                "epochs": 20,
+                "batches": 10,
+                "average-batch-size": 128000.0,
+                "time-seconds": 28.94684,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -167936,
+                "disk-bytes": 8192
+            },
+            "2": {
+                "name": "logistic-regression-testing",
+                "batches": 250,
+                "average-batch-size": 64.0,
+                "time-seconds": 0.77466,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -524288,
+                "disk-bytes": 0
+            },
+            "3": {
+                "name": "logistic-regression-evalution",
+                "batches": 313,
+                "average-batch-size": 63.89776357827476,
+                "time-seconds": 0.99451,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -1667072,
+                "disk-bytes": 0
+            }
+        },
+        "4": {
+            "1": {
+                "name": "logistic-regression-training",
+                "epochs": 20,
+                "batches": 10,
+                "average-batch-size": 128000.0,
+                "time-seconds": 27.77998,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -4227072,
+                "disk-bytes": 0
+            },
+            "2": {
+                "name": "logistic-regression-testing",
+                "batches": 250,
+                "average-batch-size": 64.0,
+                "time-seconds": 0.70683,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -4280320,
+                "disk-bytes": 0
+            },
+            "3": {
+                "name": "logistic-regression-evalution",
+                "batches": 313,
+                "average-batch-size": 63.89776357827476,
+                "time-seconds": 0.9524,
+                "cpu-percentage": 5.0,
+                "ram-bytes": 466944,
+                "disk-bytes": 0
+            }
+        },
+        "5": {
+            "1": {
+                "name": "logistic-regression-training",
+                "epochs": 20,
+                "batches": 10,
+                "average-batch-size": 128000.0,
+                "time-seconds": 27.41839,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -16367616,
+                "disk-bytes": 0
+            },
+            "2": {
+                "name": "logistic-regression-testing",
+                "batches": 250,
+                "average-batch-size": 64.0,
+                "time-seconds": 0.70107,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 249856,
+                "disk-bytes": 0
+            },
+            "3": {
+                "name": "logistic-regression-evalution",
+                "batches": 313,
+                "average-batch-size": 63.89776357827476,
+                "time-seconds": 0.96524,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -258048,
+                "disk-bytes": 0
+            }
+        },
+        "6": {
+            "1": {
+                "name": "logistic-regression-training",
+                "epochs": 20,
+                "batches": 10,
+                "average-batch-size": 128000.0,
+                "time-seconds": 28.65806,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -729088,
+                "disk-bytes": -40960
+            },
+            "2": {
+                "name": "logistic-regression-testing",
+                "batches": 250,
+                "average-batch-size": 64.0,
+                "time-seconds": 0.68979,
+                "cpu-percentage": 5.0,
+                "ram-bytes": -3874816,
+                "disk-bytes": 0
+            },
+            "3": {
+                "name": "logistic-regression-evalution",
+                "batches": 313,
+                "average-batch-size": 63.89776357827476,
+                "time-seconds": 0.94788,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 2019328,
+                "disk-bytes": 4096
+            }
+        },
+        "7": {
+            "1": {
+                "name": "logistic-regression-training",
+                "epochs": 20,
+                "batches": 10,
+                "average-batch-size": 128000.0,
+                "time-seconds": 27.82317,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -6316032,
+                "disk-bytes": 8192
+            },
+            "2": {
+                "name": "logistic-regression-testing",
+                "batches": 250,
+                "average-batch-size": 64.0,
+                "time-seconds": 0.69581,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 565248,
+                "disk-bytes": 0
+            },
+            "3": {
+                "name": "logistic-regression-evalution",
+                "batches": 313,
+                "average-batch-size": 63.89776357827476,
+                "time-seconds": 0.98903,
+                "cpu-percentage": 5.0,
+                "ram-bytes": 1204224,
+                "disk-bytes": 0
+            }
+        },
+        "8": {
+            "1": {
+                "name": "logistic-regression-training",
+                "epochs": 20,
+                "batches": 10,
+                "average-batch-size": 128000.0,
+                "time-seconds": 27.58656,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -15499264,
+                "disk-bytes": 12288
+            },
+            "2": {
+                "name": "logistic-regression-testing",
+                "batches": 250,
+                "average-batch-size": 64.0,
+                "time-seconds": 0.71046,
+                "cpu-percentage": -5.0,
+                "ram-bytes": -1318912,
+                "disk-bytes": 0
+            },
+            "3": {
+                "name": "logistic-regression-evalution",
+                "batches": 313,
+                "average-batch-size": 63.89776357827476,
+                "time-seconds": 0.92859,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 1933312,
+                "disk-bytes": 4096
+            }
+        },
+        "9": {
+            "1": {
+                "name": "logistic-regression-training",
+                "epochs": 20,
+                "batches": 10,
+                "average-batch-size": 128000.0,
+                "time-seconds": 27.64989,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -23695360,
+                "disk-bytes": 4096
+            },
+            "2": {
+                "name": "logistic-regression-testing",
+                "batches": 250,
+                "average-batch-size": 64.0,
+                "time-seconds": 0.69786,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 937984,
+                "disk-bytes": 0
+            },
+            "3": {
+                "name": "logistic-regression-evalution",
+                "batches": 313,
+                "average-batch-size": 63.89776357827476,
+                "time-seconds": 0.98533,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -9781248,
+                "disk-bytes": 0
+            }
+        },
+        "10": {
+            "1": {
+                "name": "logistic-regression-training",
+                "epochs": 20,
+                "batches": 10,
+                "average-batch-size": 128000.0,
+                "time-seconds": 27.98374,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -3280896,
+                "disk-bytes": 8192
+            },
+            "2": {
+                "name": "logistic-regression-testing",
+                "batches": 250,
+                "average-batch-size": 64.0,
+                "time-seconds": 0.68081,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 516096,
+                "disk-bytes": 0
+            },
+            "3": {
+                "name": "logistic-regression-evalution",
+                "batches": 313,
+                "average-batch-size": 63.89776357827476,
+                "time-seconds": 0.98292,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 503808,
+                "disk-bytes": 4096
+            }
+        }
+    },
+    "inference": {}
+}
