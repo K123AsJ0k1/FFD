@@ -1,0 +1,21 @@
+{
+    "seed": 42,
+    "used-columns": [
+        "amount",
+        "type_CASH_IN",
+        "type_CASH_OUT",
+        "type_DEBIT",
+        "type_PAYMENT",
+        "type_TRANSFER",
+        "isFraud"
+    ],
+    "input-size": 6,
+    "target-column": "isFraud",
+    "scaled-columns": [
+        "amount"
+    ],
+    "learning-rate": 0.05,
+    "sample-rate": 0.1,
+    "optimizer": "SGD",
+    "epochs": 20
+}

@@ -1,0 +1,1339 @@
+{
+    "general": {
+        "physical-cpu-amount": 4,
+        "total-cpu-amount": 8,
+        "min-cpu-frequency-mhz": 400.0,
+        "max-cpu-frequency-mhz": 3400.0,
+        "total-ram-amount-bytes": 16650469376,
+        "available-ram-amount-bytes": 3098574848,
+        "total-disk-amount-bytes": 370490241024,
+        "available-disk-amount-bytes": 150482542592,
+        "times": {
+            "experiment-date": "2024-03-10-16:10:40.401735",
+            "experiment-time-start": 1710079840.4017897,
+            "experiment-time-end": 1710080681.1397998,
+            "experiment-total-seconds": 840.7380101680756,
+            "1": {
+                "cycle-time-start": 1710079860.5283093,
+                "cycle-time-end": 1710080062.8582408,
+                "cycle-total-seconds": 202.32993149757385
+            },
+            "2": {
+                "cycle-time-start": 1710080062.8582466,
+                "cycle-time-end": 1710080182.829296,
+                "cycle-total-seconds": 119.97104954719543
+            },
+            "3": {
+                "cycle-time-start": 1710080182.8293009,
+                "cycle-time-end": 1710080302.9159706,
+                "cycle-total-seconds": 120.08666968345642
+            },
+            "4": {
+                "cycle-time-start": 1710080302.9159763,
+                "cycle-time-end": 1710080422.8391457,
+                "cycle-total-seconds": 119.92316937446594
+            },
+            "5": {
+                "cycle-time-start": 1710080422.8391511,
+                "cycle-time-end": 1710080543.2832031,
+                "cycle-total-seconds": 120.44405198097229
+            },
+            "6": {
+                "cycle-time-start": 1710080543.2832122,
+                "cycle-time-end": 1710080662.8978229,
+                "cycle-total-seconds": 119.61461067199707
+            }
+        }
+    },
+    "function": {
+        "1": {
+            "1": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00304,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 3887104,
+                "disk-bytes": 0
+            },
+            "2": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00348,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 2191360,
+                "disk-bytes": 0
+            },
+            "3": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00304,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 1400832,
+                "disk-bytes": 0
+            },
+            "4": {
+                "name": "central-worker-data-split",
+                "time-seconds": 0.30818,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 16285696,
+                "disk-bytes": 675840
+            },
+            "5": {
+                "name": "preprocess-into-train-test-and-evalute-tensors",
+                "time-seconds": 0.1189,
+                "cpu-percentage": 69.8,
+                "ram-bytes": -2195456,
+                "disk-bytes": 1417216
+            },
+            "6": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00322,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -3227648,
+                "disk-bytes": 0
+            },
+            "7": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00303,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 425984,
+                "disk-bytes": 0
+            },
+            "8": {
+                "name": "split-data-between-workers",
+                "time-seconds": 0.19971,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -6922240,
+                "disk-bytes": 671744
+            },
+            "9": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00372,
+                "cpu-percentage": -5.0,
+                "ram-bytes": 3289088,
+                "disk-bytes": 0
+            },
+            "10": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00497,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -16838656,
+                "disk-bytes": 0
+            },
+            "11": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00303,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -8192,
+                "disk-bytes": -151552
+            },
+            "12": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00347,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -1064960,
+                "disk-bytes": 0
+            },
+            "13": {
+                "name": "store-worker-1",
+                "time-seconds": 0.03003,
+                "cpu-percentage": -5.0,
+                "ram-bytes": -5947392,
+                "disk-bytes": 4096
+            },
+            "14": {
+                "name": "initial-model-training",
+                "time-seconds": 6.511945962905884,
+                "cpu-percentage": -5.0,
+                "ram-bytes": 1781760,
+                "disk-bytes": 20480
+            },
+            "15": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00313,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 585728,
+                "disk-bytes": 0
+            },
+            "16": {
+                "name": "send-context-to-workers",
+                "time-seconds": 1.0265617370605469,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 22740992,
+                "disk-bytes": 696320
+            },
+            "17": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00483,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 413696,
+                "disk-bytes": 0
+            },
+            "18": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00336,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 9445376,
+                "disk-bytes": 577536
+            },
+            "19": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00463,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -2068480,
+                "disk-bytes": 0
+            },
+            "20": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00415,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -3960832,
+                "disk-bytes": 0
+            },
+            "21": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00393,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 15323136,
+                "disk-bytes": 0
+            },
+            "22": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01051,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 233472,
+                "disk-bytes": 4096
+            },
+            "23": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00432,
+                "cpu-percentage": 5.0,
+                "ram-bytes": 753664,
+                "disk-bytes": 4096
+            },
+            "24": {
+                "name": "update-from-worker-1",
+                "time-seconds": 0.05773,
+                "cpu-percentage": 5.0,
+                "ram-bytes": 434176,
+                "disk-bytes": 4096
+            },
+            "25": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00451,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -45056,
+                "disk-bytes": 0
+            },
+            "26": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00502,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 0,
+                "disk-bytes": 0
+            },
+            "27": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00468,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 0,
+                "disk-bytes": 0
+            },
+            "28": {
+                "name": "update-global-model",
+                "time-seconds": 0.00985,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -4096,
+                "disk-bytes": 4096
+            }
+        },
+        "2": {
+            "1": {
+                "name": "evaluate-global-model",
+                "time-seconds": 1.99769,
+                "cpu-percentage": 5.0,
+                "ram-bytes": -11431936,
+                "disk-bytes": 0
+            },
+            "2": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00493,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 438272,
+                "disk-bytes": 0
+            },
+            "3": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00518,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 0,
+                "disk-bytes": 4096
+            },
+            "4": {
+                "name": "split-data-between-workers",
+                "time-seconds": 0.18521,
+                "cpu-percentage": 5.0,
+                "ram-bytes": -24576,
+                "disk-bytes": 667648
+            },
+            "5": {
+                "name": "send-context-to-workers",
+                "time-seconds": 1.03444504737854,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 1343488,
+                "disk-bytes": 675840
+            },
+            "6": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00529,
+                "cpu-percentage": 5.0,
+                "ram-bytes": -9207808,
+                "disk-bytes": 0
+            },
+            "7": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00498,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 3596288,
+                "disk-bytes": 577536
+            },
+            "8": {
+                "name": "store-worker-1",
+                "time-seconds": 0.0049,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 0,
+                "disk-bytes": 0
+            },
+            "9": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00564,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 0,
+                "disk-bytes": 0
+            },
+            "10": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00541,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 0,
+                "disk-bytes": 0
+            },
+            "11": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00561,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 0,
+                "disk-bytes": 0
+            },
+            "12": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00696,
+                "cpu-percentage": 5.0,
+                "ram-bytes": 495616,
+                "disk-bytes": 4096
+            },
+            "13": {
+                "name": "update-from-worker-1",
+                "time-seconds": 0.05974,
+                "cpu-percentage": -5.0,
+                "ram-bytes": -11567104,
+                "disk-bytes": 8192
+            },
+            "14": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00631,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -4096,
+                "disk-bytes": 4096
+            },
+            "15": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00638,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 0,
+                "disk-bytes": 0
+            },
+            "16": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00599,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -7794688,
+                "disk-bytes": 0
+            },
+            "17": {
+                "name": "update-global-model",
+                "time-seconds": 0.00948,
+                "cpu-percentage": 10.0,
+                "ram-bytes": 81920,
+                "disk-bytes": 4096
+            }
+        },
+        "3": {
+            "1": {
+                "name": "evaluate-global-model",
+                "time-seconds": 1.97024,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -253952,
+                "disk-bytes": 0
+            },
+            "2": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00727,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 2596864,
+                "disk-bytes": 0
+            },
+            "3": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00777,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 282624,
+                "disk-bytes": 0
+            },
+            "4": {
+                "name": "split-data-between-workers",
+                "time-seconds": 0.16605,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -684032,
+                "disk-bytes": 671744
+            },
+            "5": {
+                "name": "send-context-to-workers",
+                "time-seconds": 1.169551134109497,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 11087872,
+                "disk-bytes": 675840
+            },
+            "6": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00802,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 372736,
+                "disk-bytes": 0
+            },
+            "7": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00723,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -6905856,
+                "disk-bytes": 573440
+            },
+            "8": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00634,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 0,
+                "disk-bytes": 0
+            },
+            "9": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00688,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 503808,
+                "disk-bytes": 4096
+            },
+            "10": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00652,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -9396224,
+                "disk-bytes": 0
+            },
+            "11": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00667,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 4337664,
+                "disk-bytes": 0
+            },
+            "12": {
+                "name": "store-worker-1",
+                "time-seconds": 0.06837,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 241664,
+                "disk-bytes": 4096
+            },
+            "13": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00721,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -8192,
+                "disk-bytes": 0
+            },
+            "14": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00746,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 0,
+                "disk-bytes": 0
+            },
+            "15": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00748,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 495616,
+                "disk-bytes": 4096
+            },
+            "16": {
+                "name": "update-global-model",
+                "time-seconds": 0.00746,
+                "cpu-percentage": 5.0,
+                "ram-bytes": 253952,
+                "disk-bytes": 4096
+            }
+        },
+        "4": {
+            "1": {
+                "name": "evaluate-global-model",
+                "time-seconds": 2.05419,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -368640,
+                "disk-bytes": 0
+            },
+            "2": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00848,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 569344,
+                "disk-bytes": 0
+            },
+            "3": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00724,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 0,
+                "disk-bytes": 0
+            },
+            "4": {
+                "name": "split-data-between-workers",
+                "time-seconds": 0.15941,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -798720,
+                "disk-bytes": 671744
+            },
+            "5": {
+                "name": "send-context-to-workers",
+                "time-seconds": 0.9310715198516846,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 282624,
+                "disk-bytes": 675840
+            },
+            "6": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00921,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 0,
+                "disk-bytes": 0
+            },
+            "7": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00812,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -4767744,
+                "disk-bytes": 573440
+            },
+            "8": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00768,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 245760,
+                "disk-bytes": 0
+            },
+            "9": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00806,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 0,
+                "disk-bytes": 0
+            },
+            "10": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00885,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -233472,
+                "disk-bytes": 0
+            },
+            "11": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00826,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 229376,
+                "disk-bytes": 4096
+            },
+            "12": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00964,
+                "cpu-percentage": -5.0,
+                "ram-bytes": 106496,
+                "disk-bytes": 4096
+            },
+            "13": {
+                "name": "update-from-worker-1",
+                "time-seconds": 0.05931,
+                "cpu-percentage": 5.0,
+                "ram-bytes": 106496,
+                "disk-bytes": 4096
+            },
+            "14": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00871,
+                "cpu-percentage": 5.0,
+                "ram-bytes": -208896,
+                "disk-bytes": 0
+            },
+            "15": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00959,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 466944,
+                "disk-bytes": 0
+            },
+            "16": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00904,
+                "cpu-percentage": 5.0,
+                "ram-bytes": 258048,
+                "disk-bytes": 0
+            },
+            "17": {
+                "name": "update-global-model",
+                "time-seconds": 0.01221,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -7467008,
+                "disk-bytes": 4096
+            }
+        },
+        "5": {
+            "1": {
+                "name": "evaluate-global-model",
+                "time-seconds": 1.97866,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -2334720,
+                "disk-bytes": 0
+            },
+            "2": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01072,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -9101312,
+                "disk-bytes": 0
+            },
+            "3": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00878,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 2068480,
+                "disk-bytes": 0
+            },
+            "4": {
+                "name": "split-data-between-workers",
+                "time-seconds": 0.15968,
+                "cpu-percentage": -5.0,
+                "ram-bytes": 81920,
+                "disk-bytes": 671744
+            },
+            "5": {
+                "name": "send-context-to-workers",
+                "time-seconds": 1.0747466087341309,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 15347712,
+                "disk-bytes": 675840
+            },
+            "6": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00891,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 1773568,
+                "disk-bytes": 4096
+            },
+            "7": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01055,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 442368,
+                "disk-bytes": 573440
+            },
+            "8": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00904,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -8318976,
+                "disk-bytes": 0
+            },
+            "9": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00943,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -28672,
+                "disk-bytes": 0
+            },
+            "10": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00909,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 229376,
+                "disk-bytes": 0
+            },
+            "11": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00949,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 253952,
+                "disk-bytes": 4096
+            },
+            "12": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01014,
+                "cpu-percentage": 5.0,
+                "ram-bytes": -4096,
+                "disk-bytes": 8192
+            },
+            "13": {
+                "name": "update-from-worker-1",
+                "time-seconds": 0.05349,
+                "cpu-percentage": 5.0,
+                "ram-bytes": -4096,
+                "disk-bytes": 8192
+            },
+            "14": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01007,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 0,
+                "disk-bytes": 0
+            },
+            "15": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01024,
+                "cpu-percentage": 5.0,
+                "ram-bytes": 0,
+                "disk-bytes": 0
+            },
+            "16": {
+                "name": "store-worker-1",
+                "time-seconds": 0.00997,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 0,
+                "disk-bytes": 0
+            },
+            "17": {
+                "name": "update-global-model",
+                "time-seconds": 0.0075,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 1314816,
+                "disk-bytes": 4096
+            }
+        },
+        "6": {
+            "1": {
+                "name": "evaluate-global-model",
+                "time-seconds": 2.37111,
+                "cpu-percentage": 5.0,
+                "ram-bytes": -954368,
+                "disk-bytes": 0
+            },
+            "2": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01192,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -1523712,
+                "disk-bytes": 0
+            },
+            "3": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01003,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -8622080,
+                "disk-bytes": 0
+            },
+            "4": {
+                "name": "split-data-between-workers",
+                "time-seconds": 0.17011,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -5853184,
+                "disk-bytes": 671744
+            },
+            "5": {
+                "name": "send-context-to-workers",
+                "time-seconds": 0.8814194202423096,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 5804032,
+                "disk-bytes": 675840
+            },
+            "6": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01127,
+                "cpu-percentage": -5.0,
+                "ram-bytes": 5951488,
+                "disk-bytes": 0
+            },
+            "7": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01076,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 5394432,
+                "disk-bytes": 573440
+            },
+            "8": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01273,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -212992,
+                "disk-bytes": 4096
+            },
+            "9": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01034,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -8736768,
+                "disk-bytes": 0
+            },
+            "10": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01243,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 2785280,
+                "disk-bytes": 0
+            },
+            "11": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01114,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 0,
+                "disk-bytes": 0
+            },
+            "12": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01162,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 0,
+                "disk-bytes": 4096
+            },
+            "13": {
+                "name": "update-from-worker-1",
+                "time-seconds": 0.06046,
+                "cpu-percentage": 5.0,
+                "ram-bytes": 225280,
+                "disk-bytes": 4096
+            },
+            "14": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01132,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 2056192,
+                "disk-bytes": 0
+            },
+            "15": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01132,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 487424,
+                "disk-bytes": 4096
+            },
+            "16": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01571,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -10108928,
+                "disk-bytes": 0
+            },
+            "17": {
+                "name": "update-global-model",
+                "time-seconds": 0.00683,
+                "cpu-percentage": -5.0,
+                "ram-bytes": -7680000,
+                "disk-bytes": 4096
+            }
+        },
+        "7": {
+            "1": {
+                "name": "evaluate-global-model",
+                "time-seconds": 2.03871,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 19869696,
+                "disk-bytes": 0
+            },
+            "2": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01205,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 2318336,
+                "disk-bytes": 0
+            },
+            "3": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01552,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 155648,
+                "disk-bytes": 0
+            },
+            "4": {
+                "name": "send-context-to-workers",
+                "time-seconds": 0.5073680877685547,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 6082560,
+                "disk-bytes": 4096
+            },
+            "5": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01277,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 65536,
+                "disk-bytes": 0
+            },
+            "6": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01171,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 0,
+                "disk-bytes": 0
+            },
+            "7": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01253,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 0,
+                "disk-bytes": 0
+            },
+            "8": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01322,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -548864,
+                "disk-bytes": 0
+            },
+            "9": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01353,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 1056768,
+                "disk-bytes": 0
+            },
+            "10": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01655,
+                "cpu-percentage": -5.0,
+                "ram-bytes": 704512,
+                "disk-bytes": 0
+            },
+            "11": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01887,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -2785280,
+                "disk-bytes": 0
+            },
+            "12": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01501,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 7602176,
+                "disk-bytes": 4096
+            },
+            "13": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01581,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 3346432,
+                "disk-bytes": 0
+            },
+            "14": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01736,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 774144,
+                "disk-bytes": 0
+            },
+            "15": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01589,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 974848,
+                "disk-bytes": 0
+            },
+            "16": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01385,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 856064,
+                "disk-bytes": 0
+            },
+            "17": {
+                "name": "store-worker-1",
+                "time-seconds": 0.0142,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 4661248,
+                "disk-bytes": 0
+            },
+            "18": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01421,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 3194880,
+                "disk-bytes": 0
+            },
+            "19": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01513,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 3346432,
+                "disk-bytes": 0
+            },
+            "20": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01704,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 335872,
+                "disk-bytes": 0
+            },
+            "21": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01404,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -286720,
+                "disk-bytes": 0
+            },
+            "22": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01919,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 2314240,
+                "disk-bytes": 4096
+            },
+            "23": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01889,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 249856,
+                "disk-bytes": 0
+            },
+            "24": {
+                "name": "store-worker-1",
+                "time-seconds": 0.02276,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 331776,
+                "disk-bytes": 0
+            },
+            "25": {
+                "name": "store-worker-1",
+                "time-seconds": 0.0153,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 0,
+                "disk-bytes": 0
+            },
+            "26": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01584,
+                "cpu-percentage": 5.0,
+                "ram-bytes": 0,
+                "disk-bytes": 0
+            },
+            "27": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01712,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 516096,
+                "disk-bytes": 0
+            },
+            "28": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01634,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 491520,
+                "disk-bytes": -36864
+            },
+            "29": {
+                "name": "store-worker-1",
+                "time-seconds": 0.04361,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -8916992,
+                "disk-bytes": 0
+            },
+            "30": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01466,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -2580480,
+                "disk-bytes": 0
+            },
+            "31": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01416,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 1282048,
+                "disk-bytes": 0
+            },
+            "32": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01705,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 487424,
+                "disk-bytes": 0
+            },
+            "33": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01503,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -4096,
+                "disk-bytes": 4096
+            },
+            "34": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01739,
+                "cpu-percentage": 5.0,
+                "ram-bytes": -6979584,
+                "disk-bytes": 0
+            },
+            "35": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01582,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 3129344,
+                "disk-bytes": 0
+            },
+            "36": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01767,
+                "cpu-percentage": 5.0,
+                "ram-bytes": -73728,
+                "disk-bytes": 0
+            },
+            "37": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01587,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 20480,
+                "disk-bytes": 0
+            },
+            "38": {
+                "name": "store-worker-1",
+                "time-seconds": 0.02599,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 126976,
+                "disk-bytes": 0
+            },
+            "39": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01564,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 229376,
+                "disk-bytes": 0
+            },
+            "40": {
+                "name": "store-worker-1",
+                "time-seconds": 0.0143,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -22069248,
+                "disk-bytes": 0
+            },
+            "41": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01657,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 2514944,
+                "disk-bytes": 0
+            },
+            "42": {
+                "name": "store-worker-1",
+                "time-seconds": 0.0164,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 913408,
+                "disk-bytes": 0
+            },
+            "43": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01919,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 0,
+                "disk-bytes": 0
+            },
+            "44": {
+                "name": "store-worker-1",
+                "time-seconds": 0.01666,
+                "cpu-percentage": 5.0,
+                "ram-bytes": 1589248,
+                "disk-bytes": 4096
+            },
+            "45": {
+                "name": "store-worker-1",
+                "time-seconds": 0.02077,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 753664,
+                "disk-bytes": 0
+            }
+        }
+    },
+    "network": {
+        "1": {
+            "1": {
+                "name": "sending-context-to-worker-1",
+                "status-code": 200,
+                "processing-time-seconds": 0.6170051097869873,
+                "elapsed-time-seconds": 0.472278,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 32112640,
+                "disk-bytes": 696320
+            }
+        },
+        "2": {
+            "1": {
+                "name": "sending-context-to-worker-1",
+                "status-code": 200,
+                "processing-time-seconds": 0.6207590103149414,
+                "elapsed-time-seconds": 0.452039,
+                "cpu-percentage": 5.0,
+                "ram-bytes": 2338816,
+                "disk-bytes": 675840
+            }
+        },
+        "3": {
+            "1": {
+                "name": "sending-context-to-worker-1",
+                "status-code": 200,
+                "processing-time-seconds": 0.756472110748291,
+                "elapsed-time-seconds": 0.400095,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 13987840,
+                "disk-bytes": 675840
+            }
+        },
+        "4": {
+            "1": {
+                "name": "sending-context-to-worker-1",
+                "status-code": 200,
+                "processing-time-seconds": 0.5153751373291016,
+                "elapsed-time-seconds": 0.376602,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -3117056,
+                "disk-bytes": 675840
+            }
+        },
+        "5": {
+            "1": {
+                "name": "sending-context-to-worker-1",
+                "status-code": 200,
+                "processing-time-seconds": 0.6611864566802979,
+                "elapsed-time-seconds": 0.516243,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 5099520,
+                "disk-bytes": 675840
+            }
+        },
+        "6": {
+            "1": {
+                "name": "sending-context-to-worker-1",
+                "status-code": 200,
+                "processing-time-seconds": 0.4662621021270752,
+                "elapsed-time-seconds": 0.323072,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 110592,
+                "disk-bytes": 675840
+            }
+        },
+        "7": {
+            "1": {
+                "name": "sending-context-to-worker-1",
+                "status-code": 200,
+                "processing-time-seconds": 0.02469778060913086,
+                "elapsed-time-seconds": 0.021758,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 3411968,
+                "disk-bytes": 4096
+            }
+        }
+    },
+    "training": {
+        "1": {
+            "1": {
+                "name": "logistic-regression-training",
+                "epochs": 5,
+                "batches": 10,
+                "average-batch-size": 10000.0,
+                "time-seconds": 2.2863,
+                "cpu-percentage": 64.8,
+                "ram-bytes": -6320128,
+                "disk-bytes": 8192
+            },
+            "2": {
+                "name": "logistic-regression-testing",
+                "batches": 79,
+                "average-batch-size": 63.29113924050633,
+                "time-seconds": 0.2401,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -262144,
+                "disk-bytes": 0
+            },
+            "3": {
+                "name": "logistic-regression-evalution",
+                "batches": 391,
+                "average-batch-size": 63.9386189258312,
+                "time-seconds": 1.20054,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -471040,
+                "disk-bytes": 0
+            },
+            "4": {
+                "name": "logistic-regression-evalution",
+                "batches": 391,
+                "average-batch-size": 63.9386189258312,
+                "time-seconds": 1.52366,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -10661888,
+                "disk-bytes": 0
+            }
+        },
+        "2": {
+            "1": {
+                "name": "logistic-regression-evalution",
+                "batches": 391,
+                "average-batch-size": 63.9386189258312,
+                "time-seconds": 1.49453,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -348160,
+                "disk-bytes": 0
+            }
+        },
+        "3": {
+            "1": {
+                "name": "logistic-regression-evalution",
+                "batches": 391,
+                "average-batch-size": 63.9386189258312,
+                "time-seconds": 1.57666,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 1134592,
+                "disk-bytes": 0
+            }
+        },
+        "4": {
+            "1": {
+                "name": "logistic-regression-evalution",
+                "batches": 391,
+                "average-batch-size": 63.9386189258312,
+                "time-seconds": 1.49861,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 1449984,
+                "disk-bytes": 0
+            }
+        },
+        "5": {
+            "1": {
+                "name": "logistic-regression-evalution",
+                "batches": 391,
+                "average-batch-size": 63.9386189258312,
+                "time-seconds": 1.93329,
+                "cpu-percentage": 0.0,
+                "ram-bytes": -7262208,
+                "disk-bytes": 86016
+            }
+        },
+        "6": {
+            "1": {
+                "name": "logistic-regression-evalution",
+                "batches": 391,
+                "average-batch-size": 63.9386189258312,
+                "time-seconds": 1.55753,
+                "cpu-percentage": 0.0,
+                "ram-bytes": 6320128,
+                "disk-bytes": 0
+            }
+        }
+    },
+    "inference": {}
+}

@@ -1,0 +1,39 @@
+{
+    "sample-pool": 50000,
+    "data-augmentation": {
+        "active": true,
+        "sample-pool": 100000,
+        "1-0-ratio": 0.2
+    },
+    "eval-ratio": 0.2,
+    "train-ratio": 0.8,
+    "min-update-amount": 1,
+    "max-cycles": 10,
+    "min-metric-success": 7,
+    "metric-thresholds": {
+        "true-positives": 50,
+        "false-positives": 100,
+        "true-negatives": 1000,
+        "false-negatives": 100,
+        "recall": 0.4,
+        "selectivity": 0.99,
+        "precision": 0.8,
+        "miss-rate": 0.05,
+        "fall-out": 0.05,
+        "balanced-accuracy": 0.8,
+        "accuracy": 0.9
+    },
+    "metric-conditions": {
+        "true-positives": ">=",
+        "false-positives": "<=",
+        "true-negatives": ">=",
+        "false-negatives": "<=",
+        "recall": ">=",
+        "selectivity": ">=",
+        "precision": ">=",
+        "miss-rate": "<=",
+        "fall-out": "<=",
+        "balanced-accuracy": ">=",
+        "accuracy": ">="
+    }
+}

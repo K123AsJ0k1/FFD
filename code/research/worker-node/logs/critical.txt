@@ -1,0 +1,8 @@
+{
+    "worker-id": "f51af78e-5f22-44e6-88db-8f929dc31c8d",
+    "central-address": "127.0.0.1",
+    "central-port": "7500",
+    "worker-port": "7501",
+    "worker-address": "127.0.0.1",
+    "worker-system-monitor": "0"
+}

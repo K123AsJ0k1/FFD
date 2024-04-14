@@ -49,9 +49,9 @@ We recommend trying all options to see what fits best, but the target enviroment
 Open up four terminals and move them into the following repository paths:
 
 - FFD/code/notebooks/demonstrations/Production-Central-Worker
-- FFD/code/prod-https/central-node
-- FFD/code/prod-https/worker-node
-- FFD/code/prod-https/deployment
+- FFD/code/research/central-node
+- FFD/code/research/worker-node
+- FFD/code/research/deployment
 
 In the first three, create Python virtual enviroments with right packages using following:
 
@@ -97,7 +97,7 @@ When the regular Flask logs start to show with central showing logs every 5 seco
 
 Open up one terminal and move it to the following repository path:
 
-- FFD/code/prod-https/deployment
+- FFD/code/research/deployment
 
 Run the following command to make the stack run:
 
@@ -126,3 +126,90 @@ Check the following addresses:
 If there is no errors, proceed to run the demonstration notebook.
 
 ### Oakestra Setup
+
+We will follow the Oakestra README instructions for setting up the orhestrator and worker nodes:
+
+#### Orchestrator
+
+Git clone the Oakestra repository:
+
+```
+git clone https://github.com/oakestra/oakestra.git 
+cd oakestra
+```
+
+Set the following enviromental variables:
+
+```
+export CLUSTER_NAME=ffd-1
+export CLUSTER_LOCATION=60.204478,24.962756,3000
+export SYSTEM_MANAGER_URL=(Public IP)
+```
+
+Open a terminal and start the oakestra containers with:
+
+```
+sudo -E docker compose -f run-a-cluster/1-DOC.yaml -f run-a-cluster/override-alpha-versions.yaml up
+```
+
+#### Worker Node
+
+In the devices of your choosing, install worker node NodeEngine
+
+```
+wget -c https://github.com/oakestra/oakestra/releases/download/alpha-v0.4.300/NodeEngine_$(dpkg --print-architecture).tar.gz && tar -xzf NodeEngine_$(dpkg --print-architecture).tar.gz && chmod +x install.sh && mv NodeEngine NodeEngine_$(dpkg --print-architecture) && ./install.sh $(dpkg --print-architecture)
+```
+
+and NetManager
+
+```
+wget -c https://github.com/oakestra/oakestra-net/releases/download/alpha-v0.4.300/NetManager_$(dpkg --print-architecture).tar.gz && tar -xzf NetManager_$(dpkg --print-architecture).tar.gz && chmod +x install.sh && ./install.sh $(dpkg --print-architecture)
+```
+
+Before you start NodeEngine and Netmanager, modify the netcfg.json using
+
+```
+sudo nano /etc/netmanager/netcfg.json
+```
+
+into the following format
+
+```
+{
+  "NodePublicAddress": "(Public IP)",
+  "NodePublicPort": 50103,
+  "ClusterUrl": "(Public IP)",
+  "ClusterMqttPort": "10003"
+}
+```
+
+Now, open two terminals. Start the NetManager with
+
+```
+sudo NetManager -p 6000
+```
+
+and NodeEngine with
+
+```
+sudo NodeEngine -n 6000 -p 10100 -a (Public IP)
+```
+
+#### Checks
+
+Now, when everything is running, go to the following addresses:
+
+- http://(public IP)
+  - Username = Admin
+  - Password = Admin
+- http://(Public IP):10000/api/docs
+
+In the later case, go down the page to find Clusters and press try it out to check, if the amount of active_nodes is 1. If it is, then Oakestra is ready. 
+
+
+#### FFD setup
+
+Open up a code editor and go to:
+
+- FFD/code/research/deployment/oakestra
+

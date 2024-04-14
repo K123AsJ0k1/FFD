@@ -1,0 +1,17 @@
+{
+    "1": {
+        "id": 1,
+        "central-address": "",
+        "worker-address": "",
+        "status": "",
+        "stored": false,
+        "preprocessed": false,
+        "trained": false,
+        "updated": false,
+        "complete": false,
+        "train-amount": 0,
+        "test-amount": 0,
+        "eval-amount": 0,
+        "cycle": 1
+    }
+}
