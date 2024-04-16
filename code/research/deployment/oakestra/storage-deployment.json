@@ -6,22 +6,22 @@
         "microservice_namespace": "stack",
         "virtualization": "container",
         "cmd": [],
-        "memory": 300,
+        "memory": 100,
         "vcpus": 1,
         "vgpus": 0,
         "vtpus": 0,
         "bandwidth_in": 0,
         "bandwidth_out": 0,
-        "storage": 600,
+        "storage": 300,
         "code": "docker.io/t9k4b5ndjok1/ffd:postgres",
         "state": "",
         "port": "5432",
         "addresses": {
-          "rr_ip": "10.30.10.01"
+          "rr_ip": "10.30.10.10"
         },
         "environment":[
-          "POSTGRES_USER=postgres",
-          "POSTGRES_PASSWORD=postgres"
+          "POSTGRES_USER=23954sdmS923013jksd",
+          "POSTGRES_PASSWORD=sod3054nsiersio13kls"
         ]
       },
       {
@@ -30,22 +30,22 @@
         "microservice_namespace": "stack",
         "virtualization": "container",
         "cmd": [],
-        "memory": 300,
+        "memory": 600,
         "vcpus": 1,
         "vgpus": 0,
         "vtpus": 0,
         "bandwidth_in": 0,
         "bandwidth_out": 0,
-        "storage": 600,
+        "storage": 800,
         "code": "docker.io/t9k4b5ndjok1/ffd:minio",
         "state": "",
         "port": "9000;9001",
         "addresses": {
-          "rr_ip": "10.30.10.02"
+          "rr_ip": "10.30.10.11"
         },
         "environment":[
-          "MINIO_ROOT_USER=minio",
-          "MINIO_ROOT_PASSWORD=minio123"
+          "MINIO_ROOT_USER=23034opsdjhksd",
+          "MINIO_ROOT_PASSWORD=sdkl3slömdm"
         ]
       },
       {
@@ -54,26 +54,26 @@
         "microservice_namespace": "stack",
         "virtualization": "container",
         "cmd": [],
-        "memory": 300,
+        "memory": 400,
         "vcpus": 1,
         "vgpus": 0,
         "vtpus": 0,
         "bandwidth_in": 0,
         "bandwidth_out": 0,
-        "storage": 200,
+        "storage": 300,
         "code": "docker.io/t9k4b5ndjok1/ffd:mlflow",
         "state": "",
         "port": "5000",
         "addresses": {
-          "rr_ip": "10.30.10.03"
+          "rr_ip": "10.30.10.12"
         },
         "environment":[
-          "POSTGRES_USER=postgres",
-          "POSTGRES_PASSWORD=postgres",
-          "AWS_ACCESS_KEY_ID=minio",
-          "AWS_SECRET_ACCESS_KEY=minio123",
-          "MLFLOW_S3_ENDPOINT_URL=http://10.30.10.02:9000",
-          "MLFLOW_SQL_ALCHEMY_CONN=postgresql+psycopg2://postgres:postgres@10.30.10.01:5432/mlflow_db"
+          "POSTGRES_USER=23954sdmS923013jksd",
+          "POSTGRES_PASSWORD=sod3054nsiersio13kls",
+          "AWS_ACCESS_KEY_ID=23034opsdjhksd",
+          "AWS_SECRET_ACCESS_KEY=sdkl3slömdm",
+          "MLFLOW_S3_ENDPOINT_URL=http://10.30.10.11:9000",
+          "MLFLOW_SQL_ALCHEMY_CONN=postgresql+psycopg2://23954sdmS923013jksd:sod3054nsiersio13kls@10.30.10.10:5432/mlflow_db"
         ]
       }
     ]
