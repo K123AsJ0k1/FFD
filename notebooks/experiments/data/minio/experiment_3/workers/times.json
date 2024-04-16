@@ -1,0 +1,70 @@
+{
+    "66e8acb0-574e-4392-a8ab-cdcb9fca760a": {
+        "experiment-name": "ffd-experiment-3",
+        "experiment": "4",
+        "cycle": "1",
+        "experiment-date": "2024-04-15-16:26:12.414063",
+        "experiment-time-start": 1713198372.414114,
+        "experiment-time-end": 1713199527.8847919,
+        "experiment-total-seconds": 1155.4706778526306,
+        "1": {
+            "cycle-time-start": 1713198387.12735,
+            "cycle-time-end": 1713198527.5686584,
+            "cycle-total-seconds": 140.441308259964
+        },
+        "2": {
+            "cycle-time-start": 1713198657.1264822,
+            "cycle-time-end": 1713198767.6272583,
+            "cycle-total-seconds": 110.50077605247498
+        },
+        "3": {
+            "cycle-time-start": 1713198867.1273265,
+            "cycle-time-end": 1713199008.1012614,
+            "cycle-total-seconds": 140.97393488883972
+        },
+        "4": {
+            "cycle-time-start": 1713199107.126826,
+            "cycle-time-end": 1713199247.6147108,
+            "cycle-total-seconds": 140.48788475990295
+        },
+        "5": {
+            "cycle-time-start": 1713199377.126261,
+            "cycle-time-end": 1713199487.781052,
+            "cycle-total-seconds": 110.65479111671448
+        }
+    },
+    "e773520a-073e-4b2e-8f27-15275cfd8d4e": {
+        "experiment-name": "ffd-experiment-3",
+        "experiment": "4",
+        "cycle": "1",
+        "experiment-date": "2024-04-15-16:26:16.389061",
+        "experiment-time-start": 1713198376.3891263,
+        "experiment-time-end": 1713199528.4344785,
+        "experiment-total-seconds": 1152.0453522205353,
+        "1": {
+            "cycle-time-start": 1713198387.1506877,
+            "cycle-time-end": 1713198527.6624024,
+            "cycle-total-seconds": 140.51171469688416
+        },
+        "2": {
+            "cycle-time-start": 1713198657.150617,
+            "cycle-time-end": 1713198767.839102,
+            "cycle-total-seconds": 110.68848514556885
+        },
+        "3": {
+            "cycle-time-start": 1713198867.1509433,
+            "cycle-time-end": 1713199008.260248,
+            "cycle-total-seconds": 141.10930466651917
+        },
+        "4": {
+            "cycle-time-start": 1713199107.1503916,
+            "cycle-time-end": 1713199287.6425729,
+            "cycle-total-seconds": 180.49218130111694
+        },
+        "5": {
+            "cycle-time-start": 1713199377.1506417,
+            "cycle-time-end": 1713199487.5962725,
+            "cycle-total-seconds": 110.4456307888031
+        }
+    }
+}

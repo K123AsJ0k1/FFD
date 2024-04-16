@@ -1,0 +1,138 @@
+{
+    "0f6c6657-b591-4523-935d-1abd09835f5e": {
+        "experiment-name": "ffd-experiment-2",
+        "experiment": "3",
+        "cycle": "1",
+        "experiment-date": "2024-04-15-15:17:52.425138",
+        "experiment-time-start": 1713194272.4251738,
+        "experiment-time-end": 1713196246.8989012,
+        "experiment-total-seconds": 1974.473727464676,
+        "1": {
+            "cycle-time-start": 1713194284.4233296,
+            "cycle-time-end": 1713194525.8391745,
+            "cycle-total-seconds": 241.41584491729736
+        },
+        "2": {
+            "cycle-time-start": 1713194704.4238102,
+            "cycle-time-end": 1713194925.137289,
+            "cycle-total-seconds": 220.71347880363464
+        },
+        "3": {
+            "cycle-time-start": 1713195064.4240348,
+            "cycle-time-end": 1713195325.3580098,
+            "cycle-total-seconds": 260.933974981308
+        },
+        "4": {
+            "cycle-time-start": 1713195514.4252613,
+            "cycle-time-end": 1713195725.6225004,
+            "cycle-total-seconds": 211.19723916053772
+        },
+        "5": {
+            "cycle-time-start": 1713195904.4249315,
+            "cycle-time-end": 1713196165.674195,
+            "cycle-total-seconds": 261.24926352500916
+        }
+    },
+    "a53e6dc2-a4dd-4514-b9f8-0f337fbc6816": {
+        "experiment-name": "ffd-experiment-2",
+        "experiment": "3",
+        "cycle": "1",
+        "experiment-date": "2024-04-15-15:17:43.687196",
+        "experiment-time-start": 1713194263.6872387,
+        "experiment-time-end": 1713196247.0747414,
+        "experiment-total-seconds": 1983.387502670288,
+        "1": {
+            "cycle-time-start": 1713194284.529572,
+            "cycle-time-end": 1713194525.8940134,
+            "cycle-total-seconds": 241.3644413948059
+        },
+        "2": {
+            "cycle-time-start": 1713194674.5287375,
+            "cycle-time-end": 1713194885.5271657,
+            "cycle-total-seconds": 210.99842810630798
+        },
+        "3": {
+            "cycle-time-start": 1713195094.5280714,
+            "cycle-time-end": 1713195325.265471,
+            "cycle-total-seconds": 230.73739957809448
+        },
+        "4": {
+            "cycle-time-start": 1713195514.5299854,
+            "cycle-time-end": 1713195725.4914665,
+            "cycle-total-seconds": 210.96148109436035
+        },
+        "5": {
+            "cycle-time-start": 1713195934.5282383,
+            "cycle-time-end": 1713196165.6303842,
+            "cycle-total-seconds": 231.10214591026306
+        }
+    },
+    "af5b7dae-cb38-4c82-994d-4e8b8c198a27": {
+        "experiment-name": "ffd-experiment-2",
+        "experiment": "3",
+        "cycle": "1",
+        "experiment-date": "2024-04-15-15:17:34.459384",
+        "experiment-time-start": 1713194254.4594362,
+        "experiment-time-end": 1713196246.690033,
+        "experiment-total-seconds": 1992.230596780777,
+        "1": {
+            "cycle-time-start": 1713194284.347462,
+            "cycle-time-end": 1713194525.6378527,
+            "cycle-total-seconds": 241.29039072990417
+        },
+        "2": {
+            "cycle-time-start": 1713194674.34712,
+            "cycle-time-end": 1713194885.580255,
+            "cycle-total-seconds": 211.2331349849701
+        },
+        "3": {
+            "cycle-time-start": 1713195064.3472202,
+            "cycle-time-end": 1713195284.7575634,
+            "cycle-total-seconds": 220.41034317016602
+        },
+        "4": {
+            "cycle-time-start": 1713195514.348911,
+            "cycle-time-end": 1713195725.1518867,
+            "cycle-total-seconds": 210.80297565460205
+        },
+        "5": {
+            "cycle-time-start": 1713195904.346355,
+            "cycle-time-end": 1713196165.0556772,
+            "cycle-total-seconds": 260.7093222141266
+        }
+    },
+    "d23a4790-2964-4b15-99ec-eee56d5c60bd": {
+        "experiment-name": "ffd-experiment-2",
+        "experiment": "3",
+        "cycle": "1",
+        "experiment-date": "2024-04-15-15:18:01.922563",
+        "experiment-time-start": 1713194281.9226084,
+        "experiment-time-end": 1713196247.26235,
+        "experiment-total-seconds": 1965.3397417068481,
+        "1": {
+            "cycle-time-start": 1713194284.3828106,
+            "cycle-time-end": 1713194525.7846606,
+            "cycle-total-seconds": 241.40184998512268
+        },
+        "2": {
+            "cycle-time-start": 1713194674.3822656,
+            "cycle-time-end": 1713194885.327698,
+            "cycle-total-seconds": 210.9454324245453
+        },
+        "3": {
+            "cycle-time-start": 1713195094.3822424,
+            "cycle-time-end": 1713195285.2936428,
+            "cycle-total-seconds": 190.91140031814575
+        },
+        "4": {
+            "cycle-time-start": 1713195544.3836863,
+            "cycle-time-end": 1713195764.9555466,
+            "cycle-total-seconds": 220.57186031341553
+        },
+        "5": {
+            "cycle-time-start": 1713195934.3824472,
+            "cycle-time-end": 1713196165.728543,
+            "cycle-total-seconds": 231.34609580039978
+        }
+    }
+}

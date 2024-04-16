@@ -1,0 +1,31 @@
+{
+    "experiment-date": "2024-04-15-15:13:58.379929",
+    "experiment-time-start": 1713194038.3799868,
+    "experiment-time-end": 1713196247.578954,
+    "experiment-total-seconds": 2209.198967218399,
+    "1": {
+        "cycle-time-start": 1713194046.3542984,
+        "cycle-time-end": 1713194562.9667897,
+        "cycle-total-seconds": 516.6124913692474
+    },
+    "2": {
+        "cycle-time-start": 1713194562.966797,
+        "cycle-time-end": 1713194965.837049,
+        "cycle-total-seconds": 402.8702518939972
+    },
+    "3": {
+        "cycle-time-start": 1713194965.837056,
+        "cycle-time-end": 1713195362.6009166,
+        "cycle-total-seconds": 396.76386070251465
+    },
+    "4": {
+        "cycle-time-start": 1713195362.600921,
+        "cycle-time-end": 1713195813.9810982,
+        "cycle-total-seconds": 451.3801772594452
+    },
+    "5": {
+        "cycle-time-start": 1713195813.981102,
+        "cycle-time-end": 1713196213.8650253,
+        "cycle-total-seconds": 399.88392329216003
+    }
+}
