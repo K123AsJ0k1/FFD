@@ -6,25 +6,25 @@
         "microservice_namespace": "ffd",
         "virtualization": "container",
         "cmd": [],
-        "memory": 300,
+        "memory": 800,
         "vcpus": 1,
         "vgpus": 0,
         "vtpus": 0,
         "bandwidth_in": 0,
         "bandwidth_out": 0,
-        "storage": 100,
+        "storage": 200,
         "code": "docker.io/t9k4b5ndjok1/ffd:central",
         "state": "",
         "port": "7500",
         "addresses": {
-          "rr_ip": "10.30.10.07"
+          "rr_ip": "10.30.10.16"
         },
         "environment":[
-          "MINIO_ENDPOINT=10.30.10.02:9000",
-          "AWS_ACCESS_KEY_ID=minio",
-          "AWS_SECRET_ACCESS_KEY=minio123",
-          "MLFLOW_TRACKING_URI=http://10.30.10.03:5000",
-          "MLFLOW_S3_ENDPOINT_URL=http://10.30.10.02:9000"
+          "MINIO_ENDPOINT=10.30.10.11:9000",
+          "AWS_ACCESS_KEY_ID=23034opsdjhksd",
+          "AWS_SECRET_ACCESS_KEY=sdkl3slömdm",
+          "MLFLOW_TRACKING_URI=http://10.30.10.12:5000",
+          "MLFLOW_S3_ENDPOINT_URL=http://10.30.10.11:9000"
         ]
       },
       {
@@ -33,26 +33,28 @@
         "microservice_namespace": "ffd",
         "virtualization": "container",
         "cmd": [],
-        "memory": 300,
+        "memory": 800,
         "vcpus": 1,
         "vgpus": 0,
         "vtpus": 0,
         "bandwidth_in": 0,
         "bandwidth_out": 0,
-        "storage": 100,
+        "storage": 200,
         "code": "docker.io/t9k4b5ndjok1/ffd:worker",
         "state": "",
         "port": "7501",
         "addresses": {
-          "rr_ip": "10.30.10.08"
+          "rr_ip": "10.30.10.17"
         },
         "environment":[
-          "CENTRAL_ADDRESS=10.30.10.07",
-          "MINIO_ENDPOINT=10.30.10.02:9000",
-          "AWS_ACCESS_KEY_ID=minio",
-          "AWS_SECRET_ACCESS_KEY=minio123",
-          "MLFLOW_TRACKING_URI=http://10.30.10.03:5000",
-          "MLFLOW_S3_ENDPOINT_URL=http://10.30.10.02:9000"
+          "CENTRAL_ADDRESS=10.30.10.16",
+          "WORKER_ADDRESS=10.30.10.17",
+          "WORKER_SYSTEM_MONITOR=0",
+          "MINIO_ENDPOINT=10.30.10.11:9000",
+          "AWS_ACCESS_KEY_ID=23034opsdjhksd",
+          "AWS_SECRET_ACCESS_KEY=sdkl3slömdm",
+          "MLFLOW_TRACKING_URI=http://10.30.10.12:5000",
+          "MLFLOW_S3_ENDPOINT_URL=http://10.30.10.11:9000"
         ]
       },
       {
@@ -72,15 +74,17 @@
         "state": "",
         "port": "7501",
         "addresses": {
-          "rr_ip": "10.30.10.09"
+          "rr_ip": "10.30.10.18"
         },
         "environment":[
-          "CENTRAL_ADDRESS=10.30.10.07",
-          "MINIO_ENDPOINT=10.30.10.02:9000",
-          "AWS_ACCESS_KEY_ID=minio",
-          "AWS_SECRET_ACCESS_KEY=minio123",
-          "MLFLOW_TRACKING_URI=http://10.30.10.03:5000",
-          "MLFLOW_S3_ENDPOINT_URL=http://10.30.10.02:9000"
+          "CENTRAL_ADDRESS=10.30.10.16",
+          "WORKER_ADDRESS=10.30.10.18",
+          "WORKER_SYSTEM_MONITOR=0",
+          "MINIO_ENDPOINT=10.30.10.11:9000",
+          "AWS_ACCESS_KEY_ID=23034opsdjhksd",
+          "AWS_SECRET_ACCESS_KEY=sdkl3slömdm",
+          "MLFLOW_TRACKING_URI=http://10.30.10.12:5000",
+          "MLFLOW_S3_ENDPOINT_URL=http://10.30.10.11:9000"
         ]
       },
       {
@@ -100,15 +104,17 @@
         "state": "",
         "port": "7501",
         "addresses": {
-          "rr_ip": "10.30.10.10"
+          "rr_ip": "10.30.10.19"
         },
         "environment":[
-          "CENTRAL_ADDRESS=10.30.10.07",
-          "MINIO_ENDPOINT=10.30.10.02:9000",
-          "AWS_ACCESS_KEY_ID=minio",
-          "AWS_SECRET_ACCESS_KEY=minio123",
-          "MLFLOW_TRACKING_URI=http://10.30.10.03:5000",
-          "MLFLOW_S3_ENDPOINT_URL=http://10.30.10.02:9000"
+          "CENTRAL_ADDRESS=10.30.10.16",
+          "WORKER_ADDRESS=10.30.10.19",
+          "WORKER_SYSTEM_MONITOR=0",
+          "MINIO_ENDPOINT=10.30.10.11:9000",
+          "AWS_ACCESS_KEY_ID=23034opsdjhksd",
+          "AWS_SECRET_ACCESS_KEY=sdkl3slömdm",
+          "MLFLOW_TRACKING_URI=http://10.30.10.12:5000",
+          "MLFLOW_S3_ENDPOINT_URL=http://10.30.10.11:9000"
         ]
       },
       {
@@ -128,15 +134,17 @@
         "state": "",
         "port": "7501",
         "addresses": {
-          "rr_ip": "10.30.10.11"
+          "rr_ip": "10.30.10.20"
         },
         "environment":[
-          "CENTRAL_ADDRESS=10.30.10.07",
-          "MINIO_ENDPOINT=10.30.10.02:9000",
-          "AWS_ACCESS_KEY_ID=minio",
-          "AWS_SECRET_ACCESS_KEY=minio123",
-          "MLFLOW_TRACKING_URI=http://10.30.10.03:5000",
-          "MLFLOW_S3_ENDPOINT_URL=http://10.30.10.02:9000"
+          "CENTRAL_ADDRESS=10.30.10.16",
+          "WORKER_ADDRESS=10.30.10.20",
+          "WORKER_SYSTEM_MONITOR=0",
+          "MINIO_ENDPOINT=10.30.10.11:9000",
+          "AWS_ACCESS_KEY_ID=23034opsdjhksd",
+          "AWS_SECRET_ACCESS_KEY=sdkl3slömdm",
+          "MLFLOW_TRACKING_URI=http://10.30.10.12:5000",
+          "MLFLOW_S3_ENDPOINT_URL=http://10.30.10.11:9000"
         ]
       },
       {
@@ -156,15 +164,17 @@
         "state": "",
         "port": "7501",
         "addresses": {
-          "rr_ip": "10.30.10.12"
+          "rr_ip": "10.30.10.21"
         },
         "environment":[
-          "CENTRAL_ADDRESS=10.30.10.07",
-          "MINIO_ENDPOINT=10.30.10.02:9000",
-          "AWS_ACCESS_KEY_ID=minio",
-          "AWS_SECRET_ACCESS_KEY=minio123",
-          "MLFLOW_TRACKING_URI=http://10.30.10.03:5000",
-          "MLFLOW_S3_ENDPOINT_URL=http://10.30.10.02:9000"
+          "CENTRAL_ADDRESS=10.30.10.16",
+          "WORKER_ADDRESS=10.30.10.21",
+          "WORKER_SYSTEM_MONITOR=0",
+          "MINIO_ENDPOINT=10.30.10.11:9000",
+          "AWS_ACCESS_KEY_ID=23034opsdjhksd",
+          "AWS_SECRET_ACCESS_KEY=sdkl3slömdm",
+          "MLFLOW_TRACKING_URI=http://10.30.10.12:5000",
+          "MLFLOW_S3_ENDPOINT_URL=http://10.30.10.11:9000"
         ]
       }
     ]
