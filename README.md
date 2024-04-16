@@ -5,22 +5,22 @@ Welcome to the Federated Fraud Detection (FFD) repository, a group project creat
 ## Overview of Project
 
 - Research deployment
-  - ![Central node](): The server used in federated learning
-  - ![Worker node](): The client(s) used in federated learning
+  - ![Central node](https://github.com/K123AsJ0k1/FFD/tree/main/code/research/central-node): The server used in federated learning
+  - ![Worker node](https://github.com/K123AsJ0k1/FFD/tree/main/code/research/worker-node): The client(s) used in federated learning
   - Deployment: 
-    - ![Compose](): Contains deployments for demonstration and experiment 
-    - ![Oakestra](): Contains SLAs for demonstration
+    - ![Compose](https://github.com/K123AsJ0k1/FFD/tree/main/code/research/deployment/compose): Contains deployments for demonstration and experiments 
+    - ![Oakestra](https://github.com/K123AsJ0k1/FFD/tree/main/code/research/deployment/oakestra): Contains SLAs for demonstration
     - Used custom images: 
-      - ![PostgreSQL]()
-      - ![MinIO]()
-      - ![MLflow]()
-      - ![Prometheus]()
-      - ![Grafana]()
-- ![Demonstration](): A notebook that shows how to interact with a research FFD
-- Experiments
-  - Notebooks
-  - Data
-  - Images
+      - ![PostgreSQL](https://github.com/K123AsJ0k1/FFD/tree/main/code/research/deployment/postgreSQL)
+      - ![MinIO](https://github.com/K123AsJ0k1/FFD/tree/main/code/research/deployment/minio)
+      - ![MLflow](https://github.com/K123AsJ0k1/FFD/tree/main/code/research/deployment/mlflow)
+      - ![Prometheus](https://github.com/K123AsJ0k1/FFD/tree/main/code/research/deployment/prometheus)
+      - ![Grafana](https://github.com/K123AsJ0k1/FFD/tree/main/code/research/deployment/grafana)
+- ![Demo](https://github.com/K123AsJ0k1/FFD/blob/main/notebooks/demonstrations/Research-Central-Worker-Demo.ipynb): A notebook that shows how to interact with a research FFD
+- Experiments:
+  - ![Notebooks](https://github.com/K123AsJ0k1/FFD/tree/main/notebooks/experiments/notebooks): Used preprocessing, scenarios and parsing for experiments
+  - ![Data](https://github.com/K123AsJ0k1/FFD/tree/main/notebooks/experiments/data): Generated MinIO and MLflow data by scenarios
+  - ![Images](https://github.com/K123AsJ0k1/FFD/tree/main/notebooks/experiments/images): Collected images from experiment results
 
 ## Get Started
 
@@ -166,7 +166,7 @@ If these logs don't show any errors either, your FFD is now ready to run the Res
 
 ### Oakestra Setup
 
-Please follow the Oakestra ![README]() to setup a local 1-DOC setup orhestrator. When you have managed to deploy a Ngnix example, go to
+Please follow the Oakestra ![README](https://github.com/oakestra/oakestra) to setup a local 1-DOC setup orhestrator. When you have managed to deploy a Ngnix example, go to
 
 - FFD/code/research/deployment/oakestra
 
@@ -194,7 +194,7 @@ If central is able to store workers, you know FFD is ready to run the Research-C
 
 The following image shows the components and interactions of FFD:
 
-![architecture]()
+![architecture](https://github.com/K123AsJ0k1/FFD/blob/main/images/NAI_Report_FFD_Architecture.PNG)
 
 **Components**
 - **Central**: Creates global model, coordinates training, aggregates a new global model and evaluates the global model
