@@ -61,16 +61,13 @@ When its done, you have three deployment options of local, docker compose and oa
 
 We recommend trying all options to see what fits best, but we recommend docker compose.
 
-### Local Setup
+### Jupyter setup
 
-Open up four terminals and move them into the following repository paths:
+Open up a single terminal and move it to:
 
 - FFD/code/notebooks
-- FFD/code/research/central-node
-- FFD/code/research/worker-node
-- FFD/code/research/deployment
 
-In the first three, create Python virtual enviroments with right packages using following:
+Create a virtual enviroment with:
 
 ```
 python3 -m venv venv
@@ -78,13 +75,29 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-When these are ready, open up the Jupyter notebook with
+Start Jupyter with:
 
 ```
 jupyter notebook
 ```
 
-and open the Research-Central-Worker-Demo. Before we start the central and worker node, we first need to setup storage components using
+### Local Setup
+
+Open up three terminals and move them into the following repository paths:
+
+- FFD/code/research/central-node
+- FFD/code/research/worker-node
+- FFD/code/research/deployment
+
+In the first two, create Python virtual enviroments with right packages using following:
+
+```
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+When these are ready, start the Jupyter notebook and open the Research-Central-Worker-Demo. Before we start the central and worker node, we first need to setup storage components using
 
 ```
 docker compose -f ffd-storage-docker-compose.yaml up
@@ -92,15 +105,10 @@ docker compose -f ffd-storage-docker-compose.yaml up
 
 When the logs start appearing, check out the following addresses using your browser:
 
-- Grafana: http://127.0.0.1:3000/ 
-  - User = admin
-  - Password = admin
 - MLflow: http://127.0.0.1:5000/
 - MinIo: http://127.0.0.1:9001/ 
   - User = 23034opsdjhksd
   - Password = sdkl3slömdm  
-- Prometheus: http://127.0.0.1:9090/
-- Pushgateway: http://127.0.0.1:9091/
 
 If the dashboards look normal, compose is working as intended and you can now make central and worker run. Uncomment the variables in central and worker node run.py file and run the following command:
 
@@ -108,18 +116,23 @@ If the dashboards look normal, compose is working as intended and you can now ma
 python3 run.py
 ```
 
-When the regular Flask logs start to show with central showing logs every 5 seconds without errors, proceed to check MinIO. When you are in MinIO, click the top option (object browser) on left, which should show central, mlflow and workers buckets. This means that the integration is succesful, which should allow you to run the demonstration notebook without problems. 
+When the regular Flask logs start to show with central showing logs every 5 seconds without errors, proceed to check MinIO. When you are in MinIO, click the top option (object browser) on left, which should show central, mlflow and workers buckets. This means that the integration is succesful, which should allow you to run the demonstration notebook without problems. It is recommended to check central and worker logs using the following:
+
+- Central: http://127.0.0.1:7500/logs
+- Worker: http://127.0.0.1:7501/logs
 
 ### Docker Compose Setup
 
-Open up one terminal and move it to the following repository path:
+Open up three terminals and move them to to the following repository path:
 
-- FFD/code/research/deployment
+- FFD/code/research/deployment/compose
 
-Run the following command to make the stack run:
+Run the following commands in the first two terminals:
 
 ```
-docker compose -f ffd-docker-compose.yaml up
+docker compose -f ffd-storage-docker-compose.yaml up
+
+docker compose -f ffd-monitoring-docker-compose.yaml up
 ```
 
 Check the following addresses:
@@ -128,105 +141,66 @@ Check the following addresses:
   - User = admin
   - Password = admin
 - MLflow: http://127.0.0.1:5000/
+- MinIo: http://127.0.0.1:9001/ 
+  - User = 23034opsdjhksd
+  - Password = sdkl3slömdm   
+- Prometheus: http://127.0.0.1:9090/
+- Pushgateway: http://127.0.0.1:9091/
+
+If there is no errors, proceed to setup the C1-W5 FFD using the third terminal:
+
+```
+docker compose -f ffd-c1-w5-nodes-docker-compose.yaml up
+```
+
+If there isn't any error logs in the terminal, check the node logs with:
+
 - Central: http://127.0.0.1:7500/logs
 - Worker-1: http://127.0.0.1:7501/logs
 - Worker-2: http://127.0.0.1:7502/logs
 - Worker-3: http://127.0.0.1:7503/logs
 - Worker-4: http://127.0.0.1:7504/logs
 - Worker-5: http://127.0.0.1:7505/logs
-- MinIo: http://127.0.0.1:9001/ 
-  - User = minio
-  - User = minio123   
-- Prometheus: http://127.0.0.1:9090/
-- Pushgateway: http://127.0.0.1:9091/
 
-If there is no errors, proceed to run the demonstration notebook.
+If these logs don't show any errors either, your FFD is now ready to run the Research-Central-Worker-Demo.
 
 ### Oakestra Setup
 
-We will follow the Oakestra README instructions for setting up the orhestrator and worker nodes:
-
-#### Orchestrator
-
-Git clone the Oakestra repository:
-
-```
-git clone https://github.com/oakestra/oakestra.git 
-cd oakestra
-```
-
-Set the following enviromental variables:
-
-```
-export CLUSTER_NAME=ffd-1
-export CLUSTER_LOCATION=60.204478,24.962756,3000
-export SYSTEM_MANAGER_URL=(Public IP)
-```
-
-Open a terminal and start the oakestra containers with:
-
-```
-sudo -E docker compose -f run-a-cluster/1-DOC.yaml -f run-a-cluster/override-alpha-versions.yaml up
-```
-
-#### Worker Node
-
-In the devices of your choosing, install worker node NodeEngine
-
-```
-wget -c https://github.com/oakestra/oakestra/releases/download/alpha-v0.4.300/NodeEngine_$(dpkg --print-architecture).tar.gz && tar -xzf NodeEngine_$(dpkg --print-architecture).tar.gz && chmod +x install.sh && mv NodeEngine NodeEngine_$(dpkg --print-architecture) && ./install.sh $(dpkg --print-architecture)
-```
-
-and NetManager
-
-```
-wget -c https://github.com/oakestra/oakestra-net/releases/download/alpha-v0.4.300/NetManager_$(dpkg --print-architecture).tar.gz && tar -xzf NetManager_$(dpkg --print-architecture).tar.gz && chmod +x install.sh && ./install.sh $(dpkg --print-architecture)
-```
-
-Before you start NodeEngine and Netmanager, modify the netcfg.json using
-
-```
-sudo nano /etc/netmanager/netcfg.json
-```
-
-into the following format
-
-```
-{
-  "NodePublicAddress": "(Public IP)",
-  "NodePublicPort": 50103,
-  "ClusterUrl": "(Public IP)",
-  "ClusterMqttPort": "10003"
-}
-```
-
-Now, open two terminals. Start the NetManager with
-
-```
-sudo NetManager -p 6000
-```
-
-and NodeEngine with
-
-```
-sudo NodeEngine -n 6000 -p 10100 -a (Public IP)
-```
-
-#### Checks
-
-Now, when everything is running, go to the following addresses:
-
-- http://(public IP)
-  - Username = Admin
-  - Password = Admin
-- http://(Public IP):10000/api/docs
-
-In the later case, go down the page to find Clusters and press try it out to check, if the amount of active_nodes is 1. If it is, then Oakestra is ready. 
-
-
-#### FFD setup
-
-Open up a code editor and go to:
+Please follow the Oakestra ![README]() to setup a local 1-DOC setup orhestrator. When you have managed to deploy a Ngnix example, go to
 
 - FFD/code/research/deployment/oakestra
 
+Now, create three applications named storage, monitor and nodes in the dashboard. Then, go to the storage namespace, create a new service, select SLA and select storage-deployment.json. If service creation is succesful, deploy the services and check that all are running. To confirm that the components run, check the following:
+
+- MLflow: http://(orhestrator_address):5000/
+- MinIo: http://(orhestrator_address):9001/ 
+  - User = 23034opsdjhksd
+  - Password = sdkl3slömdm   
+
+If UIs work fine, proceed to deploy monitor-deployment.json and check the UIs with
+
+- Grafana: http://(orhestrator_address):3000/ 
+  - User = admin
+  - Password = admin
+- Prometheus: http://(orhestrator_address):9090/
+
+If UIs are again fine, proceed to deploy ffd-c1-w5-nodes-oakestra-deployment.json and check central logs with:
+
+- Central: http://(orhestrator_address):7500/logs
+
+If central is able to store workers, you know FFD is ready to run the Research-Central-Worker-Demo.
+
+## High Level Architecture
+
+The following image shows the components and interactions of FFD:
+
+![architecture]()
+
+**Components**
+- **Central**: Creates global model, coordinates training, aggregates a new global model and evaluates the global model
+- **Worker**: Creates local model and sends it to central 
+- **MLflow**: Provides End-to-End ML management and model analysis tools for central and workers
+- **MinIO**: Provides object storage for nodes and artifact storage for MLflow
+- **PostgreSQL**: Provides metric and metadata store for MLflow
+- **Prometheus**: Scrapes model, time and resource metrics stored in central and workers
+- **Grafana**: Enables visualization for metrics collected by Prometheus 

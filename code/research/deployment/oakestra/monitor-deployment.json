@@ -3,7 +3,7 @@
       {
         "microserviceID": "",
         "microservice_name": "prometheus",
-        "microservice_namespace": "monitoring",
+        "microservice_namespace": "monitor",
         "virtualization": "container",
         "cmd": [],
         "memory": 200,
@@ -29,7 +29,7 @@
       {
         "microserviceID": "",
         "microservice_name": "grafana",
-        "microservice_namespace": "monitoring",
+        "microservice_namespace": "monitor",
         "virtualization": "container",
         "cmd": [],
         "memory": 100,
