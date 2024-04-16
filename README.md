@@ -59,7 +59,7 @@ When its done, you have three deployment options of local, docker compose and oa
     - Oakestra is not currently meant for production
     - Requires a longer setup than other options
 
-We recommend trying all options to see what fits best, but we recommend docker compose.
+From these we recommed docker compose due to ease of use and minimal steps.
 
 ### Jupyter setup
 
