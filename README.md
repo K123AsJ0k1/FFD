@@ -4,6 +4,24 @@ Welcome to the Federated Fraud Detection (FFD) repository, a group project creat
 
 ## Overview of Project
 
+- Research deployment
+  - ![Central node](): The server used in federated learning
+  - ![Worker node](): The client(s) used in federated learning
+  - Deployment: 
+    - ![Compose](): Contains deployments for demonstration and experiment 
+    - ![Oakestra](): Contains SLAs for demonstration
+    - Used custom images: 
+      - ![PostgreSQL]()
+      - ![MinIO]()
+      - ![MLflow]()
+      - ![Prometheus]()
+      - ![Grafana]()
+- ![Demonstration](): A notebook that shows how to interact with a research FFD
+- Experiments
+  - Notebooks
+  - Data
+  - Images
+
 ## Get Started
 
 First, clone the repository with:
@@ -14,7 +32,7 @@ git clone https://github.com/K123AsJ0k1/FFD.git
 
 When its done, you have three deployment options of local, docker compose and oakestra with their own pros and cons:
 
-- Local:
+- Local (development):
   - Pros:
     - Familiar virtual enviroment setup
     - Enables understanding of applications
@@ -23,7 +41,7 @@ When its done, you have three deployment options of local, docker compose and oa
     - Multiple workers require separate folders
     - Docker is still a requirement for integration
     - Not portable
-- Docker compose:
+- Docker compose (recommended):
   - Pros:
     - Straightforward if Docker is properly installed and configured
     - Enables proper enviroment with multiple workers
@@ -40,15 +58,14 @@ When its done, you have three deployment options of local, docker compose and oa
   - Cons:
     - Oakestra is not currently meant for production
     - Requires a longer setup than other options
-    - Much smaller community than Kuberentes
 
-We recommend trying all options to see what fits best, but the target enviroment for FFD is Oakestra.
+We recommend trying all options to see what fits best, but we recommend docker compose.
 
 ### Local Setup
 
 Open up four terminals and move them into the following repository paths:
 
-- FFD/code/notebooks/demonstrations/Production-Central-Worker
+- FFD/code/notebooks
 - FFD/code/research/central-node
 - FFD/code/research/worker-node
 - FFD/code/research/deployment
@@ -67,10 +84,10 @@ When these are ready, open up the Jupyter notebook with
 jupyter notebook
 ```
 
-and open the Production-Central-Worker-Demonstration. Before we start the central and worker node, we first need to use the development-docker-compose.yaml via the following command:
+and open the Research-Central-Worker-Demo. Before we start the central and worker node, we first need to setup storage components using
 
 ```
-docker compose -f development-docker-compose.yaml up
+docker compose -f ffd-storage-docker-compose.yaml up
 ```
 
 When the logs start appearing, check out the following addresses using your browser:
@@ -80,12 +97,12 @@ When the logs start appearing, check out the following addresses using your brow
   - Password = admin
 - MLflow: http://127.0.0.1:5000/
 - MinIo: http://127.0.0.1:9001/ 
-  - User = minio
-  - User = minio123   
+  - User = 23034opsdjhksd
+  - Password = sdkl3slömdm  
 - Prometheus: http://127.0.0.1:9090/
 - Pushgateway: http://127.0.0.1:9091/
 
-If the dashboards look normal, compose is working as intended and you can now make central and worker run using the following command:
+If the dashboards look normal, compose is working as intended and you can now make central and worker run. Uncomment the variables in central and worker node run.py file and run the following command:
 
 ```
 python3 run.py
