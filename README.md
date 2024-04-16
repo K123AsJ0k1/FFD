@@ -4,6 +4,10 @@ Welcome to the Federated Fraud Detection (FFD) repository, a group project creat
 
 ## Overview of Project
 
+**Extent of Coding Efforts**
+
+All code in this repository has been created, developed and tested by our group based on our coding experience and found internet guides for different component integrations and tools with the following structure showing the project significant parts: 
+
 - Research deployment
   - [Central node](https://github.com/K123AsJ0k1/FFD/tree/main/code/research/central-node): The server used in federated learning
   - [Worker node](https://github.com/K123AsJ0k1/FFD/tree/main/code/research/worker-node): The client(s) used in federated learning
@@ -205,4 +209,4 @@ The following image shows the components and interactions of FFD:
 - **Prometheus**: Scrapes model, time and resource metrics stored in central and workers
 - **Grafana**: Enables visualization for metrics collected by Prometheus 
 - **Jupyter Notebook**: Default programtic interaction tool
-- **Web Browser**: Default tool for log checking and UI interactions
+- **Web Browser**: Default tool for log checking and UI interactions 
