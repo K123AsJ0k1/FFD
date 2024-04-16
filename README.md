@@ -197,10 +197,12 @@ The following image shows the components and interactions of FFD:
 ![architecture](https://github.com/K123AsJ0k1/FFD/blob/main/images/NAI_Report_FFD_Architecture.PNG)
 
 **Components**
-- **Central**: Creates global model, coordinates training, aggregates a new global model and evaluates the global model
-- **Worker**: Creates local model and sends it to central 
+- **Central Node**: Creates global model, coordinates training, aggregates a new global model and evaluates the global model
+- **Worker Node**: Creates local model and sends it to central 
 - **MLflow**: Provides End-to-End ML management and model analysis tools for central and workers
 - **MinIO**: Provides object storage for nodes and artifact storage for MLflow
 - **PostgreSQL**: Provides metric and metadata store for MLflow
 - **Prometheus**: Scrapes model, time and resource metrics stored in central and workers
 - **Grafana**: Enables visualization for metrics collected by Prometheus 
+- **Jupyter Notebook**: Default programttic interaction tool
+- **Web Browser**: Default tool for log checking and UI interactions
