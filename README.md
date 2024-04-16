@@ -204,5 +204,5 @@ The following image shows the components and interactions of FFD:
 - **PostgreSQL**: Provides metric and metadata store for MLflow
 - **Prometheus**: Scrapes model, time and resource metrics stored in central and workers
 - **Grafana**: Enables visualization for metrics collected by Prometheus 
-- **Jupyter Notebook**: Default programttic interaction tool
+- **Jupyter Notebook**: Default programtic interaction tool
 - **Web Browser**: Default tool for log checking and UI interactions
