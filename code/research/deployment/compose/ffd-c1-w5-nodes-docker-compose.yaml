@@ -97,7 +97,7 @@ services:
       - '127.0.0.1:7505:7501'
     environment:
       - CENTRAL_ADDRESS=172.28.0.8
-      - WORKER_ADDRESS=172.28.0.12
+      - WORKER_ADDRESS=172.28.0.13
       - WORKER_SYSTEM_MONITOR=0
       - MINIO_ENDPOINT=ffd-minio:9000
       - AWS_ACCESS_KEY_ID=23034opsdjhksd
