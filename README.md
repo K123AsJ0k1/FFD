@@ -1,6 +1,6 @@
 # FFD
 
-Welcome to the Federated Fraud Detection (FFD) repository, a group project created during the Networked AI Systems course 2024 of University of Helsinki. FFD is a Flask and Pytorch based federated learning application, which uses Docker compose and Oakestra for container orhestration. It provides a research simulator for local, distributed and edge enviroments with MLflow, MinIO, PostgresSQL, Prometheus, Pushgateway and Grafana integration, which can be used as a base for a custom Python Flask based federated platfrom.
+Welcome to the Federated Fraud Detection (FFD) repository, a group project created during the Networked AI Systems course 2024 of University of Helsinki. FFD is a Flask and Pytorch based federated learning application, which uses Docker compose and Oakestra for container orhestration. It provides a research simulator for local and distributed enviroments with MLflow, MinIO, PostgresSQL, Prometheus, Pushgateway and Grafana integration, which can be used as a base for a custom Python Flask based federated platfrom.
 
 ## Overview of Project
 
