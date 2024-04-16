@@ -1,0 +1,15 @@
+{
+    "activation-date": "2024-04-15-12:26:58.442775",
+    "host-kernel-version": "6.5.0-27-generic",
+    "host-system-name": "Linux",
+    "host-node-name": "37d0384a5b3b",
+    "host-machine": "x86_64",
+    "physical-cpu-amount": 4,
+    "total-cpu-amount": 8,
+    "min-cpu-frequency-mhz": 400.0,
+    "max-cpu-frequency-mhz": 3400.0,
+    "total-ram-amount-bytes": 16650469376,
+    "available-ram-amount-bytes": 3984777216,
+    "total-disk-amount-bytes": 370490241024,
+    "available-disk-amount-bytes": 96718618624
+}
